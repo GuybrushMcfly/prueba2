@@ -177,21 +177,7 @@ custom_css = {
         "align-items": "center !important",
         "justify-content": "flex-start !important"
     },
-    ".ag-cell-wrapper": {
-        "display": "flex !important",
-        "align-items": "center !important",
-        "height": "100% !important"
-    },
-    ".ag-selection-checkbox": {
-        "transform": "scale(1.4)",
-        "margin": "4px"
-    },
-    ".ag-cell.ag-selection-checkbox": {
-        "background-color": "#e7f1ff !important",
-        "border": "1px solid #136ac1",
-        "border-radius": "4px",
-        "padding": "2px"
-    }
+
 
 }
 
