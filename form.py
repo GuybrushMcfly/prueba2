@@ -129,12 +129,18 @@ if isinstance(selected, pd.DataFrame):
 # =======================
 # CONTROLAR REINICIO FLAG
 # =======================
+comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
-    actividad_nombre = fila.get("Actividad", "")
-    comision_nombre = fila.get("Comisión", "")
-    fecha_inicio = fila.get("Fecha inicio", "")
-    fecha_fin = fila.get("Fecha fin", "")
+    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
+    st.session_state["comision_nombre"] = fila.get("Comisión", "")
+    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
+    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
+
+    actividad_nombre = st.session_state["actividad_nombre"]
+    comision_nombre = st.session_state["comision_nombre"]
+    fecha_inicio = st.session_state["fecha_inicio"]
+    fecha_fin = st.session_state["fecha_fin"]
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
     # Reiniciar flags si cambiás de comisión
@@ -176,7 +182,11 @@ else:
     st.info("Seleccioná una comisión para continuar.")
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
-if st.session_state.get("validado", False) and st.session_state.get("cuil_valido", False) and not st.session_state.get("inscripcion_exitosa", False):
+if (
+    st.session_state.get("validado", False)
+    and st.session_state.get("cuil_valido", False)
+    and not st.session_state.get("inscripcion_exitosa", False)
+):
     st.markdown("#### 3. Completá tus datos personales")
 
     datos_agente = st.session_state.get("datos_agenteform", {})
@@ -265,7 +275,6 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
-            # Pausa y oculta el formulario
             time.sleep(2)
             st.session_state["validado"] = False
             st.session_state["cuil_valido"] = False
