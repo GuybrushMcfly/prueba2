@@ -392,7 +392,7 @@ if (
             
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_font("Aptos", size=11)
+                pdf.set_font("Helvetica", size=11)
                 pdf.cell(200, 10, txt="Constancia de Inscripcion", ln=True, align="C")
                 pdf.ln(10)
                 
