@@ -5,19 +5,16 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
 import time
+import io
 from fpdf import FPDF
 from io import BytesIO
 
-# Detectar si estamos en entorno con st.secrets (Streamlit Cloud) o usando Railway
-if "SUPABASE_URL" in st.secrets:
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_ANON_KEY = st.secrets["SUPABASE_ANON_KEY"]
-else:
-    SUPABASE_URL = os.environ.get("SUPABASE_URL")
-    SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+# ========== CONEXIÓN A SUPABASE ==========
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    st.error("❌ No se encontraron las credenciales de Supabase.")
+    st.error("❌ No se encontraron las credenciales de Supabase en las variables de entorno.")
     st.stop()
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
