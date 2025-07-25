@@ -149,170 +149,115 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
 
+    # --- Validar y buscar datos reales ---
     if st.button("VALIDAR Y CONTINUAR", type="primary"):
         if not validar_cuil(cuil):
             st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
+            st.session_state["cuil_valido"] = False
+            st.session_state["datos_agenteform"] = {}
         else:
-            st.session_state.update({
-                "validado": True,
-                "cuil": cuil,
-                "actividad_nombre": actividad_nombre,
-                "comision_nombre": comision_nombre,
-                "fecha_inicio": fecha_inicio,
-                "fecha_fin": fecha_fin,
-            })
-elif selected and selected[0].get("Comisión") == "Sin comisiones":
-    st.warning("No hay comisiones disponibles para esta actividad.")
-else:
-    st.info("Seleccioná una comisión para continuar.")
+            # Consultar agentesform
+            resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
+            if resp.data and len(resp.data) > 0:
+                st.session_state["cuil_valido"] = True
+                st.session_state["cuil"] = cuil
+                st.session_state["datos_agenteform"] = resp.data[0]
+                st.success("¡Datos encontrados! Revisá y completá tus datos si es necesario.")
+            else:
+                st.session_state["cuil_valido"] = False
+                st.session_state["datos_agenteform"] = {}
+                st.error("No existe esa persona en la base de datos. No podés continuar.")
 
-
-# ========== BLOQUE 2: DATOS PERSONALES ==========
-if st.session_state.get("validado", False):
+# ========== BLOQUE 2: DATOS PERSONALES SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
+if st.session_state.get("validado", False) and st.session_state.get("cuil_valido", False):
     st.markdown("#### 3. Completá tus datos personales")
 
-    # Simular carga desde "base de agentes" (esto lo podés adaptar a buscar en otra tabla)
-    datos_agente = {
-        "cuil": st.session_state.get("cuil", ""),
-        "apellidos": st.session_state.get("apellidos", "ROSENZVEIG"),
-        "nombres": st.session_state.get("nombres", "MARCELO ADRIAN"),
-        "fecha_nac": "1961-10-26",
-        "genero": "",
-        "nivel_educ": "UNIVERSITARIO",
-        "titulo": "LIC. EN PSICOLOGIA",
-        "sit_revista": "PLANTA PERMANENTE",
-        "nivel": "B",
-        "grado": "8",
-        "agrupamiento": "PROF",
-        "tramo": "INTERMEDIO",
-        "tareas": "",
-        "dependencia": dependencias[0],
-        "correo_indec": "",
-        "correo_alt": "",
-    }
+    datos_agente = st.session_state.get("datos_agenteform", {})
 
-    # Apellido/s y Nombre/s en la misma fila
-    col_ap, col_nom = st.columns(2)
-    with col_ap:
-        apellidos = st.text_input("APELLIDO/S *", value=datos_agente["apellidos"], key="apellidos")
-    with col_nom:
-        nombres = st.text_input("NOMBRE/S *", value=datos_agente["nombres"], key="nombres_detalle")
+    # Opciones para los selectbox (adaptá si tenés otros valores posibles)
+    niveles_educativos = ["", "PRIMARIO", "SECUNDARIO", "TERCIARIO", "UNIVERSITARIO", "POSGRADO"]
+    situaciones_revista = [
+        "", "PLANTA PERMANENTE", "PLANTA TRANSITORIA",
+        "CONTRATOS DEC. 1109/17", "CONTRATOS DEC. 1421/02 (48)"
+    ]
+    agrupamientos = ["", "PROF", "GRAL"]
+    niveles = ["", "A", "B", "C"]
+    tramos = ["", "INICIAL", "INTERMEDIO", "AVANZADO"]
+    sexos = ["", "F", "M", "X"]
 
-    # Fecha de nacimiento y Género en la misma fila
-    col_fec, col_gen = st.columns(2)
-    with col_fec:
-        fecha_nac = st.date_input("FECHA DE NACIMIENTO *", value=date(1961, 10, 26), key="fecha_nac")
-    with col_gen:
-        genero = st.selectbox("GÉNERO *", ["-Seleccioná-"] + generos, key="genero")
-
-    # Nivel educativo y Título en la misma fila
-    col_niv_edu, col_tit = st.columns(2)
-    with col_niv_edu:
-        nivel_educ = st.selectbox("NIVEL EDUCATIVO *", niveles_educativos, index=niveles_educativos.index(datos_agente["nivel_educ"]), key="nivel_educ")
-    with col_tit:
-        titulo = st.text_input("ÚLTIMO TÍTULO ALCANZADO *", value=datos_agente["titulo"], key="titulo")
-
-    # Situación de revista (SOLO EN LA PRIMERA COLUMNA, la segunda queda vacía)
-    col_sit, col_vacia = st.columns(2)
-    with col_sit:
-        situacion = st.selectbox("SITUACIÓN DE REVISTA *", situaciones_revista, index=situaciones_revista.index(datos_agente["sit_revista"]), key="situacion_revista")
-
-    # NIVEL y GRADO en la misma fila
-    col_nivel, col_grado = st.columns(2)
-    # AGRUPAMIENTO y TRAMO en la misma fila
-    col_agrup, col_tramo = st.columns(2)
-
-    # LIMPIEZA DE CAMPOS SEGÚN SITUACIÓN
-    if "ultima_situacion" not in st.session_state:
-        st.session_state["ultima_situacion"] = situacion
-    if st.session_state["ultima_situacion"] != situacion:
-        for campo in ["nivel", "grado", "agrupamiento", "tramo"]:
-            if campo in st.session_state:
-                del st.session_state[campo]
-        st.session_state["ultima_situacion"] = situacion
-
-    # CAMPOS VARIABLES
-    if situacion == "PLANTA PERMANENTE":
-        with col_nivel:
-            nivel = st.selectbox("NIVEL *", niveles, index=niveles.index(datos_agente["nivel"]), key="nivel")
-        with col_grado:
-            grado = st.text_input("GRADO *", value=datos_agente["grado"], key="grado")
-        with col_agrup:
-            agrupamiento = st.selectbox("AGRUPAMIENTO *", agrupamientos, index=agrupamientos.index(datos_agente["agrupamiento"]), key="agrupamiento")
-        with col_tramo:
-            tramo = st.selectbox("TRAMO", tramos, index=tramos.index(datos_agente["tramo"]), key="tramo")
-        tareas = st.text_area("TAREAS DESARROLLADAS *", max_chars=255, key="tareas")
-    elif situacion == "PLANTA TRANSITORIA":
-        with col_nivel:
-            nivel = st.selectbox("NIVEL *", niveles, key="nivel")
-        with col_grado:
-            grado = st.text_input("GRADO *", key="grado")
-        with col_agrup:
-            agrupamiento = st.selectbox("AGRUPAMIENTO *", agrupamientos, key="agrupamiento")
-        with col_tramo:
-            tramo = ""
-        tareas = st.text_area("TAREAS DESARROLLADAS *", max_chars=255, key="tareas")
-    elif situacion == "CONTRATOS DEC. 1421/02":
-        with col_nivel:
-            nivel = st.selectbox("NIVEL *", niveles, key="nivel")
-        with col_grado:
-            grado = st.text_input("GRADO *", key="grado")
-        with col_agrup:
-            agrupamiento = st.selectbox("AGRUPAMIENTO *", agrupamientos, key="agrupamiento")
-        with col_tramo:
-            tramo = ""
-        tareas = st.text_area("TAREAS DESARROLLADAS *", max_chars=255, key="tareas")
-    elif situacion == "CONTRATOS DEC. 1109/17":
-        nivel = grado = agrupamiento = tramo = ""
-        tareas = st.text_area("TAREAS DESARROLLADAS *", max_chars=255, key="tareas")
+    # Procesar fecha de nacimiento
+    if datos_agente.get("fecha_nacimiento"):
+        try:
+            fecha_nac_valor = pd.to_datetime(datos_agente["fecha_nacimiento"]).date()
+        except:
+            fecha_nac_valor = date(1980, 1, 1)
     else:
-        nivel = grado = agrupamiento = tramo = tareas = ""
+        fecha_nac_valor = date(1980, 1, 1)
 
-    # Dependencia y correos
-    dependencia = st.selectbox("DEPENDENCIA *", dependencias, index=0, key="dependencia")
-    c3, c4 = st.columns(2)
-    with c3:
-        correo_indec = st.text_input("CORREO INDEC *", value="@indec.gob.ar", key="correo_indec")
-    with c4:
-        correo_alt = st.text_input("CORREO ALTERNATIVO (opcional)", key="correo_alt")
+    apellido = st.text_input("Apellido *", value=datos_agente.get("apellido", ""))
+    nombre = st.text_input("Nombre *", value=datos_agente.get("nombre", ""))
+    fecha_nacimiento = st.date_input("Fecha de nacimiento *", value=fecha_nac_valor)
+    nivel_educativo = st.selectbox(
+        "Nivel educativo", niveles_educativos,
+        index=niveles_educativos.index(datos_agente.get("nivel_educativo", "")) if datos_agente.get("nivel_educativo", "") in niveles_educativos else 0
+    )
+    titulo = st.text_input("Título", value=datos_agente.get("titulo", ""))
+    situacion_revista = st.selectbox(
+        "Situación de revista", situaciones_revista,
+        index=situaciones_revista.index(datos_agente.get("situacion_revista", "")) if datos_agente.get("situacion_revista", "") in situaciones_revista else 0
+    )
+    agrupamiento = st.selectbox(
+        "Agrupamiento", agrupamientos,
+        index=agrupamientos.index(datos_agente.get("agrupamiento", "")) if datos_agente.get("agrupamiento", "") in agrupamientos else 0
+    )
+    nivel = st.selectbox(
+        "Nivel", niveles,
+        index=niveles.index(datos_agente.get("nivel", "")) if datos_agente.get("nivel", "") in niveles else 0
+    )
+    grado = st.text_input("Grado", value=datos_agente.get("grado", ""))
+    tramo = st.selectbox(
+        "Tramo", tramos,
+        index=tramos.index(datos_agente.get("tramo", "")) if datos_agente.get("tramo", "") in tramos else 0
+    )
+    dependencia_simple = st.text_input("Dependencia simple", value=datos_agente.get("dependencia_simple", ""))
+    correo = st.text_input("Correo", value=datos_agente.get("correo", ""))
+    sexo = st.selectbox(
+        "Sexo", sexos,
+        index=sexos.index(datos_agente.get("sexo", "")) if datos_agente.get("sexo", "") in sexos else 0
+    )
 
-    # ---- Enviar ----
+    # --- Enviar ---
     if st.button("ENVIAR INSCRIPCIÓN"):
         datos = {
             "actividad": st.session_state.get("actividad_nombre", ""),
             "comision": st.session_state.get("comision_nombre", ""),
             "fecha_inicio": st.session_state.get("fecha_inicio", ""),
             "fecha_fin": st.session_state.get("fecha_fin", ""),
-            "apellidos": apellidos,
-            "nombres": nombres,
-            "cuil": st.session_state.get("cuil", ""),
-            "fecha_nac": fecha_nac,
-            "nivel_educ": nivel_educ,
-            "genero": genero,
+            "cuil_cuit": st.session_state.get("cuil", ""),
+            "apellido": apellido,
+            "nombre": nombre,
+            "fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d"),
+            "nivel_educativo": nivel_educativo,
             "titulo": titulo,
-            "situacion": situacion,
-            "tareas": tareas,
-            "dependencia": dependencia,
-            "correo_indec": correo_indec,
-            "correo_alt": correo_alt,
+            "situacion_revista": situacion_revista,
+            "agrupamiento": agrupamiento,
+            "nivel": nivel,
+            "grado": grado,
+            "tramo": tramo,
+            "dependencia_simple": dependencia_simple,
+            "correo": correo,
+            "sexo": sexo
         }
-        if situacion == "PLANTA PERMANENTE":
-            datos.update({
-                "nivel": st.session_state.get("nivel", ""),
-                "grado": st.session_state.get("grado", ""),
-                "agrupamiento": st.session_state.get("agrupamiento", ""),
-                "tramo": st.session_state.get("tramo", "")
-            })
-        elif situacion in ["PLANTA TRANSITORIA", "CONTRATOS DEC. 1421/02"]:
-            datos.update({
-                "nivel": st.session_state.get("nivel", ""),
-                "grado": st.session_state.get("grado", ""),
-                "agrupamiento": st.session_state.get("agrupamiento", "")
-            })
+        # Guardar en Supabase (upsert por cuil_cuit)
+        result = supabase.table("agentesform").upsert(datos).execute()
+        if result.data:
+            st.success("¡Formulario enviado correctamente!")
+        else:
+            st.error("Ocurrió un error al guardar los datos. Intentalo nuevamente.")
 
-        st.success("¡Formulario enviado correctamente!")
-        st.write("**Datos enviados:**")
-        st.json(datos)
+elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
+    # Si validado pero el CUIL no existe en la base
+    st.error("No existe esa persona en la base de datos. No podés continuar.")
 
 else:
     st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
