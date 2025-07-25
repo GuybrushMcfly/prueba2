@@ -136,8 +136,16 @@ custom_css = {
     ".ag-cell": {
         "white-space": "normal !important",
         "line-height": "1.2 !important",
-        "vertical-align": "center !important"
+        "vertical-align": "middle !important",
+        "display": "flex !important",
+        "align-items": "center !important",
+        "justify-content": "flex-start !important"
     },
+    ".ag-cell-wrapper": {
+        "display": "flex !important",
+        "align-items": "center !important",
+        "height": "100% !important"
+    }
 }
 
 grid_options = gb.build()
