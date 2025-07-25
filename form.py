@@ -328,7 +328,7 @@ if st.session_state.get("inscripcion_exitosa", False):
 elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
     st.error("No existe esa persona en la base de datos. No podés continuar.")
 
-else:
-    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
+#else:
+#    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
 
 st.markdown("</div>", unsafe_allow_html=True)
