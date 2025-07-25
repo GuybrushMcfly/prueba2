@@ -8,11 +8,23 @@ import time
 from fpdf import FPDF
 from io import BytesIO
 
-# ========== CONEXIÓN A SUPABASE ==========
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_ANON_KEY = st.secrets["SUPABASE_ANON_KEY"]
+# Detectar si estamos en entorno con st.secrets (Streamlit Cloud) o usando Railway
+if "SUPABASE_URL" in st.secrets:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_ANON_KEY = st.secrets["SUPABASE_ANON_KEY"]
+else:
+    SUPABASE_URL = os.environ.get("SUPABASE_URL")
+    SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
+if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    st.error("❌ No se encontraron las credenciales de Supabase.")
+    st.stop()
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+@st.cache_resource
+def init_connection():
+    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
     from fpdf import FPDF
