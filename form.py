@@ -389,9 +389,12 @@ if (
 
             # --- Generar constancia PDF ---
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
+
             
                 pdf = FPDF()
                 pdf.add_page()
+                
+                # Agregar fuente que soporte UTF-8
                 pdf.set_font("Arial", "B", 16)
                 pdf.cell(0, 10, txt="CONSTANCIA DE INSCRIPCIÓN", ln=True, align="C")
                 pdf.ln(15)
@@ -437,7 +440,12 @@ if (
                 pdf.set_font("Arial", "I", 10)
                 pdf.cell(0, 8, txt=f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True, align="R")
                 
-                return BytesIO(pdf.output(dest='S').encode('latin1'))
+                # Usar UTF-8 en lugar de latin1
+                buffer = BytesIO()
+                pdf_string = pdf.output(dest='S')
+                buffer.write(pdf_string.encode('utf-8', errors='ignore'))
+                buffer.seek(0)
+                return buffer
 
             constancia = generar_constancia_pdf(
                 nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
