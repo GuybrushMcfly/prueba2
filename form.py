@@ -155,12 +155,13 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     st.markdown(
         f"""
         <h4>2. Validá tu CUIL para inscribirte en</h4>
-        <div style="color:#b72877;font-weight:bold; font-size:1.25em; margin-top:-0.7em;">
+        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
             {actividad_nombre} ({comision_nombre})
-        </div>
+        </span>
         """,
         unsafe_allow_html=True
     )
+
 
     col_cuil, _ = st.columns([1, 1])
     with col_cuil:
