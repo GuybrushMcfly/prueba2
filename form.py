@@ -237,7 +237,7 @@ grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
-    height=340,
+    height=500,
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
