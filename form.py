@@ -152,7 +152,14 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
             st.session_state.pop(k, None)
 
-    st.markdown(f"#### 2. Validá tu CUIL para inscribirte en **{actividad_nombre}** - {comision_nombre}")
+    st.markdown(
+    f"""
+    <h4>2. Validá tu CUIL para inscribirte en <b>{actividad_nombre}</b><br>
+    <span style="color:#136ac1;font-weight:bold">{comision_nombre}</span>
+    </h4>
+    """, unsafe_allow_html=True
+)
+
     col_cuil, _ = st.columns([1, 1])
     with col_cuil:
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
