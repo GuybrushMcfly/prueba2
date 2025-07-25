@@ -119,17 +119,54 @@ gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 # Configurar columnas con porcentajes y flex
 gb.configure_column("Actividad", flex=40, wrapText=True, autoHeight=True, 
                    tooltipField="Actividad", filter=False, resizable=False,
-                   minWidth=200, maxWidth=650)
+                   minWidth=200, maxWidth=700)
 gb.configure_column("Comisión", flex=17, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
 
+# Configurar paginación (agregar después de configure_selection)
+gb.configure_pagination(
+    paginationAutoPageSize=False, 
+    paginationPageSize=15,
+    paginationPageSizeSelector=[10, 15, 25, 50]
+)
+
 # Configuraciones adicionales para controlar el comportamiento
 gb.configure_grid_options(
     suppressSizeToFit=False,
     suppressColumnVirtualisation=False,
-    domLayout='normal'
+    domLayout='normal',
+    localeText={
+        # Paginación
+        'page': 'Página',
+        'more': 'Más',
+        'to': 'a',
+        'of': 'de',
+        'next': 'Siguiente',
+        'last': 'Último',
+        'first': 'Primero',
+        'previous': 'Anterior',
+        'loadingOoo': 'Cargando...',
+        # Selector de filas por página
+        'pageSizeSelectorLabel': 'Filas por página:',
+        # Otros textos útiles
+        'noRowsToShow': 'No hay datos para mostrar',
+        'selectAll': 'Seleccionar todo',
+        'selectAllFiltered': 'Seleccionar todo (filtrado)',
+        'searchOoo': 'Buscar...',
+        'blanks': 'En blanco',
+        'filterOoo': 'Filtrar...',
+        'applyFilter': 'Aplicar filtro',
+        'equals': 'Igual a',
+        'notEqual': 'No igual a',
+        'lessThan': 'Menor que',
+        'greaterThan': 'Mayor que',
+        'contains': 'Contiene',
+        'notContains': 'No contiene',
+        'startsWith': 'Empieza con',
+        'endsWith': 'Termina con'
+    }
 )
 
 custom_css = {
