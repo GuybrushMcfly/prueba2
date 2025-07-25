@@ -278,7 +278,6 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         else:
             resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
             if resp.data and len(resp.data) == 0:
-                # --- Caso: NO existe el CUIL en la base ---
                 st.session_state["validado"] = False
                 st.session_state["cuil_valido"] = False
                 st.error(
@@ -286,7 +285,6 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
                     "Verificá los datos ingresados o comunicate con la Dirección de Capacitación."
                 )
             else:
-                # --- Caso: Existe el CUIL, chequear si ya está inscripto en esta comisión ---
                 comision = st.session_state.get("comision_nombre", "")
                 inscrip_existente = supabase.table("pruebainscripciones") \
                     .select("id") \
@@ -294,23 +292,25 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
                     .eq("comision", comision) \
                     .limit(1) \
                     .execute()
-        
+    
                 if inscrip_existente.data and len(inscrip_existente.data) > 0:
-                    # Ya inscripto en la comisión
                     st.session_state["validado"] = False
                     st.session_state["cuil_valido"] = False
                     st.warning("⚠️ Ya realizaste la preinscripción en esa comisión. No es necesario volver a inscribirse.")
                 else:
-                    # Puede avanzar a la inscripción
                     st.session_state["validado"] = True
                     st.session_state["cuil_valido"] = True
                     st.session_state["cuil"] = cuil
                     st.session_state["datos_agenteform"] = resp.data[0]
                     st.success("¡Datos encontrados! Revisá y completá tus datos si es necesario.")
-        elif selected and selected[0].get("Comisión") == "Sin comisiones":
-            st.warning("No hay comisiones disponibles para esta actividad.")
-        else:
-            st.info("Seleccioná una comisión para continuar.")
+    
+    # Atención: estos bloques NO deben estar indentados dentro del if anterior,
+    # van alineados al if st.button(...) (fuera del else y fuera del botón):
+    
+    elif selected and selected[0].get("Comisión") == "Sin comisiones":
+        st.warning("No hay comisiones disponibles para esta actividad.")
+    else:
+        st.info("Seleccioná una comisión para continuar.")
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
