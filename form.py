@@ -96,12 +96,12 @@ df_comisiones = pd.DataFrame(filas)
 
 # ========== TABLA AGGRID ==========
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
-st.markdown("#### 1. Seleccioná una comisión en la tabla:")
+st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True)
-gb.configure_selection(selection_mode="single", use_checkbox=False)
-gb.configure_column("Actividad", width=320, tooltipField="Actividad")  # columna más ancha + tooltip
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
+gb.configure_selection(selection_mode="single", use_checkbox=True)
+gb.configure_column("Actividad", width=320, wrapText=True, autoHeight=True, tooltipField="Actividad")
 gb.configure_column("Comisión", width=160)
 gb.configure_column("Fecha inicio", width=110)
 gb.configure_column("Fecha fin", width=110)
@@ -109,6 +109,10 @@ custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
     ".ag-row": {"font-size": "14px !important"},
     ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-cell": {
+        "white-space": "normal !important",
+        "line-height": "1.2 !important"
+    },
 }
 grid_options = gb.build()
 response = AgGrid(
