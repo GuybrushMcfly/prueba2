@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
+from datetime import date, datetime  # ← Una sola línea para ambos
 from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
 import time
+import io
 from fpdf import FPDF
 from io import BytesIO
 import os
@@ -48,10 +49,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ========== Inicializar el key para AgGrid (para controlar la selección) ==========
-if "aggrid_key" not in st.session_state:
-    st.session_state["aggrid_key"] = 0
-
 # ========== DATOS DESDE SUPABASE ==========
 @st.cache_data(ttl=86400)  # 1 día = 86400 segundos
 def obtener_comisiones():
@@ -87,6 +84,7 @@ def format_fecha(f):
         except Exception:
             return f
     return ""
+
 
 # --- 1. Filtros únicos ---
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
@@ -134,24 +132,39 @@ df_comisiones = pd.DataFrame(filas)
 # ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
+#gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
+
 gb.configure_selection(selection_mode="single", use_checkbox=True)
+
+
+# Configurar paginación
 gb.configure_pagination(
     paginationAutoPageSize=False,
     paginationPageSize=15
 )
+
+# Mostrar solo "Actividad (Comisión)"
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
                     tooltipField="Actividad (Comisión)", filter=False, resizable=False,
                     minWidth=600, maxWidth=600)
+
+# Ocultar columnas internas necesarias para lógica
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
+
+# Otras columnas visibles
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
+
+
+# Configuraciones adicionales para controlar el comportamiento
 gb.configure_grid_options(
     suppressSizeToFit=False,
     suppressColumnVirtualisation=False,
     domLayout='normal',
     localeText={
+        # Paginación
         'page': 'Página',
         'more': 'Más',
         'to': 'a',
@@ -161,7 +174,9 @@ gb.configure_grid_options(
         'first': 'Primero',
         'previous': 'Anterior',
         'loadingOoo': 'Cargando...',
+        # Selector de filas por página
         'pageSizeSelectorLabel': 'Filas por página:',
+        # Otros textos útiles
         'noRowsToShow': 'No hay datos para mostrar',
         'selectAll': 'Seleccionar todo',
         'selectAllFiltered': 'Seleccionar todo (filtrado)',
@@ -179,6 +194,7 @@ gb.configure_grid_options(
         'endsWith': 'Termina con'
     }
 )
+
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
     ".ag-row": {"font-size": "14px !important"},
@@ -191,19 +207,21 @@ custom_css = {
         "align-items": "center !important",
         "justify-content": "flex-start !important"
     },
+
+
 }
+
+grid_options = gb.build()
 
 response = AgGrid(
     df_comisiones,
-    gridOptions=gb.build(),
+    gridOptions=grid_options,
     height=500,
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
     use_container_width=False,
-    width=900,
-    #key=st.session_state["aggrid_key"],
-    key=int(st.session_state.get("aggrid_key", 0)),# <-- clave para limpiar selección
+    width=900  # Asegúrate de que el ancho total esté fijo
 )
 
 selected = response["selected_rows"]
@@ -274,7 +292,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
                     .eq("comision", comision) \
                     .limit(1) \
                     .execute()
-
+    
                 if inscrip_existente.data and len(inscrip_existente.data) > 0:
                     st.session_state["validado"] = False
                     st.session_state["cuil_valido"] = False
@@ -285,11 +303,15 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
                     st.session_state["cuil"] = cuil
                     st.session_state["datos_agenteform"] = resp.data[0]
                     st.success("¡Datos encontrados! Revisá y completá tus datos si es necesario.")
+    
+    # Atención: estos bloques NO deben estar indentados dentro del if anterior,
+    # van alineados al if st.button(...) (fuera del else y fuera del botón):
+    
+    elif selected and selected[0].get("Comisión") == "Sin comisiones":
+        st.warning("No hay comisiones disponibles para esta actividad.")
+    else:
+        st.info("Seleccioná una comisión para continuar.")
 
-elif selected and selected[0].get("Comisión") == "Sin comisiones":
-    st.warning("No hay comisiones disponibles para esta actividad.")
-else:
-    st.info("Seleccioná una comisión para continuar.")
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if (
@@ -385,14 +407,13 @@ if (
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
-
-            # Limpiar selección de comisión y FORZAR RESET DE AGGRID
+        
+            # Limpiar selección de comisión
             st.session_state["last_comision_id"] = None
             st.session_state["comision_nombre"] = ""
             st.session_state["actividad_nombre"] = ""
             st.session_state["fecha_inicio"] = ""
             st.session_state["fecha_fin"] = ""
-            st.session_state["aggrid_key"] += 1  # <--- ¡Clave para limpiar el checkbox!
 
             # --- Generar constancia PDF ---
 
@@ -434,6 +455,7 @@ if (
                 
                 return BytesIO(pdf.output(dest='S').encode('latin1'))
 
+
             constancia = generar_constancia_pdf(
                 nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
                 actividad=st.session_state.get("actividad_nombre", ""),
@@ -472,5 +494,8 @@ if st.session_state.get("inscripcion_exitosa", False):
 
 elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
     st.error("No existe esa persona en la base de datos. No podés continuar.")
+
+#else:
+#    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
 
 st.markdown("</div>", unsafe_allow_html=True)
