@@ -99,33 +99,22 @@ st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 st.markdown("#### 1. Seleccioná una comisión en la tabla:")
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
-gb.configure_column("Actividad", width=220, wrapText=True, autoHeight=True)
+gb.configure_default_column(sortable=True)
+gb.configure_selection(selection_mode="single", use_checkbox=False)
+gb.configure_column("Actividad", width=320, tooltipField="Actividad")  # columna más ancha + tooltip
 gb.configure_column("Comisión", width=160)
 gb.configure_column("Fecha inicio", width=110)
 gb.configure_column("Fecha fin", width=110)
 custom_css = {
-    ".ag-header": {
-        "background-color": "#136ac1 !important",
-        "color": "white !important",
-        "font-weight": "bold !important"
-    },
-    ".ag-row": {
-        "font-size": "14px !important"
-    },
-    ".ag-row:nth-child(even)": {
-        "background-color": "#f5f5f5 !important"
-    },
-    ".ag-cell": {
-        "white-space": "normal !important",
-        "line-height": "1.2 !important"
-    },
+    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
+    ".ag-row": {"font-size": "14px !important"},
+    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
 }
 grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
-    height=290,
+    height=330,
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
@@ -136,13 +125,7 @@ selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
-if (
-    selected and
-    isinstance(selected, list) and
-    len(selected) > 0 and
-    selected[0].get("Comisión") and
-    selected[0].get("Comisión") != "Sin comisiones"
-):
+if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
     actividad_nombre = fila.get("Actividad", "")
     comision_nombre = fila.get("Comisión", "")
@@ -178,6 +161,7 @@ elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
 else:
     st.info("Seleccioná una comisión para continuar.")
+
 
 # ========== BLOQUE 2: DATOS PERSONALES ==========
 if st.session_state.get("validado", False):
