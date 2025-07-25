@@ -146,7 +146,7 @@ gb.configure_pagination(
 # Mostrar solo "Actividad (Comisión)"
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
                     tooltipField="Actividad (Comisión)", filter=False, resizable=False,
-                    minWidth=800, maxWidth=800)
+                    minWidth=600, maxWidth=600)
 
 # Ocultar columnas internas necesarias para lógica
 gb.configure_column("Actividad", hide=True)
