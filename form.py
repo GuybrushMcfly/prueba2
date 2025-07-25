@@ -42,7 +42,7 @@ st.set_page_config(layout="wide")
 st.markdown("""
     <style>
     .block-container {
-        max-width: 70vw !important;
+        max-width: 80vw !important;
         padding-left: 2vw;
         padding-right: 2vw;
     }
