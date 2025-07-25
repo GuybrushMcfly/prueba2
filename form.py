@@ -153,12 +153,14 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
             st.session_state.pop(k, None)
 
     st.markdown(
-    f"""
-    <h4>2. Validá tu CUIL para inscribirte en <b>{actividad_nombre}</b><br>
-    <span style="color:#136ac1;font-weight:bold">{comision_nombre}</span>
-    </h4>
-    """, unsafe_allow_html=True
-)
+        f"""
+        <h4>2. Validá tu CUIL para inscribirte en 
+        <span style="color:#b72877;font-weight:bold">
+            {actividad_nombre} ({comision_nombre})
+        </span>
+        </h4>
+        """, unsafe_allow_html=True
+    )
 
     col_cuil, _ = st.columns([1, 1])
     with col_cuil:
