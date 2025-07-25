@@ -8,6 +8,7 @@ import time
 import io
 from fpdf import FPDF
 from io import BytesIO
+import os  # 👈 IMPORTANTE: agregar esto
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
