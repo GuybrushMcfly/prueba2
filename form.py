@@ -116,7 +116,7 @@ gb.configure_selection(selection_mode="single", use_checkbox=True)
 # Configurar columnas con porcentajes y flex
 gb.configure_column("Actividad", flex=50, wrapText=True, autoHeight=True, 
                    tooltipField="Actividad", filter=False, resizable=False,
-                   minWidth=200, maxWidth=400)  # Límites para evitar que se expanda demasiado
+                   minWidth=200, maxWidth=500)  # Límites para evitar que se expanda demasiado
 gb.configure_column("Comisión", flex=17, filter=False, resizable=False)
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False)
