@@ -390,24 +390,55 @@ if (
 
             # --- Generar constancia PDF ---
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-
+                from fpdf import FPDF
+                from io import BytesIO
             
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_font("Arial", "B", 16)
                 pdf.cell(0, 10, txt="CONSTANCIA DE INSCRIPCIÓN", ln=True, align="C")
+                pdf.ln(15)
+                
+                # Texto principal más profesional
+                pdf.set_font("Arial", "", 12)
+                
+                # Saludo personalizado
+                pdf.multi_cell(0, 8, txt=f"{nombre}, te registraste exitosamente en la actividad detallada a continuación:")
+                pdf.ln(5)
+                
+                # Datos de la actividad en un formato más estructurado
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 8, txt="DATOS DE LA ACTIVIDAD:", ln=True)
+                pdf.set_font("Arial", "", 12)
+                pdf.ln(2)
+                
+                datos_actividad = (
+                    f"• Actividad: {actividad}\n"
+                    f"• Comisión: {comision}\n"
+                    f"• Fecha de inicio: {fecha_inicio}\n"
+                    f"• Fecha de finalización: {fecha_fin}"
+                )
+                pdf.multi_cell(0, 8, txt=datos_actividad)
+                pdf.ln(8)
+                
+                # Información importante sobre la inscripción
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 8, txt="INFORMACIÓN IMPORTANTE:", ln=True)
+                pdf.set_font("Arial", "", 12)
+                pdf.ln(2)
+                
+                info_importante = (
+                    "Recordá que esta inscripción NO implica una asignación automática de vacante. "
+                    "Antes del inicio de la actividad, en caso de que te sea otorgada una vacante, "
+                    "recibirás un correo electrónico con la confirmación y las instrucciones "
+                    "correspondientes para el acceso a la capacitación."
+                )
+                pdf.multi_cell(0, 8, txt=info_importante)
                 pdf.ln(10)
                 
-                pdf.set_font("Arial", "", 12)
-                contenido = (
-                    f"Se deja constancia de que {nombre} ha registrado su inscripción en:\n\n"
-                    f"Actividad: {actividad}\n"
-                    f"Comisión: {comision}\n"
-                    f"Fecha de inicio: {fecha_inicio}\n"
-                    f"Fecha de fin: {fecha_fin}\n\n"
-                    f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-                )
-                pdf.multi_cell(0, 8, txt=contenido)
+                # Fecha de registro
+                pdf.set_font("Arial", "I", 10)
+                pdf.cell(0, 8, txt=f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True, align="R")
                 
                 return BytesIO(pdf.output(dest='S').encode('latin1'))
 
