@@ -221,7 +221,7 @@ response = AgGrid(
     theme="balham",
     custom_css=custom_css,
     use_container_width=False,
-    width=700  # Asegúrate de que el ancho total esté fijo
+    width=900  # Asegúrate de que el ancho total esté fijo
 )
 
 selected = response["selected_rows"]
