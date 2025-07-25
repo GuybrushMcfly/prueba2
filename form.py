@@ -388,21 +388,30 @@ if (
             st.session_state["inscripcion_exitosa"] = True
 
             # --- Generar constancia PDF ---
+
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-            
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_font("Helvetica", size=10)
-                pdf.cell(200, 10, txt="Constancia de preinscripcion", ln=True, align="C")
+                pdf.set_auto_page_break(auto=True, margin=15)
+            
+                # ===== Estilo del encabezado =====
+                pdf.set_font("Helvetica", style='B', size=14)
+                pdf.set_text_color(19, 106, 193)  # Azul institucional
+                pdf.cell(0, 10, txt="Constancia de preinscripcion", ln=True, align="C")
                 pdf.ln(10)
-                
-                # Limpiar cualquier caracter problemático
+            
+                # ===== Restaurar fuente y color normales =====
+                pdf.set_font("Helvetica", size=11)
+                pdf.set_text_color(0, 0, 0)
+            
+                # ===== Limpiar caracteres problemáticos =====
                 nombre_limpio = ''.join(c for c in str(nombre) if ord(c) < 256)
                 actividad_limpia = ''.join(c for c in str(actividad) if ord(c) < 256)
                 comision_limpia = ''.join(c for c in str(comision) if ord(c) < 256)
                 fecha_inicio_limpia = ''.join(c for c in str(fecha_inicio) if ord(c) < 256)
                 fecha_fin_limpia = ''.join(c for c in str(fecha_fin) if ord(c) < 256)
-                
+            
+                # ===== Contenido =====
                 contenido = (
                     f"{nombre_limpio}, te registraste exitosamente en la actividad detallada a continuacion:\n\n"
                     f"Actividad: {actividad_limpia}\n"
@@ -413,10 +422,11 @@ if (
                     f"Antes del inicio, en caso de ser otorgada, recibiras un correo con la confirmacion.\n\n"
                     f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
                 )
-                
-                pdf.multi_cell(0, 10, txt=contenido)
+            
+                pdf.multi_cell(0, 8, txt=contenido)
                 
                 return BytesIO(pdf.output(dest='S').encode('latin1'))
+
 
             constancia = generar_constancia_pdf(
                 nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
