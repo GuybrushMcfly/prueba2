@@ -41,13 +41,11 @@ resp_com = supabase.table("comisiones").select(
 ).execute()
 comisiones_raw = resp_com.data if resp_com.data else []
 
-# Sacar el listado único de actividades (por id_actividad + nombre_actividad)
 actividades_unicas = {}
 for c in comisiones_raw:
     if c["id_actividad"] and c["nombre_actividad"]:
         actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
 
-# Organizar comisiones por actividad
 comisiones = defaultdict(list)
 for c in comisiones_raw:
     if c["id_actividad"]:
@@ -61,7 +59,6 @@ for c in comisiones_raw:
             "modalidad": c["modalidad"],
         })
 
-# ========== TABLA DE COMISIONES PARA SELECCIÓN ==========
 def format_fecha(f):
     if f:
         try:
@@ -94,7 +91,6 @@ for id_act, nombre_act in actividades_unicas.items():
         })
 df_comisiones = pd.DataFrame(filas)
 
-# ========== TABLA AGGRID ==========
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 
@@ -149,24 +145,28 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
 
-    # --- Validar y buscar datos reales ---
+    # Bloque validación y consulta en agentesform
     if st.button("VALIDAR Y CONTINUAR", type="primary"):
         if not validar_cuil(cuil):
             st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
+            st.session_state["validado"] = False
             st.session_state["cuil_valido"] = False
-            st.session_state["datos_agenteform"] = {}
         else:
-            # Consultar agentesform
             resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
             if resp.data and len(resp.data) > 0:
+                st.session_state["validado"] = True
                 st.session_state["cuil_valido"] = True
                 st.session_state["cuil"] = cuil
                 st.session_state["datos_agenteform"] = resp.data[0]
                 st.success("¡Datos encontrados! Revisá y completá tus datos si es necesario.")
             else:
+                st.session_state["validado"] = True
                 st.session_state["cuil_valido"] = False
-                st.session_state["datos_agenteform"] = {}
                 st.error("No existe esa persona en la base de datos. No podés continuar.")
+elif selected and selected[0].get("Comisión") == "Sin comisiones":
+    st.warning("No hay comisiones disponibles para esta actividad.")
+else:
+    st.info("Seleccioná una comisión para continuar.")
 
 # ========== BLOQUE 2: DATOS PERSONALES SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if st.session_state.get("validado", False) and st.session_state.get("cuil_valido", False):
@@ -174,7 +174,7 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
 
     datos_agente = st.session_state.get("datos_agenteform", {})
 
-    # Opciones para los selectbox (adaptá si tenés otros valores posibles)
+    # Opciones de selects
     niveles_educativos = ["", "PRIMARIO", "SECUNDARIO", "TERCIARIO", "UNIVERSITARIO", "POSGRADO"]
     situaciones_revista = [
         "", "PLANTA PERMANENTE", "PLANTA TRANSITORIA",
@@ -194,37 +194,43 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
     else:
         fecha_nac_valor = date(1980, 1, 1)
 
-    apellido = st.text_input("Apellido *", value=datos_agente.get("apellido", ""))
-    nombre = st.text_input("Nombre *", value=datos_agente.get("nombre", ""))
-    fecha_nacimiento = st.date_input("Fecha de nacimiento *", value=fecha_nac_valor)
-    nivel_educativo = st.selectbox(
-        "Nivel educativo", niveles_educativos,
-        index=niveles_educativos.index(datos_agente.get("nivel_educativo", "")) if datos_agente.get("nivel_educativo", "") in niveles_educativos else 0
-    )
-    titulo = st.text_input("Título", value=datos_agente.get("titulo", ""))
-    situacion_revista = st.selectbox(
-        "Situación de revista", situaciones_revista,
-        index=situaciones_revista.index(datos_agente.get("situacion_revista", "")) if datos_agente.get("situacion_revista", "") in situaciones_revista else 0
-    )
-    agrupamiento = st.selectbox(
-        "Agrupamiento", agrupamientos,
-        index=agrupamientos.index(datos_agente.get("agrupamiento", "")) if datos_agente.get("agrupamiento", "") in agrupamientos else 0
-    )
-    nivel = st.selectbox(
-        "Nivel", niveles,
-        index=niveles.index(datos_agente.get("nivel", "")) if datos_agente.get("nivel", "") in niveles else 0
-    )
-    grado = st.text_input("Grado", value=datos_agente.get("grado", ""))
-    tramo = st.selectbox(
-        "Tramo", tramos,
-        index=tramos.index(datos_agente.get("tramo", "")) if datos_agente.get("tramo", "") in tramos else 0
-    )
-    dependencia_simple = st.text_input("Dependencia simple", value=datos_agente.get("dependencia_simple", ""))
-    correo = st.text_input("Correo", value=datos_agente.get("correo", ""))
-    sexo = st.selectbox(
-        "Sexo", sexos,
-        index=sexos.index(datos_agente.get("sexo", "")) if datos_agente.get("sexo", "") in sexos else 0
-    )
+    # FORMULARIO ADAPTADO: se autocompleta con datos reales, es editable
+    col_ap, col_nom = st.columns(2)
+    with col_ap:
+        apellido = st.text_input("Apellido *", value=datos_agente.get("apellido", ""), key="apellido")
+    with col_nom:
+        nombre = st.text_input("Nombre *", value=datos_agente.get("nombre", ""), key="nombre")
+
+    col_fec, col_sex = st.columns(2)
+    with col_fec:
+        fecha_nacimiento = st.date_input("Fecha de nacimiento *", value=fecha_nac_valor, key="fecha_nacimiento")
+    with col_sex:
+        sexo = st.selectbox("Sexo", sexos, index=sexos.index(datos_agente.get("sexo", "")) if datos_agente.get("sexo", "") in sexos else 0, key="sexo")
+
+    col_niv_edu, col_tit = st.columns(2)
+    with col_niv_edu:
+        nivel_educativo = st.selectbox("Nivel educativo", niveles_educativos, index=niveles_educativos.index(datos_agente.get("nivel_educativo", "")) if datos_agente.get("nivel_educativo", "") in niveles_educativos else 0, key="nivel_educativo")
+    with col_tit:
+        titulo = st.text_input("Título", value=datos_agente.get("titulo", ""), key="titulo")
+
+    col_sit, col_vacia = st.columns(2)
+    with col_sit:
+        situacion_revista = st.selectbox("Situación de revista", situaciones_revista, index=situaciones_revista.index(datos_agente.get("situacion_revista", "")) if datos_agente.get("situacion_revista", "") in situaciones_revista else 0, key="situacion_revista")
+
+    col_nivel, col_grado = st.columns(2)
+    with col_nivel:
+        nivel = st.selectbox("Nivel", niveles, index=niveles.index(datos_agente.get("nivel", "")) if datos_agente.get("nivel", "") in niveles else 0, key="nivel")
+    with col_grado:
+        grado = st.text_input("Grado", value=datos_agente.get("grado", ""), key="grado")
+
+    col_agrup, col_tramo = st.columns(2)
+    with col_agrup:
+        agrupamiento = st.selectbox("Agrupamiento", agrupamientos, index=agrupamientos.index(datos_agente.get("agrupamiento", "")) if datos_agente.get("agrupamiento", "") in agrupamientos else 0, key="agrupamiento")
+    with col_tramo:
+        tramo = st.selectbox("Tramo", tramos, index=tramos.index(datos_agente.get("tramo", "")) if datos_agente.get("tramo", "") in tramos else 0, key="tramo")
+
+    dependencia_simple = st.text_input("Dependencia simple", value=datos_agente.get("dependencia_simple", ""), key="dependencia_simple")
+    correo = st.text_input("Correo", value=datos_agente.get("correo", ""), key="correo")
 
     # --- Enviar ---
     if st.button("ENVIAR INSCRIPCIÓN"):
@@ -248,7 +254,6 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
             "correo": correo,
             "sexo": sexo
         }
-        # Guardar en Supabase (upsert por cuil_cuit)
         result = supabase.table("agentesform").upsert(datos).execute()
         if result.data:
             st.success("¡Formulario enviado correctamente!")
@@ -256,7 +261,6 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
             st.error("Ocurrió un error al guardar los datos. Intentalo nuevamente.")
 
 elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
-    # Si validado pero el CUIL no existe en la base
     st.error("No existe esa persona en la base de datos. No podés continuar.")
 
 else:
