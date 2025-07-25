@@ -5,11 +5,34 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
 import time
+from fpdf import FPDF
+from io import BytesIO
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_ANON_KEY = st.secrets["SUPABASE_ANON_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+
+def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="Constancia de Inscripción", ln=True, align="C")
+    pdf.ln(10)
+    pdf.multi_cell(0, 10, txt=(
+        f"Se deja constancia de que {nombre} ha registrado su inscripción en:\n\n"
+        f"Actividad: {actividad}\n"
+        f"Comisión: {comision}\n"
+        f"Fecha de inicio: {fecha_inicio}\n"
+        f"Fecha de fin: {fecha_fin}\n\n"
+        f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+    ))
+
+    buffer = BytesIO()
+    pdf.output(name=buffer, dest='S')
+    buffer.seek(0)
+    return buffer
 
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
@@ -370,8 +393,51 @@ if (
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
-            time.sleep(2)
+
+            # --- Generar constancia PDF ---
+            def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
+                from fpdf import FPDF
+                from io import BytesIO
+                import datetime
+
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                pdf.cell(200, 10, txt="Constancia de Inscripción", ln=True, align="C")
+                pdf.ln(10)
+                pdf.multi_cell(0, 10, txt=(
+                    f"Se deja constancia de que {nombre} ha registrado su inscripción en:\n\n"
+                    f"Actividad: {actividad}\n"
+                    f"Comisión: {comision}\n"
+                    f"Fecha de inicio: {fecha_inicio}\n"
+                    f"Fecha de fin: {fecha_fin}\n\n"
+                    f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+                ))
+
+                buffer = BytesIO()
+                pdf.output(name=buffer, dest='S')
+                buffer.seek(0)
+                return buffer
+
+            constancia = generar_constancia_pdf(
+                nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
+                actividad=st.session_state.get("actividad_nombre", ""),
+                comision=st.session_state.get("comision_nombre", ""),
+                fecha_inicio=st.session_state.get("fecha_inicio", ""),
+                fecha_fin=st.session_state.get("fecha_fin", "")
+            )
+
+            st.download_button(
+                label="📄 Descargar constancia de inscripción",
+                data=constancia,
+                file_name="constancia_inscripcion.pdf",
+                mime="application/pdf"
+            )
+
+            # Esperar un poco para que pueda descargar
+            time.sleep(6)
             st.rerun()
+
         else:
             st.error("Ocurrió un error al guardar la inscripción.")
 
