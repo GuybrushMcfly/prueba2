@@ -110,13 +110,13 @@ df_comisiones = pd.DataFrame(filas)
 
 # Definir anchos
 ANCHO_TABLA_TOTAL = 700
-ANCHO_ACTIVIDAD = int(ANCHO_TABLA_TOTAL * 0.40)      # 40%
+ANCHO_ACTIVIDAD = int(ANCHO_TABLA_TOTAL * 0.30)      # 40%
 ANCHO_COMISION = int(ANCHO_TABLA_TOTAL * 0.17)        # 17%
 ANCHO_FECHA = int(ANCHO_TABLA_TOTAL * 0.15)           # 15% cada fecha
 ANCHO_CREDITOS = ANCHO_TABLA_TOTAL - (ANCHO_ACTIVIDAD + ANCHO_COMISION + 2*ANCHO_FECHA) # resto
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_column("Actividad", width=ANCHO_ACTIVIDAD, wrapText=True, autoHeight=True, tooltipField="Actividad")
 gb.configure_column("Comisión", width=ANCHO_COMISION)
