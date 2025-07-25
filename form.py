@@ -24,37 +24,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 def init_connection():
     return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-    from fpdf import FPDF
-    from io import BytesIO
-    import datetime
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Constancia de Inscripción", ln=True, align="C")
-    pdf.ln(10)
-    pdf.multi_cell(0, 10, txt=(
-        f"Se deja constancia de que {nombre} ha registrado su inscripción en:\n\n"
-        f"Actividad: {actividad}\n"
-        f"Comisión: {comision}\n"
-        f"Fecha de inicio: {fecha_inicio}\n"
-        f"Fecha de fin: {fecha_fin}\n\n"
-        f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-    ))
-
-    # 🚫 Esto no funciona como se espera:
-    # buffer = BytesIO()
-    # pdf.output(name=buffer, dest='S')
-    # buffer.seek(0)
-    # return buffer
-
-    # ✅ Usá esto:
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
-    return BytesIO(pdf_bytes)
-
-
-
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
     if not cuil.isdigit() or len(cuil) != 11:
@@ -420,28 +389,26 @@ if (
 
             # --- Generar constancia PDF ---
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-                from fpdf import FPDF
-                from io import BytesIO
-                import datetime
 
+            
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_font("Arial", size=12)
-                pdf.cell(200, 10, txt="Constancia de Inscripción", ln=True, align="C")
+                pdf.set_font("Arial", "B", 16)
+                pdf.cell(0, 10, txt="CONSTANCIA DE INSCRIPCIÓN", ln=True, align="C")
                 pdf.ln(10)
-                pdf.multi_cell(0, 10, txt=(
+                
+                pdf.set_font("Arial", "", 12)
+                contenido = (
                     f"Se deja constancia de que {nombre} ha registrado su inscripción en:\n\n"
                     f"Actividad: {actividad}\n"
                     f"Comisión: {comision}\n"
                     f"Fecha de inicio: {fecha_inicio}\n"
                     f"Fecha de fin: {fecha_fin}\n\n"
                     f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-                ))
-
-                buffer = BytesIO()
-                pdf.output(name=buffer, dest='S')
-                buffer.seek(0)
-                return buffer
+                )
+                pdf.multi_cell(0, 8, txt=contenido)
+                
+                return BytesIO(pdf.output(dest='S').encode('latin1'))
 
             constancia = generar_constancia_pdf(
                 nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
