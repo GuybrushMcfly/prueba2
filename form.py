@@ -116,6 +116,7 @@ ANCHO_FECHA = int(ANCHO_TABLA_TOTAL * 0.15)           # 15% cada fecha
 ANCHO_CREDITOS = ANCHO_TABLA_TOTAL - (ANCHO_ACTIVIDAD + ANCHO_COMISION + 2*ANCHO_FECHA) # resto
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
+gb.configure_grid_options(enableFilter=False)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_column("Actividad", width=ANCHO_ACTIVIDAD, wrapText=True, autoHeight=True, tooltipField="Actividad")
