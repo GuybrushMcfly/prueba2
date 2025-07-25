@@ -110,19 +110,27 @@ df_comisiones = pd.DataFrame(filas)
 
 # Definir anchos
 ANCHO_TABLA_TOTAL = 700
-ANCHO_ACTIVIDAD = int(ANCHO_TABLA_TOTAL * 0.30)      # 40%
+ANCHO_ACTIVIDAD = int(ANCHO_TABLA_TOTAL * 0.40)      # 40%
 ANCHO_COMISION = int(ANCHO_TABLA_TOTAL * 0.17)        # 17%
 ANCHO_FECHA = int(ANCHO_TABLA_TOTAL * 0.15)           # 15% cada fecha
 ANCHO_CREDITOS = ANCHO_TABLA_TOTAL - (ANCHO_ACTIVIDAD + ANCHO_COMISION + 2*ANCHO_FECHA) # resto
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_column("Actividad", width=ANCHO_ACTIVIDAD, wrapText=True, autoHeight=True, tooltipField="Actividad", filter=False)
-gb.configure_column("Comisión", width=ANCHO_COMISION, filter=False)
-gb.configure_column("Fecha inicio", width=ANCHO_FECHA, filter=False)
-gb.configure_column("Fecha fin", width=ANCHO_FECHA, filter=False)
-gb.configure_column("Créditos", width=ANCHO_CREDITOS, filter=False)
+
+# Configurar columnas específicas
+gb.configure_column("Actividad", width=ANCHO_ACTIVIDAD, wrapText=True, autoHeight=True, 
+                   tooltipField="Actividad", filter=False, resizable=False, 
+                   suppressSizeToFit=True)
+gb.configure_column("Comisión", width=ANCHO_COMISION, filter=False, resizable=False)
+gb.configure_column("Fecha inicio", width=ANCHO_FECHA, filter=False, resizable=False)
+gb.configure_column("Fecha fin", width=ANCHO_FECHA, filter=False, resizable=False)
+gb.configure_column("Créditos", width=ANCHO_CREDITOS, filter=False, resizable=False)
+
+# Deshabilitar el ajuste automático de tamaño
+gb.configure_grid_options(suppressColumnVirtualisation=False, suppressSizeToFit=True)
+
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
     ".ag-row": {"font-size": "14px !important"},
@@ -132,6 +140,7 @@ custom_css = {
         "line-height": "1.2 !important"
     },
 }
+
 grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
