@@ -4,6 +4,7 @@ from datetime import date
 from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
+import time
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -125,6 +126,9 @@ selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
+# =======================
+# CONTROLAR REINICIO FLAG
+# =======================
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
     actividad_nombre = fila.get("Actividad", "")
@@ -133,8 +137,11 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     fecha_fin = fila.get("Fecha fin", "")
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
+    # Reiniciar flags si cambiás de comisión
     if st.session_state.get("last_comision_id") != comision_id:
         st.session_state["validado"] = False
+        st.session_state["cuil_valido"] = False
+        st.session_state["inscripcion_exitosa"] = False
         st.session_state["last_comision_id"] = comision_id
         for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
             st.session_state.pop(k, None)
@@ -145,7 +152,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
 
-    # Bloque validación y consulta en agentesform
+    # Validación de CUIL y consulta a agentesform
     if st.button("VALIDAR Y CONTINUAR", type="primary"):
         if not validar_cuil(cuil):
             st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
@@ -168,13 +175,12 @@ elif selected and selected[0].get("Comisión") == "Sin comisiones":
 else:
     st.info("Seleccioná una comisión para continuar.")
 
-# ========== BLOQUE 2: DATOS PERSONALES SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
-if st.session_state.get("validado", False) and st.session_state.get("cuil_valido", False):
+# ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
+if st.session_state.get("validado", False) and st.session_state.get("cuil_valido", False) and not st.session_state.get("inscripcion_exitosa", False):
     st.markdown("#### 3. Completá tus datos personales")
 
     datos_agente = st.session_state.get("datos_agenteform", {})
 
-    # Opciones de selects
     niveles_educativos = ["", "PRIMARIO", "SECUNDARIO", "TERCIARIO", "UNIVERSITARIO", "POSGRADO"]
     situaciones_revista = [
         "", "PLANTA PERMANENTE", "PLANTA TRANSITORIA",
@@ -185,7 +191,6 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
     tramos = ["", "INICIAL", "INTERMEDIO", "AVANZADO"]
     sexos = ["", "F", "M", "X"]
 
-    # Procesar fecha de nacimiento
     if datos_agente.get("fecha_nacimiento"):
         try:
             fecha_nac_valor = pd.to_datetime(datos_agente["fecha_nacimiento"]).date()
@@ -194,7 +199,6 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
     else:
         fecha_nac_valor = date(1980, 1, 1)
 
-    # FORMULARIO ADAPTADO: se autocompleta con datos reales, es editable
     col_ap, col_nom = st.columns(2)
     with col_ap:
         apellido = st.text_input("Apellido *", value=datos_agente.get("apellido", ""), key="apellido")
@@ -232,7 +236,7 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
     dependencia_simple = st.text_input("Dependencia simple", value=datos_agente.get("dependencia_simple", ""), key="dependencia_simple")
     correo = st.text_input("Correo", value=datos_agente.get("correo", ""), key="correo")
 
-    # --- Enviar ---
+    # --- Enviar inscripción ---
     if st.button("ENVIAR INSCRIPCIÓN"):
         apellido_nombre = f"{apellido}, {nombre}"
         datos_inscripcion = {
@@ -259,9 +263,28 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
         result = supabase.table("pruebainscripciones").insert(datos_inscripcion).execute()
         if result.data:
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
+            st.balloons()
+            st.session_state["inscripcion_exitosa"] = True
+            # Pausa y oculta el formulario
+            time.sleep(2)
+            st.session_state["validado"] = False
+            st.session_state["cuil_valido"] = False
         else:
             st.error("Ocurrió un error al guardar la inscripción.")
 
+# --- Tabla de inscripciones solo tras inscribir exitosamente ---
+if st.session_state.get("inscripcion_exitosa", False):
+    st.markdown("### Últimas inscripciones")
+    inscripciones = supabase.table("pruebainscripciones") \
+        .select("apellido_nombre, actividad, comision, fecha_inicio, fecha_fin") \
+        .eq("cuil_cuit", st.session_state.get("cuil", "")) \
+        .order("fecha_inscripcion", desc=True) \
+        .limit(10).execute()
+    df_insc = pd.DataFrame(inscripciones.data)
+    if not df_insc.empty:
+        st.table(df_insc)
+    else:
+        st.info("No se encontraron inscripciones para este usuario.")
 
 elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
     st.error("No existe esa persona en la base de datos. No podés continuar.")
