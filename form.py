@@ -68,17 +68,6 @@ def format_fecha(f):
             return f
     return ""
 
-# --- 1. Filtros únicos ---
-organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
-organismos.insert(0, "Todos")
-modalidades.insert(0, "Todos")
-
-col1, col2 = st.columns(2)
-with col1:
-    organismo_sel = st.selectbox("Organismo", organismos, index=0)
-with col2:
-    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
 # --- 2. Filtrado y armado de filas ---
 filas = []
@@ -106,6 +95,18 @@ df_comisiones = pd.DataFrame(filas)
 # --- 3. Tabla AgGrid con anchos fijos ---
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
+
+# --- 1. Filtros únicos ---
+organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
+modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
+organismos.insert(0, "Todos")
+modalidades.insert(0, "Todos")
+
+col1, col2 = st.columns(2)
+with col1:
+    organismo_sel = st.selectbox("Organismo", organismos, index=0)
+with col2:
+    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
 # Definir anchos
 ANCHO_TABLA_TOTAL = 700
@@ -306,7 +307,7 @@ if (
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
             time.sleep(2)
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Ocurrió un error al guardar la inscripción.")
 
