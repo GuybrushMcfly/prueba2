@@ -234,14 +234,12 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
 
     # --- Enviar ---
     if st.button("ENVIAR INSCRIPCIÓN"):
-        datos = {
-            "actividad": st.session_state.get("actividad_nombre", ""),
-            "comision": st.session_state.get("comision_nombre", ""),
-            "fecha_inicio": st.session_state.get("fecha_inicio", ""),
-            "fecha_fin": st.session_state.get("fecha_fin", ""),
+        apellido_nombre = f"{apellido}, {nombre}"
+        datos_inscripcion = {
             "cuil_cuit": st.session_state.get("cuil", ""),
             "apellido": apellido,
             "nombre": nombre,
+            "apellido_nombre": apellido_nombre,
             "fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d"),
             "nivel_educativo": nivel_educativo,
             "titulo": titulo,
@@ -252,13 +250,18 @@ if st.session_state.get("validado", False) and st.session_state.get("cuil_valido
             "tramo": tramo,
             "dependencia_simple": dependencia_simple,
             "correo": correo,
-            "sexo": sexo
+            "sexo": sexo,
+            "actividad": st.session_state.get("actividad_nombre", ""),
+            "comision": st.session_state.get("comision_nombre", ""),
+            "fecha_inicio": st.session_state.get("fecha_inicio", ""),
+            "fecha_fin": st.session_state.get("fecha_fin", "")
         }
-        result = supabase.table("agentesform").upsert(datos).execute()
+        result = supabase.table("pruebainscripciones").insert(datos_inscripcion).execute()
         if result.data:
-            st.success("¡Formulario enviado correctamente!")
+            st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
         else:
-            st.error("Ocurrió un error al guardar los datos. Intentalo nuevamente.")
+            st.error("Ocurrió un error al guardar la inscripción.")
+
 
 elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
     st.error("No existe esa persona en la base de datos. No podés continuar.")
