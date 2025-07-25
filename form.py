@@ -114,7 +114,10 @@ gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filte
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
 # Configurar paginación
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+gb.configure_pagination(
+    paginationAutoPageSize=False, 
+    paginationPageSize=15
+)
 
 # Configurar columnas con porcentajes y flex
 gb.configure_column("Actividad", flex=40, wrapText=True, autoHeight=True, 
@@ -124,13 +127,6 @@ gb.configure_column("Comisión", flex=17, filter=False, resizable=False, autoHei
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
-
-# Configurar paginación (agregar después de configure_selection)
-gb.configure_pagination(
-    paginationAutoPageSize=False, 
-    paginationPageSize=15,
-    paginationPageSizeSelector=[10, 15, 25, 50]
-)
 
 # Configuraciones adicionales para controlar el comportamiento
 gb.configure_grid_options(
@@ -186,9 +182,10 @@ custom_css = {
         "align-items": "center !important",
         "height": "100% !important"
     },
- 
 }
+
 grid_options = gb.build()
+
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
