@@ -1,4 +1,4 @@
-import streamlit as st
+<b>import streamlit as st
 import pandas as pd
 from datetime import date
 from st_aggrid import AgGrid, GridOptionsBuilder
@@ -154,12 +154,12 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
     st.markdown(
         f"""
-        <h4>2. Validá tu CUIL para inscribirte en <b>
-        <span style="color:#b72877;font-weight:bold">
+        <h4>2. Validá tu CUIL para inscribirte en</h4>
+        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
             {actividad_nombre} ({comision_nombre})
         </span>
-        </h4>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True
     )
 
     col_cuil, _ = st.columns([1, 1])
