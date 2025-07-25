@@ -182,6 +182,10 @@ custom_css = {
         "align-items": "center !important",
         "height": "100% !important"
     },
+    ".ag-selection-checkbox": {
+    "transform": "scale(1.5)",
+    "margin": "5px"
+    }
 }
 
 grid_options = gb.build()
