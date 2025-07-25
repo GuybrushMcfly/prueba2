@@ -152,8 +152,11 @@ df_comisiones = pd.DataFrame(filas)
 
 # ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
+#gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
+
 gb.configure_selection(selection_mode="single", use_checkbox=True)
+
 
 # Configurar paginación
 gb.configure_pagination(
