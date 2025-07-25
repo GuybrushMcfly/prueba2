@@ -145,6 +145,18 @@ custom_css = {
         "display": "flex !important",
         "align-items": "center !important",
         "height": "100% !important"
+    },
+    # Estilos para el checkbox
+    ".ag-checkbox-input": {
+        "width": "18px !important",
+        "height": "18px !important",
+        "accent-color": "#136ac1 !important",  # Color azul como el header
+        "cursor": "pointer !important"
+    },
+    ".ag-selection-checkbox": {
+        "display": "flex !important",
+        "align-items": "center !important",
+        "justify-content": "center !important"
     }
 }
 
