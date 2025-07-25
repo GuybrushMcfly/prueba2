@@ -15,6 +15,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
 def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
+    from fpdf import FPDF
+    from io import BytesIO
+    import datetime
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -29,10 +33,10 @@ def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin)
         f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
     ))
 
-    buffer = BytesIO()
-    pdf.output(name=buffer, dest='S')
-    buffer.seek(0)
-    return buffer
+    # --- CORREGIDO: guardar como bytes ---
+    pdf_output = pdf.output(dest='S').encode('latin1')  # importante: encode
+    return BytesIO(pdf_output)
+
 
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
