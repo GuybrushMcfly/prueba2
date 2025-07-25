@@ -472,7 +472,7 @@ if (
             )
 
             # Esperar un poco para que pueda descargar
-            time.sleep(3)
+            time.sleep(6)
             st.rerun()
 
         else:
