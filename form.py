@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import date
+from datetime import date, datetime  # ← Una sola línea para ambos
 from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
@@ -8,8 +8,7 @@ import time
 import io
 from fpdf import FPDF
 from io import BytesIO
-import os  # 👈 IMPORTANTE: agregar esto
-import datetime
+import os
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -390,8 +389,6 @@ if (
 
             # --- Generar constancia PDF ---
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-                from fpdf import FPDF
-                from io import BytesIO
             
                 pdf = FPDF()
                 pdf.add_page()
