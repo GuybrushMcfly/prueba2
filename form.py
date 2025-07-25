@@ -146,20 +146,19 @@ custom_css = {
         "align-items": "center !important",
         "height": "100% !important"
     },
-    # Estilos para el checkbox
     ".ag-checkbox-input": {
-        "width": "18px !important",
-        "height": "18px !important",
-        "accent-color": "#136ac1 !important",  # Color azul como el header
-        "cursor": "pointer !important"
+        "width": "16px !important",
+        "height": "16px !important",
+        "accent-color": "#b72877 !important",
+        "cursor": "pointer !important",
+        "transform": "scale(1.2) !important"
     },
     ".ag-selection-checkbox": {
-        "display": "flex !important",
-        "align-items": "center !important",
-        "justify-content": "center !important"
+        "background-color": "#f0f8ff !important",
+        "border-radius": "4px !important",
+        "padding": "2px !important"
     }
 }
-
 grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
