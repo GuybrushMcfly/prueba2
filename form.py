@@ -37,10 +37,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== DATOS DESDE SUPABASE ==========
-resp_com = supabase.table("comisiones").select(
-    "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
-).execute()
-comisiones_raw = resp_com.data if resp_com.data else []
+@st.cache_data(ttl=86400)  # 1 día = 86400 segundos
+def obtener_comisiones():
+    resp = supabase.table("comisiones").select(
+        "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
+    ).execute()
+    return resp.data if resp.data else []
+
+comisiones_raw = obtener_comisiones()
 
 actividades_unicas = {}
 for c in comisiones_raw:
