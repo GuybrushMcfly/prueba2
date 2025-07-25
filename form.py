@@ -155,7 +155,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     st.markdown(
         f"""
         <h4>2. Validá tu CUIL para inscribirte en</h4>
-        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
+        <span style="color:#b72877;font-weight:bold; font-size:1.35em;">
             {actividad_nombre} ({comision_nombre})
         </span>
         """,
