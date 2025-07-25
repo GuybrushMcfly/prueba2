@@ -37,7 +37,7 @@ st.markdown("""
 
 # ========== DATOS DESDE SUPABASE ==========
 resp_com = supabase.table("comisiones").select(
-    "id_comision, organismo, id_actividad, nombre_actividad, area, fecha_inicio, fecha_fin, creditos, modalidad"
+    "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
 ).execute()
 comisiones_raw = resp_com.data if resp_com.data else []
 
@@ -53,26 +53,32 @@ for c in comisiones_raw:
     if c["id_actividad"]:
         comisiones[c["id_actividad"]].append({
             "id": c["id_comision"],
-            "nombre": c["nombre_actividad"],  # Podrías también usar otro campo como nombre de la comisión si tenés uno.
+            "nombre": c["nombre_actividad"],  # Podrías también usar otro campo como nombre de la comisión si tuvieras uno.
             "fecha_inicio": c["fecha_inicio"],
             "fecha_fin": c["fecha_fin"],
             "organismo": c["organismo"],
-            "area": c["area"],
             "creditos": c["creditos"],
             "modalidad": c["modalidad"],
         })
 
 # ========== TABLA DE COMISIONES PARA SELECCIÓN ==========
+def format_fecha(f):
+    if f:
+        try:
+            return pd.to_datetime(f).strftime("%d/%m/%Y")
+        except Exception:
+            return f
+    return ""
+
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones.get(id_act, []):
         filas.append({
             "Actividad": nombre_act,
             "Comisión": c["id"],
-            "Fecha inicio": c["fecha_inicio"],
-            "Fecha fin": c["fecha_fin"],
+            "Fecha inicio": format_fecha(c["fecha_inicio"]),
+            "Fecha fin": format_fecha(c["fecha_fin"]),
             "Organismo": c["organismo"],
-            "Área": c["area"],
             "Créditos": c["creditos"],
             "Modalidad": c["modalidad"],
         })
@@ -83,28 +89,37 @@ for id_act, nombre_act in actividades_unicas.items():
             "Fecha inicio": "",
             "Fecha fin": "",
             "Organismo": "",
-            "Área": "",
             "Créditos": "",
             "Modalidad": "",
         })
 df_comisiones = pd.DataFrame(filas)
 
-
-
+# ========== TABLA AGGRID ==========
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 st.markdown("#### 1. Seleccioná una comisión en la tabla:")
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True)
-gb.configure_selection(selection_mode="single", use_checkbox=False)
-gb.configure_column("Actividad", width=220)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
+gb.configure_column("Actividad", width=220, wrapText=True, autoHeight=True)
 gb.configure_column("Comisión", width=160)
 gb.configure_column("Fecha inicio", width=110)
 gb.configure_column("Fecha fin", width=110)
 custom_css = {
-    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
-    ".ag-row": {"font-size": "14px !important"},
-    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-header": {
+        "background-color": "#136ac1 !important",
+        "color": "white !important",
+        "font-weight": "bold !important"
+    },
+    ".ag-row": {
+        "font-size": "14px !important"
+    },
+    ".ag-row:nth-child(even)": {
+        "background-color": "#f5f5f5 !important"
+    },
+    ".ag-cell": {   # esto fuerza que el texto haga wrap y ajuste el alto
+        "white-space": "normal !important",
+        "line-height": "1.2 !important"
+    },
 }
 grid_options = gb.build()
 response = AgGrid(
