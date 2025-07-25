@@ -379,13 +379,18 @@ if (
     correo = st.text_input("Correo", value=datos_agente.get("correo", ""), key="correo")
 
     # --- Enviar inscripción ---
+    # --- Enviar inscripción ---
     if st.button("ENVIAR INSCRIPCIÓN"):
-        apellido_nombre = f"{apellido}, {nombre}"
+        # Guardar en session_state para usar luego en PDF
+        st.session_state["apellido"] = apellido
+        st.session_state["nombre"] = nombre
+        st.session_state["apellido_nombre"] = f"{apellido}, {nombre}"
+    
         datos_inscripcion = {
             "cuil_cuit": st.session_state.get("cuil", ""),
             "apellido": apellido,
             "nombre": nombre,
-            "apellido_nombre": apellido_nombre,
+            "apellido_nombre": st.session_state["apellido_nombre"],
             "fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d"),
             "nivel_educativo": nivel_educativo,
             "titulo": titulo,
@@ -402,72 +407,68 @@ if (
             "fecha_inicio": st.session_state.get("fecha_inicio", ""),
             "fecha_fin": st.session_state.get("fecha_fin", "")
         }
+    
         result = supabase.table("pruebainscripciones").insert(datos_inscripcion).execute()
         if result.data:
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
-
+    
             # --- Generar constancia PDF ---
-
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_auto_page_break(auto=True, margin=15)
-            
+    
                 # ===== Estilo del encabezado =====
                 pdf.set_font("Helvetica", style='B', size=14)
                 pdf.set_text_color(19, 106, 193)  # Azul institucional
-                pdf.cell(0, 10, txt="Constancia de preinscripcion", ln=True, align="C")
+                pdf.cell(0, 10, txt="Constancia de preinscripción", ln=True, align="C")
                 pdf.ln(10)
-            
+    
                 # ===== Restaurar fuente y color normales =====
                 pdf.set_font("Helvetica", size=11)
                 pdf.set_text_color(0, 0, 0)
-            
+    
                 # ===== Limpiar caracteres problemáticos =====
                 nombre_limpio = ''.join(c for c in str(nombre) if ord(c) < 256)
                 actividad_limpia = ''.join(c for c in str(actividad) if ord(c) < 256)
                 comision_limpia = ''.join(c for c in str(comision) if ord(c) < 256)
                 fecha_inicio_limpia = ''.join(c for c in str(fecha_inicio) if ord(c) < 256)
                 fecha_fin_limpia = ''.join(c for c in str(fecha_fin) if ord(c) < 256)
-            
+    
                 # ===== Contenido =====
                 contenido = (
-                    f"{nombre_limpio}, te registraste exitosamente en la actividad detallada a continuacion:\n\n"
+                    f"{nombre_limpio}, te registraste exitosamente en la actividad detallada a continuación:\n\n"
                     f"Actividad: {actividad_limpia}\n"
-                    f"Comision: {comision_limpia}\n"
+                    f"Comisión: {comision_limpia}\n"
                     f"Fecha de inicio: {fecha_inicio_limpia}\n"
                     f"Fecha de fin: {fecha_fin_limpia}\n\n"
-                    f"IMPORTANTE: Esta inscripcion NO implica asignacion automatica de vacante. "
-                    f"Antes del inicio, en caso de ser otorgada, recibiras un correo con la confirmacion.\n\n"
+                    f"IMPORTANTE: Esta inscripción NO implica asignación automática de vacante. "
+                    f"Antes del inicio, en caso de ser otorgada, recibirás un correo con la confirmación.\n\n"
                     f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
                 )
-            
+    
                 pdf.multi_cell(0, 8, txt=contenido)
-                
                 return BytesIO(pdf.output(dest='S').encode('latin1'))
-
-
+    
             constancia = generar_constancia_pdf(
-                nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
+                nombre=st.session_state["apellido_nombre"],
                 actividad=st.session_state.get("actividad_nombre", ""),
                 comision=st.session_state.get("comision_nombre", ""),
                 fecha_inicio=st.session_state.get("fecha_inicio", ""),
                 fecha_fin=st.session_state.get("fecha_fin", "")
             )
-
+    
             st.download_button(
                 label="📄 Descargar constancia de inscripción",
                 data=constancia,
                 file_name="constancia_inscripcion.pdf",
                 mime="application/pdf"
             )
-
-            # Esperar un poco para que pueda descargar
+    
             time.sleep(6)
             st.rerun()
-
         else:
             st.error("Ocurrió un error al guardar la inscripción.")
 
