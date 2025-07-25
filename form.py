@@ -276,6 +276,7 @@ if (
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
             time.sleep(2)
+            st.rerun()
             st.session_state["validado"] = False
             st.session_state["cuil_valido"] = False
         else:
