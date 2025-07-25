@@ -116,7 +116,7 @@ gb.configure_selection(selection_mode="single", use_checkbox=True)
 # Configurar columnas con porcentajes y flex
 gb.configure_column("Actividad", flex=40, wrapText=True, autoHeight=True, 
                    tooltipField="Actividad", filter=False, resizable=False,
-                   minWidth=200, maxWidth=550)
+                   minWidth=200, maxWidth=650)
 gb.configure_column("Comisión", flex=17, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
@@ -146,18 +146,7 @@ custom_css = {
         "align-items": "center !important",
         "height": "100% !important"
     },
-    ".ag-checkbox-input": {
-        "width": "16px !important",
-        "height": "16px !important",
-        "accent-color": "#b72877 !important",
-        "cursor": "pointer !important",
-        "transform": "scale(1.2) !important"
-    },
-    ".ag-selection-checkbox": {
-        "background-color": "#f0f8ff !important",
-        "border-radius": "4px !important",
-        "padding": "2px !important"
-    }
+ 
 }
 grid_options = gb.build()
 response = AgGrid(
