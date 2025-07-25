@@ -183,9 +183,16 @@ custom_css = {
         "height": "100% !important"
     },
     ".ag-selection-checkbox": {
-    "transform": "scale(1.5)",
-    "margin": "5px"
+        "transform": "scale(1.4)",
+        "margin": "4px"
+    },
+    ".ag-cell.ag-selection-checkbox": {
+        "background-color": "#e7f1ff !important",
+        "border": "1px solid #136ac1",
+        "border-radius": "4px",
+        "padding": "2px"
     }
+
 }
 
 grid_options = gb.build()
