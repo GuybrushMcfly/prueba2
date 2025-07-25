@@ -33,9 +33,16 @@ def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin)
         f"Fecha de registro: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
     ))
 
-    # --- CORREGIDO: guardar como bytes ---
-    pdf_output = pdf.output(dest='S').encode('latin1')  # importante: encode
-    return BytesIO(pdf_output)
+    # 🚫 Esto no funciona como se espera:
+    # buffer = BytesIO()
+    # pdf.output(name=buffer, dest='S')
+    # buffer.seek(0)
+    # return buffer
+
+    # ✅ Usá esto:
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    return BytesIO(pdf_bytes)
+
 
 
 # ========== VALIDACIÓN DE CUIL ==========
