@@ -389,63 +389,34 @@ if (
 
             # --- Generar constancia PDF ---
             def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-
             
                 pdf = FPDF()
                 pdf.add_page()
-                
-                # Agregar fuente que soporte UTF-8
-                pdf.set_font("Arial", "B", 16)
-                pdf.cell(0, 10, txt="CONSTANCIA DE INSCRIPCIÓN", ln=True, align="C")
-                pdf.ln(15)
-                
-                # Texto principal más profesional
-                pdf.set_font("Arial", "", 12)
-                
-                # Saludo personalizado
-                pdf.multi_cell(0, 8, txt=f"{nombre}, te registraste exitosamente en la actividad detallada a continuación:")
-                pdf.ln(5)
-                
-                # Datos de la actividad en un formato más estructurado
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 8, txt="DATOS DE LA ACTIVIDAD:", ln=True)
-                pdf.set_font("Arial", "", 12)
-                pdf.ln(2)
-                
-                datos_actividad = (
-                    f"• Actividad: {actividad}\n"
-                    f"• Comisión: {comision}\n"
-                    f"• Fecha de inicio: {fecha_inicio}\n"
-                    f"• Fecha de finalización: {fecha_fin}"
-                )
-                pdf.multi_cell(0, 8, txt=datos_actividad)
-                pdf.ln(8)
-                
-                # Información importante sobre la inscripción
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 8, txt="INFORMACIÓN IMPORTANTE:", ln=True)
-                pdf.set_font("Arial", "", 12)
-                pdf.ln(2)
-                
-                info_importante = (
-                    "Recordá que esta inscripción NO implica una asignación automática de vacante. "
-                    "Antes del inicio de la actividad, en caso de que te sea otorgada una vacante, "
-                    "recibirás un correo electrónico con la confirmación y las instrucciones "
-                    "correspondientes para el acceso a la capacitación."
-                )
-                pdf.multi_cell(0, 8, txt=info_importante)
+                pdf.set_font("Arial", size=12)
+                pdf.cell(200, 10, txt="Constancia de Inscripcion", ln=True, align="C")
                 pdf.ln(10)
                 
-                # Fecha de registro
-                pdf.set_font("Arial", "I", 10)
-                pdf.cell(0, 8, txt=f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True, align="R")
+                # Limpiar cualquier caracter problemático
+                nombre_limpio = ''.join(c for c in str(nombre) if ord(c) < 256)
+                actividad_limpia = ''.join(c for c in str(actividad) if ord(c) < 256)
+                comision_limpia = ''.join(c for c in str(comision) if ord(c) < 256)
+                fecha_inicio_limpia = ''.join(c for c in str(fecha_inicio) if ord(c) < 256)
+                fecha_fin_limpia = ''.join(c for c in str(fecha_fin) if ord(c) < 256)
                 
-                # Usar UTF-8 en lugar de latin1
-                buffer = BytesIO()
-                pdf_string = pdf.output(dest='S')
-                buffer.write(pdf_string.encode('utf-8', errors='ignore'))
-                buffer.seek(0)
-                return buffer
+                contenido = (
+                    f"{nombre_limpio}, te registraste exitosamente en la actividad detallada a continuacion:\n\n"
+                    f"Actividad: {actividad_limpia}\n"
+                    f"Comision: {comision_limpia}\n"
+                    f"Fecha de inicio: {fecha_inicio_limpia}\n"
+                    f"Fecha de fin: {fecha_fin_limpia}\n\n"
+                    f"IMPORTANTE: Esta inscripcion NO implica asignacion automatica de vacante. "
+                    f"Antes del inicio, en caso de ser otorgada, recibiras un correo con la confirmacion.\n\n"
+                    f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+                )
+                
+                pdf.multi_cell(0, 10, txt=contenido)
+                
+                return BytesIO(pdf.output(dest='S').encode('latin1'))
 
             constancia = generar_constancia_pdf(
                 nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
