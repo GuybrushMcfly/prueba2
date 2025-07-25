@@ -68,40 +68,60 @@ def format_fecha(f):
             return f
     return ""
 
+# --- 1. Filtros únicos ---
+organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
+modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
+organismos.insert(0, "Todos")
+modalidades.insert(0, "Todos")
+
+col1, col2 = st.columns(2)
+with col1:
+    organismo_sel = st.selectbox("Organismo", organismos, index=0)
+with col2:
+    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
+
+# --- 2. Filtrado y armado de filas ---
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones.get(id_act, []):
-        filas.append({
-            "Actividad": nombre_act,
-            "Comisión": c["id"],
-            "Fecha inicio": format_fecha(c["fecha_inicio"]),
-            "Fecha fin": format_fecha(c["fecha_fin"]),
-            "Organismo": c["organismo"],
-            "Créditos": c["creditos"],
-            "Modalidad": c["modalidad"],
-        })
+        if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
+           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+            filas.append({
+                "Actividad": nombre_act,
+                "Comisión": c["id"],
+                "Fecha inicio": format_fecha(c["fecha_inicio"]),
+                "Fecha fin": format_fecha(c["fecha_fin"]),
+                "Créditos": c["creditos"],
+            })
     if not comisiones.get(id_act):
         filas.append({
             "Actividad": nombre_act,
             "Comisión": "Sin comisiones",
             "Fecha inicio": "",
             "Fecha fin": "",
-            "Organismo": "",
             "Créditos": "",
-            "Modalidad": "",
         })
 df_comisiones = pd.DataFrame(filas)
 
+# --- 3. Tabla AgGrid con anchos fijos ---
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
+
+# Definir anchos
+ANCHO_TABLA_TOTAL = 700
+ANCHO_ACTIVIDAD = int(ANCHO_TABLA_TOTAL * 0.40)      # 40%
+ANCHO_COMISION = int(ANCHO_TABLA_TOTAL * 0.17)        # 17%
+ANCHO_FECHA = int(ANCHO_TABLA_TOTAL * 0.15)           # 15% cada fecha
+ANCHO_CREDITOS = ANCHO_TABLA_TOTAL - (ANCHO_ACTIVIDAD + ANCHO_COMISION + 2*ANCHO_FECHA) # resto
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_column("Actividad", width=320, wrapText=True, autoHeight=True, tooltipField="Actividad")
-gb.configure_column("Comisión", width=160)
-gb.configure_column("Fecha inicio", width=110)
-gb.configure_column("Fecha fin", width=110)
+gb.configure_column("Actividad", width=ANCHO_ACTIVIDAD, wrapText=True, autoHeight=True, tooltipField="Actividad")
+gb.configure_column("Comisión", width=ANCHO_COMISION)
+gb.configure_column("Fecha inicio", width=ANCHO_FECHA)
+gb.configure_column("Fecha fin", width=ANCHO_FECHA)
+gb.configure_column("Créditos", width=ANCHO_CREDITOS)
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
     ".ag-row": {"font-size": "14px !important"},
@@ -115,11 +135,12 @@ grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
-    height=330,
+    height=340,
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
-    use_container_width=True
+    use_container_width=False,
+    width=ANCHO_TABLA_TOTAL
 )
 
 selected = response["selected_rows"]
@@ -155,13 +176,12 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     st.markdown(
         f"""
         <h4>2. Validá tu CUIL para inscribirte en</h4>
-        <span style="color:#b72877;font-weight:bold; font-size:1.35em;">
+        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
             {actividad_nombre} ({comision_nombre})
         </span>
         """,
         unsafe_allow_html=True
     )
-
 
     col_cuil, _ = st.columns([1, 1])
     with col_cuil:
@@ -286,9 +306,7 @@ if (
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
             time.sleep(2)
-            st.rerun()
-            st.session_state["validado"] = False
-            st.session_state["cuil_valido"] = False
+            st.experimental_rerun()
         else:
             st.error("Ocurrió un error al guardar la inscripción.")
 
