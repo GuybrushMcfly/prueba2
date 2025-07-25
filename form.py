@@ -113,6 +113,9 @@ gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
+# Configurar paginación
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+
 # Configurar columnas con porcentajes y flex
 gb.configure_column("Actividad", flex=40, wrapText=True, autoHeight=True, 
                    tooltipField="Actividad", filter=False, resizable=False,
@@ -124,7 +127,7 @@ gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHei
 
 # Configuraciones adicionales para controlar el comportamiento
 gb.configure_grid_options(
-    suppressSizeToFit=False,  # Cambiar a False para que use flex
+    suppressSizeToFit=False,
     suppressColumnVirtualisation=False,
     domLayout='normal'
 )
