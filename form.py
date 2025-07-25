@@ -407,6 +407,13 @@ if (
             st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
             st.balloons()
             st.session_state["inscripcion_exitosa"] = True
+        
+            # Limpiar selección de comisión
+            st.session_state["last_comision_id"] = None
+            st.session_state["comision_nombre"] = ""
+            st.session_state["actividad_nombre"] = ""
+            st.session_state["fecha_inicio"] = ""
+            st.session_state["fecha_fin"] = ""
 
             # --- Generar constancia PDF ---
 
