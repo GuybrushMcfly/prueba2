@@ -87,46 +87,56 @@ st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 # --- 2. Filtrado y armado de filas ---
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
-    for c in comisiones.get(id_act, []):
-        if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
-            filas.append({
-                "Actividad": nombre_act,
-                "Comisión": c["id"],
-                "Fecha inicio": format_fecha(c["fecha_inicio"]),
-                "Fecha fin": format_fecha(c["fecha_fin"]),
-                "Créditos": c["creditos"],
-            })
-    if not comisiones.get(id_act):
+    coms = comisiones.get(id_act, [])
+    if coms:
+        for c in coms:
+            if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
+               (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+                filas.append({
+                    "Actividad (Comisión)": f"{nombre_act} ({c['id']})",  # visual
+                    "Actividad": nombre_act,        # para session_state
+                    "Comisión": c["id"],            # para session_state
+                    "Fecha inicio": format_fecha(c["fecha_inicio"]),
+                    "Fecha fin": format_fecha(c["fecha_fin"]),
+                    "Créditos": c["creditos"],
+                })
+    else:
         filas.append({
+            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",  # visual
             "Actividad": nombre_act,
             "Comisión": "Sin comisiones",
             "Fecha inicio": "",
             "Fecha fin": "",
             "Créditos": "",
         })
+
 df_comisiones = pd.DataFrame(filas)
 
-
-# Definir anchos en porcentajes
+# ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
 # Configurar paginación
 gb.configure_pagination(
-    paginationAutoPageSize=False, 
+    paginationAutoPageSize=False,
     paginationPageSize=15
 )
 
-# Configurar columnas con porcentajes y flex
-gb.configure_column("Actividad", flex=40, wrapText=True, autoHeight=True, 
-                   tooltipField="Actividad", filter=False, resizable=False,
-                   minWidth=200, maxWidth=700)
-gb.configure_column("Comisión", flex=17, filter=False, resizable=False, autoHeight=True)
+# Mostrar solo "Actividad (Comisión)"
+gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
+                    tooltipField="Actividad (Comisión)", filter=False, resizable=False,
+                    minWidth=250, maxWidth=800)
+
+# Ocultar columnas internas necesarias para lógica
+gb.configure_column("Actividad", hide=True)
+gb.configure_column("Comisión", hide=True)
+
+# Otras columnas visibles
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
+
 
 # Configuraciones adicionales para controlar el comportamiento
 gb.configure_grid_options(
