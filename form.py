@@ -135,7 +135,8 @@ custom_css = {
     ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
     ".ag-cell": {
         "white-space": "normal !important",
-        "line-height": "1.2 !important"
+        "line-height": "1.2 !important",
+        "vertical-align": "center !important"
     },
 }
 
