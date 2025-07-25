@@ -202,7 +202,8 @@ response = AgGrid(
     custom_css=custom_css,
     use_container_width=False,
     width=900,
-    key=st.session_state["aggrid_key"],  # <-- clave para limpiar selección
+    #key=st.session_state["aggrid_key"],
+    key=int(st.session_state.get("aggrid_key", 0)),# <-- clave para limpiar selección
 )
 
 selected = response["selected_rows"]
