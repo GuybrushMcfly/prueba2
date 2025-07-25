@@ -53,7 +53,7 @@ for c in comisiones_raw:
     if c["id_actividad"]:
         comisiones[c["id_actividad"]].append({
             "id": c["id_comision"],
-            "nombre": c["nombre_actividad"],  # Podrías también usar otro campo como nombre de la comisión si tuvieras uno.
+            "nombre": c["nombre_actividad"],
             "fecha_inicio": c["fecha_inicio"],
             "fecha_fin": c["fecha_fin"],
             "organismo": c["organismo"],
@@ -116,7 +116,7 @@ custom_css = {
     ".ag-row:nth-child(even)": {
         "background-color": "#f5f5f5 !important"
     },
-    ".ag-cell": {   # esto fuerza que el texto haga wrap y ajuste el alto
+    ".ag-cell": {
         "white-space": "normal !important",
         "line-height": "1.2 !important"
     },
@@ -136,12 +136,18 @@ selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
-if selected:
+if (
+    selected and
+    isinstance(selected, list) and
+    len(selected) > 0 and
+    selected[0].get("Comisión") and
+    selected[0].get("Comisión") != "Sin comisiones"
+):
     fila = selected[0]
-    actividad_nombre = fila["Actividad"]
-    comision_nombre = fila["Comisión"]
-    fecha_inicio = fila["Fecha inicio"]
-    fecha_fin = fila["Fecha fin"]
+    actividad_nombre = fila.get("Actividad", "")
+    comision_nombre = fila.get("Comisión", "")
+    fecha_inicio = fila.get("Fecha inicio", "")
+    fecha_fin = fila.get("Fecha fin", "")
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
     if st.session_state.get("last_comision_id") != comision_id:
@@ -168,6 +174,10 @@ if selected:
                 "fecha_inicio": fecha_inicio,
                 "fecha_fin": fecha_fin,
             })
+elif selected and selected[0].get("Comisión") == "Sin comisiones":
+    st.warning("No hay comisiones disponibles para esta actividad.")
+else:
+    st.info("Seleccioná una comisión para continuar.")
 
 # ========== BLOQUE 2: DATOS PERSONALES ==========
 if st.session_state.get("validado", False):
