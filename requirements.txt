@@ -20,3 +20,4 @@ streamlit-option-menu
 bcrypt
 streamlit-aggrid
 fpdf==1.7.2
+mailjet-rest
