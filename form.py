@@ -63,7 +63,7 @@ for c in comisiones_raw:
             "fecha_fin": c["fecha_hasta"],
             "organismo": c["organismo"],
             "creditos": c["creditos"],
-            "modalidad": c["modalidad_cursada"],
+            "modalidad": c["modalidad"],
         })
 
 # ========== UI ==========
@@ -78,7 +78,7 @@ st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
 # FILTROS
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c["modalidad_cursada"]})
+modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
