@@ -78,17 +78,21 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 # CONFIGURAR AGGRID
-gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
-gb.configure_selection("single", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
-gb.configure_column("Actividad", hide=True)
-gb.configure_column("Comisión", hide=True)
-grid_options = gb.build()
+if not df_comisiones.empty:
+    gb = GridOptionsBuilder.from_dataframe(df_comisiones)
+    gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
+    gb.configure_selection("single", use_checkbox=True)
+    gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
+    gb.configure_column("Actividad", hide=True)
+    gb.configure_column("Comisión", hide=True)
+    grid_options = gb.build()
 
-st.markdown("#### 1. Seleccioná una comisión:")
-response = AgGrid(df_comisiones, gridOptions=grid_options, theme="balham", height=300)
-selected = response["selected_rows"]
+    st.markdown("#### 1. Seleccioná una comisión:")
+    response = AgGrid(df_comisiones, gridOptions=grid_options, theme="balham", height=300)
+    selected = response["selected_rows"]
+else:
+    st.warning("⚠️ No hay comisiones disponibles con esos filtros.")
+    selected = []
 
 # ========== SI HAY SELECCIÓN ==========
 if selected:
