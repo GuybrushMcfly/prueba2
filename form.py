@@ -52,7 +52,7 @@ st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
 # FILTROS
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c["modalidad_cursada"]})
+modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
@@ -65,7 +65,7 @@ filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones[id_act]:
         if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-           (modalidad_sel == "Todos" or c["modalidad_cursada"] == modalidad_sel):
+           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
             filas.append({
                 "Actividad (Comisión)": f"{nombre_act} ({c['id_comision_sai']})",
                 "Actividad": nombre_act,
