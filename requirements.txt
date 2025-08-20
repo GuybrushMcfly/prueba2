@@ -17,3 +17,4 @@ bcrypt
 streamlit-aggrid
 fpdf==1.7.2
 mailjet-rest
+streamlit-elements
