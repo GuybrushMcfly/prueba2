@@ -12,30 +12,40 @@ import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
 import streamlit.components.v1 as components
 
-# ========== DATOS ==========
+# ========== DATOS DE PRUEBA ==========
 data = pd.DataFrame([
     {"Actividad": "Curso Python", "Enlace": "https://python.org"},
     {"Actividad": "Curso Streamlit", "Enlace": "https://streamlit.io"},
     {"Actividad": "Curso Pandas", "Enlace": "https://pandas.pydata.org"}
 ])
 
-# ========== CONFIGURACIÓN AGGRID ==========
+# ========== CONFIGURAR AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(data)
-gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_default_column(resizable=True, wrapText=True)
+gb.configure_selection("multiple", use_checkbox=True)
+gb.configure_column("Enlace", header_name="🌐 Link", width=300)
 grid_options = gb.build()
 
 # ========== MOSTRAR AGGRID ==========
-st.subheader("🧪 Seleccioná un curso para abrir el enlace")
-response = AgGrid(data, gridOptions=grid_options, theme="alpine", height=250, use_container_width=True)
+st.subheader("🧪 Seleccioná cursos para abrir el link")
+response = AgGrid(data, gridOptions=grid_options, theme="balham", height=300, use_container_width=True)
 
-# ========== BOTÓN QUE ABRE LINK ==========
-selected = response["selected_rows"]
+# ========== MOSTRAR BOTONES ==========
+selected = response.get("selected_rows", [])
+
 if selected:
-    curso = selected[0]
-    st.success(f"Curso seleccionado: {curso['Actividad']}")
-    if st.button("🌐 Abrir link"):
-        components.html(f'<script>window.open("{curso["Enlace"]}", "_blank")</script>', height=0)
+    st.success(f"Seleccionaste {len(selected)} curso(s)")
+    for i, row in enumerate(selected):
+        if st.button(f"🌐 Abrir {row['Actividad']}", key=f"boton_{i}"):
+            components.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
+
+    if len(selected) > 1:
+        st.markdown("---")
+        if st.button("🚀 Abrir todos"):
+            for row in selected:
+                components.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
+            st.balloons()
+else:
+    st.info("Seleccioná al menos un curso para ver los botones.")
 
 
 
