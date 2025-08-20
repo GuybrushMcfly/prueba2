@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime  # ← Una sola línea para ambos
+from datetime import date, datetime
 from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
 import time
-import io
-from fpdf import FPDF
 from io import BytesIO
+from fpdf import FPDF
 import os
 
 # ========== CONEXIÓN A SUPABASE ==========
@@ -50,19 +49,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== DATOS DESDE SUPABASE ==========
-@st.cache_data(ttl=86400)  # 1 día = 86400 segundos
+@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, creditos, modalidad"
+        "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, creditos, modalidad"
     ).execute()
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
-
-# ========== ADAPTACIÓN CAMPOS ==========
-for c in comisiones_raw:
-    c["fecha_inicio"] = c.pop("fecha_desde", None)
-    c["fecha_fin"] = c.pop("fecha_hasta", None)
 
 actividades_unicas = {}
 for c in comisiones_raw:
@@ -73,10 +67,10 @@ comisiones = defaultdict(list)
 for c in comisiones_raw:
     if c["id_actividad"]:
         comisiones[c["id_actividad"]].append({
-            "id": c["id_comision"],
+            "id_comision_sai": c["id_comision_sai"],
             "nombre": c["nombre_actividad"],
-            "fecha_inicio": c["fecha_inicio"],
-            "fecha_fin": c["fecha_fin"],
+            "fecha_inicio": c["fecha_desde"],
+            "fecha_fin": c["fecha_hasta"],
             "organismo": c["organismo"],
             "creditos": c["creditos"],
             "modalidad": c["modalidad"],
@@ -90,7 +84,6 @@ def format_fecha(f):
             return f
     return ""
 
-# --- 1. Filtros únicos ---
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
 modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
 organismos.insert(0, "Todos")
@@ -105,7 +98,6 @@ with col2:
 
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 
-# --- 2. Filtrado y armado de filas ---
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     coms = comisiones.get(id_act, [])
@@ -114,16 +106,16 @@ for id_act, nombre_act in actividades_unicas.items():
             if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
                (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
                 filas.append({
-                    "Actividad (Comisión)": f"{nombre_act} ({c['id']})",  # visual
-                    "Actividad": nombre_act,        # para session_state
-                    "Comisión": c["id"],            # para session_state
+                    "Actividad (Comisión)": f"{nombre_act} ({c['id_comision_sai']})",
+                    "Actividad": nombre_act,
+                    "Comisión": c["id_comision_sai"],
                     "Fecha inicio": format_fecha(c["fecha_inicio"]),
                     "Fecha fin": format_fecha(c["fecha_fin"]),
                     "Créditos": c["creditos"],
                 })
     else:
         filas.append({
-            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",  # visual
+            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",
             "Actividad": nombre_act,
             "Comisión": "Sin comisiones",
             "Fecha inicio": "",
@@ -133,36 +125,16 @@ for id_act, nombre_act in actividades_unicas.items():
 
 df_comisiones = pd.DataFrame(filas)
 
-# ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
-                    tooltipField="Actividad (Comisión)", filter=False, resizable=False,
-                    minWidth=600, maxWidth=600)
+gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, tooltipField="Actividad (Comisión)", filter=False, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
-
-gb.configure_grid_options(
-    suppressSizeToFit=False,
-    suppressColumnVirtualisation=False,
-    domLayout='normal',
-    localeText={
-        'page': 'Página', 'more': 'Más', 'to': 'a', 'of': 'de',
-        'next': 'Siguiente', 'last': 'Último', 'first': 'Primero', 'previous': 'Anterior',
-        'loadingOoo': 'Cargando...', 'pageSizeSelectorLabel': 'Filas por página:',
-        'noRowsToShow': 'No hay datos para mostrar', 'selectAll': 'Seleccionar todo',
-        'selectAllFiltered': 'Seleccionar todo (filtrado)', 'searchOoo': 'Buscar...',
-        'blanks': 'En blanco', 'filterOoo': 'Filtrar...', 'applyFilter': 'Aplicar filtro',
-        'equals': 'Igual a', 'notEqual': 'No igual a', 'lessThan': 'Menor que',
-        'greaterThan': 'Mayor que', 'contains': 'Contiene', 'notContains': 'No contiene',
-        'startsWith': 'Empieza con', 'endsWith': 'Termina con'
-    }
-)
 
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
@@ -194,6 +166,7 @@ response = AgGrid(
 selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
+
 
 
 # CONTROLAR REINICIO FLAG
