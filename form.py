@@ -69,19 +69,21 @@ response = AgGrid(
     theme="balham",
     allow_unsafe_jscode=True,
     key="tabla_comisiones",
-    update_mode=GridUpdateMode.SELECTION_CHANGED  # 🔑 CLAVE: refresca al tildar checkbox
+    update_mode=GridUpdateMode.SELECTION_CHANGED  # 🔑 clave para refrescar en vivo
 )
 
 selected = response.get("selected_rows", [])
 
-# ========== MOSTRAR SELECCIÓN (automático como en el viejo) ==========
-if selected and isinstance(selected[0], dict):
+# ========== MOSTRAR SELECCIÓN (debug automático) ==========
+if selected:
     fila = selected[0]
     st.success("✅ Comisión seleccionada:")
     st.write(f"**Actividad:** {fila['Actividad (Comisión)']}")
     st.write(f"**Comisión SAI:** {fila['Comisión SAI']}")
     st.write(f"**Estado inscripción:** {fila['Estado inscripción']}")
     st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
-    st.write(f"**ID interno (uuid):** {fila['ID Comisión']}")  # lo tenés para inscribir
+    st.write(f"**ID interno (uuid):** {fila['ID Comisión']}")  # 🔍 uuid interno para inscribir
+    st.write("### 🔎 DEBUG - Fila completa seleccionada")
+    st.json(fila)
 else:
     st.info("⚠️ Seleccioná una comisión para continuar.")
