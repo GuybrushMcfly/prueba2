@@ -177,12 +177,8 @@ custom_css = {
 }
 
 
-# ======================================
-# 🧪 1. TABLA SIMULADA
-# ======================================
-
 # ===============================
-# DATOS SIMULADOS (deben ir antes de gb_sim)
+# DATOS SIMULADOS
 # ===============================
 df_simulada = pd.DataFrame([
     {
@@ -202,27 +198,35 @@ df_simulada = pd.DataFrame([
         "Créditos": 8
     }
 ])
+
 # ===============================
 # CONFIGURACIÓN DE AGGRID (TABLA SIMULADA)
 # ===============================
 gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
 gb_sim.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
-
-# Checkbox para selección única
 gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
-
-# Ocultar campos internos
 gb_sim.configure_column("Actividad", hide=True)
 gb_sim.configure_column("Comisión", hide=True)
-
-# Columnas visibles
 gb_sim.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
 gb_sim.configure_column("Fecha inicio", flex=15)
 gb_sim.configure_column("Fecha fin", flex=15)
 gb_sim.configure_column("Créditos", flex=10)
-
-# Paginación
 gb_sim.configure_pagination(paginationAutoPageSize=True)
+
+# Opcional: Estilo visual (mismo que en app real)
+custom_css = {
+    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
+    ".ag-row": {"font-size": "14px !important"},
+    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-cell": {
+        "white-space": "normal !important",
+        "line-height": "1.2 !important",
+        "vertical-align": "middle !important",
+        "display": "flex !important",
+        "align-items": "center !important",
+        "justify-content": "flex-start !important"
+    }
+}
 
 # ===============================
 # MOSTRAR TABLA Y CAPTURAR FILA
@@ -231,7 +235,7 @@ st.markdown("### 🧪 Tabla de prueba (simulada)")
 
 response_sim = AgGrid(
     df_simulada,
-    gridOptions=gb_sim.build(),  # <-- ✅ Usás gb_sim, no gb
+    gridOptions=gb_sim.build(),
     theme="balham",
     height=300,
     custom_css=custom_css,
@@ -253,7 +257,6 @@ if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("C
     st.write(f"**Créditos:** {fila['Créditos']}")
 else:
     st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
-
 
 
 # === Mostrar tabla con selección ===
