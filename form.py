@@ -6,6 +6,9 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 
+from st_aggrid.shared import JsCode
+
+link_renderer = JsCode("""
 class UrlCellRenderer {
   init(params) {
     this.eGui = document.createElement('a');
@@ -18,7 +21,8 @@ class UrlCellRenderer {
     return this.eGui;
   }
 }
-
+""")
+gb.configure_column("Ver más", header_name="Acceso", cellRenderer=link_renderer, flex=10, resizable=False)
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
