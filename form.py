@@ -50,9 +50,11 @@ def obtener_comisiones():
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
+st.write("🧪 DEBUG: Datos crudos desde vista_comisiones_abiertas", comisiones_raw)
 
 # ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
 df_temp = pd.DataFrame(comisiones_raw)
+st.write("🧪 DEBUG: DataFrame intermedio df_temp antes de limpiar", df_temp)
 
 # Validación y limpieza de datos críticos
 required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
@@ -90,6 +92,8 @@ if organismo_sel != "Todos":
     df_temp = df_temp[df_temp["organismo"] == organismo_sel]
 if modalidad_sel != "Todos":
     df_temp = df_temp[df_temp["modalidad_cursada"] == modalidad_sel]
+
+st.write("🧪 DEBUG: DataFrame luego de filtros", df_temp)
 
 # ========== ARMAR DF FINAL CON COLUMNAS VISIBLES ==========
 df_comisiones = df_temp[[
@@ -169,6 +173,7 @@ if selected:
     fecha_fin = st.session_state["fecha_fin"]
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
+    st.write("🔍 DEBUG comisión_id:", comision_id)
 
     if st.session_state.get("last_comision_id") != comision_id:
         st.session_state["validado"] = False
@@ -223,6 +228,7 @@ if selected:
 
 elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
+
 
 
 
