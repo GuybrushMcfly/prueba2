@@ -52,9 +52,10 @@ st.markdown("""
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, id_comision_sai, nombre_actividad, estado_inscripcion, fecha_desde, fecha_hasta, modalidad, organismo"
+        "id_comision, id_comision_sai, nombre_actividad, estado_inscripcion, fecha_desde, fecha_hasta, id_actividad"
     ).execute()
     return resp.data if resp.data else []
+
 
 comisiones_raw = obtener_comisiones()
 # st.write("DEBUG vista:", comisiones_raw)  # 👈 podés descomentar para verificar qué campos trae
