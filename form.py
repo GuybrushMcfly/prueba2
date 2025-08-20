@@ -180,8 +180,9 @@ custom_css = {
 # ======================================
 # 🧪 1. TABLA SIMULADA
 # ======================================
-st.markdown("### 🧪 Tabla de prueba (simulada)")
-
+# ===============================
+# DATOS DE PRUEBA
+# ===============================
 df_simulada = pd.DataFrame([
     {
         "Actividad (Comisión)": "Curso de Python (CPY-001)",
@@ -201,31 +202,65 @@ df_simulada = pd.DataFrame([
     }
 ])
 
-# ✅ Configurar la tabla con checkbox
-gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
-gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
-gb_sim.configure_grid_options(rowSelection='single')
-gb_sim.configure_pagination(paginationAutoPageSize=True)
+st.markdown("### 🧪 Tabla de prueba (simulada)")
 
-# ✅ Mostrar la tabla
-response_sim = AgGrid(
+# ===============================
+# CONFIGURACIÓN DE AGGRID
+# ===============================
+gb = GridOptionsBuilder.from_dataframe(df_simulada)
+gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
+
+# Checkbox de selección única
+gb.configure_selection(selection_mode="single", use_checkbox=True)
+
+# Ocultar columnas internas
+gb.configure_column("Actividad", hide=True)
+gb.configure_column("Comisión", hide=True)
+
+# Formato de columnas visibles
+gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
+gb.configure_column("Fecha inicio", flex=15)
+gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=10)
+
+# Configurar paginación
+gb.configure_pagination(paginationAutoPageSize=True)
+
+# Estilos visuales
+custom_css = {
+    ".ag-header": {
+        "background-color": "#136ac1 !important",
+        "color": "white !important",
+        "font-weight": "bold !important"
+    },
+    ".ag-cell": {
+        "white-space": "normal !important",
+        "line-height": "1.3 !important"
+    }
+}
+
+# ===============================
+# MOSTRAR TABLA
+# ===============================
+response = AgGrid(
     df_simulada,
-    gridOptions=gb_sim.build(),
-    height=300,
-    allow_unsafe_jscode=True,
+    gridOptions=gb.build(),
     theme="balham",
-    key="tabla_simulada",
-    update_mode=GridUpdateMode.MODEL_CHANGED  # ✅ Este es el que funciona con checkbox
+    height=300,
+    custom_css=custom_css,
+    allow_unsafe_jscode=True,
+    key="tabla_simulada"
 )
 
-# ✅ Obtener la selección
-selected_sim = response_sim.get("selected_rows", [])
+selected = response.get("selected_rows", [])
 
-# ✅ Botón para mostrar la fila seleccionada
+# ===============================
+# BOTÓN PARA MOSTRAR SELECCIÓN
+# ===============================
 if st.button("📥 Ver selección de tabla simulada"):
-    st.write("🔍 Datos crudos seleccionados:", selected_sim)
-    if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
-        fila = selected_sim[0]
+    st.write("🔍 Datos crudos seleccionados:", selected)
+    if selected and isinstance(selected[0], dict) and selected[0].get("Comisión"):
+        fila = selected[0]
         st.success("✅ Fila seleccionada en tabla simulada:")
         st.write(f"**Actividad:** {fila['Actividad']}")
         st.write(f"**Comisión:** {fila['Comisión']}")
