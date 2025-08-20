@@ -6,304 +6,6 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 import streamlit.components.v1 as components
-import plotly.graph_objects as go
-
-# Datos de ejemplo
-data = pd.DataFrame([
-    {"Actividad": "Curso de Python Avanzado para Data Science", "URL": "https://python.org", "Categoría": "Programación", "Duración": "40 horas"},
-    {"Actividad": "Desarrollo de Aplicaciones Web con Streamlit", "URL": "https://streamlit.io", "Categoría": "Web Development", "Duración": "25 horas"},
-    {"Actividad": "Análisis de Datos con Pandas y NumPy", "URL": "https://pandas.pydata.org", "Categoría": "Data Science", "Duración": "30 horas"},
-    {"Actividad": "Machine Learning con Scikit-learn", "URL": "https://scikit-learn.org", "Categoría": "AI/ML", "Duración": "50 horas"}
-])
-
-st.title("🎨 Alternativas a AgGrid para tablas estilizadas")
-
-# ========== OPCIÓN 1: ST.DATAFRAME CON COLUMN_CONFIG (RECOMENDADA) ==========
-st.header("✅ 1. st.dataframe() con column_config (Streamlit >= 1.23)")
-
-st.info("🆕 **La mejor alternativa:** Funciona con links clickeables + personalización avanzada")
-
-# Crear DataFrame con links
-data_with_links = data.copy()
-
-styled_df = st.dataframe(
-    data,
-    column_config={
-        "Actividad": st.column_config.TextColumn(
-            "📚 Curso",
-            help="Nombre del curso disponible",
-            max_chars=100,
-            width="large"
-        ),
-        "URL": st.column_config.LinkColumn(
-            "🔗 Enlace",
-            help="Haz click para abrir el curso",
-            display_text=r"https://.*\.(.+)",  # Regex para mostrar solo el dominio
-            width="medium"
-        ),
-        "Categoría": st.column_config.SelectboxColumn(
-            "🏷️ Categoría",
-            help="Tipo de curso",
-            width="medium",
-            options=["Programación", "Web Development", "Data Science", "AI/ML"]
-        ),
-        "Duración": st.column_config.ProgressColumn(
-            "⏱️ Horas",
-            help="Duración del curso",
-            min_value=0,
-            max_value=60,
-            format="%d hrs",
-            width="small"
-        ),
-    },
-    height=300,  # ✅ ALTURA PERSONALIZABLE
-    use_container_width=True,
-    hide_index=True
-)
-
-st.success("✅ **Ventajas:** Links clickeables + altura personalizable + buen styling")
-
-st.divider()
-
-# ========== OPCIÓN 2: PANDAS STYLER CON CSS ==========
-st.header("🎨 2. Pandas Styler + CSS personalizado")
-
-# Función de styling personalizado
-def style_dataframe(df):
-    return df.style \
-        .set_properties(**{
-            'background-color': '#f0f2f6',
-            'color': '#262730',
-            'border': '1px solid #e6e9ef',
-            'padding': '12px',  # ✅ ALTURA DE CELDA
-            'text-align': 'left'
-        }) \
-        .set_table_styles([
-            # Estilo del header
-            {
-                'selector': 'th',
-                'props': [
-                    ('background-color', '#4CAF50'),
-                    ('color', 'white'),
-                    ('font-weight', 'bold'),
-                    ('padding', '15px'),  # ✅ ALTURA DEL HEADER
-                    ('border', '1px solid #45a049')
-                ]
-            },
-            # Hover effect
-            {
-                'selector': 'tbody tr:hover',
-                'props': [('background-color', '#e8f5e8')]
-            },
-            # Styling general de la tabla
-            {
-                'selector': '',
-                'props': [
-                    ('border-collapse', 'collapse'),
-                    ('margin', '25px 0'),
-                    ('font-size', '16px'),  # ✅ TAMAÑO DE FUENTE
-                    ('min-width', '400px')
-                ]
-            }
-        ])
-
-# Aplicar styling
-styled_data = style_dataframe(data)
-st.dataframe(styled_data, height=300, use_container_width=True)
-
-# Código CSS personalizado adicional
-st.markdown("""
-<style>
-    /* CSS personalizado para tablas */
-    .stDataFrame > div {
-        border: 2px solid #4CAF50;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-st.success("✅ **Ventajas:** CSS completamente personalizable + altura ajustable")
-
-st.divider()
-
-# ========== OPCIÓN 3: PLOTLY TABLE (MUY ESTILIZADO) ==========
-st.header("🚀 3. Plotly Table (súper profesional)")
-
-fig = go.Figure(data=[go.Table(
-    columnwidth=[300, 150, 120, 100],  # ✅ ANCHO DE COLUMNAS
-    header=dict(
-        values=list(data.columns),
-        fill_color='#4CAF50',
-        font=dict(color='white', size=16),
-        align='center',
-        height=50  # ✅ ALTURA DEL HEADER
-    ),
-    cells=dict(
-        values=[data[col] for col in data.columns],
-        fill_color=[['#f0f2f6', '#ffffff'] * len(data)],  # Colores alternados
-        font=dict(color='#262730', size=14),
-        align='left',
-        height=40  # ✅ ALTURA DE FILAS
-    )
-)])
-
-fig.update_layout(
-    title="📊 Tabla con Plotly - Súper Profesional",
-    title_x=0.5,
-    height=400,  # ✅ ALTURA TOTAL
-    margin=dict(l=0, r=0, t=50, b=0)
-)
-
-st.plotly_chart(fig, use_container_width=True)
-st.warning("⚠️ **Limitación:** Los links no son clickeables en Plotly Table")
-
-st.divider()
-
-# ========== OPCIÓN 4: HTML PERSONALIZADO ==========
-st.header("🛠️ 4. HTML + CSS personalizado completo")
-
-# Generar HTML personalizado
-def create_html_table(df):
-    html = """
-    <style>
-        .custom-table {
-            border-collapse: collapse;
-            margin: 25px 0;
-            font-size: 16px;
-            font-family: 'Arial', sans-serif;
-            min-width: 400px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .custom-table thead tr {
-            background-color: #4CAF50;
-            color: #ffffff;
-            text-align: left;
-        }
-        .custom-table th,
-        .custom-table td {
-            padding: 18px 15px;  /* ✅ ALTURA PERSONALIZABLE */
-            border-bottom: 1px solid #dddddd;
-        }
-        .custom-table tbody tr {
-            background-color: #f3f3f3;
-        }
-        .custom-table tbody tr:nth-of-type(even) {
-            background-color: #f9f9f9;
-        }
-        .custom-table tbody tr:hover {
-            background-color: #e8f5e8;
-            transform: scale(1.02);
-            transition: all 0.3s ease;
-        }
-        .custom-table a {
-            color: #4CAF50;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .custom-table a:hover {
-            text-decoration: underline;
-        }
-    </style>
-    
-    <table class="custom-table">
-        <thead>
-            <tr>
-    """
-    
-    # Headers
-    for col in df.columns:
-        if col == "URL":
-            html += f"<th>🔗 Enlace</th>"
-        else:
-            html += f"<th>{col}</th>"
-    html += "</tr></thead><tbody>"
-    
-    # Rows
-    for _, row in df.iterrows():
-        html += "<tr>"
-        for col in df.columns:
-            if col == "URL":
-                html += f'<td><a href="{row[col]}" target="_blank">🌐 Abrir</a></td>'
-            else:
-                html += f"<td>{row[col]}</td>"
-        html += "</tr>"
-    
-    html += "</tbody></table>"
-    return html
-
-st.markdown(create_html_table(data), unsafe_allow_html=True)
-st.success("✅ **Ventajas:** Control total sobre CSS + links clickeables + animaciones")
-
-st.divider()
-
-# ========== OPCIÓN 5: STREAMLIT ELEMENTS (EXPERIMENTAL) ==========
-st.header("🧪 5. Alternativa: streamlit-elements")
-
-st.code("""
-# Instalar: pip install streamlit-elements
-from streamlit_elements import elements, mui
-
-with elements("demo"):
-    mui.DataGrid(
-        rows=data.to_dict('records'),
-        columns=[
-            {"field": "Actividad", "headerName": "Curso", "width": 300},
-            {"field": "URL", "headerName": "Enlace", "width": 200},
-        ],
-        autoHeight=True,
-        rowHeight=60,  # ✅ ALTURA PERSONALIZABLE
-    )
-""")
-
-st.info("📦 **Requiere instalación:** `pip install streamlit-elements`")
-
-# ========== COMPARACIÓN FINAL ==========
-st.header("📊 Comparación de alternativas")
-
-comparison_data = pd.DataFrame([
-    {"Método": "st.dataframe + column_config", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "⚠️ Limitado", "Facilidad": "🟢 Fácil"},
-    {"Método": "Pandas Styler", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"},
-    {"Método": "Plotly Table", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"},
-    {"Método": "HTML personalizado", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🔴 Difícil"},
-    {"Método": "streamlit-elements", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🔴 Difícil"},
-    {"Método": "AgGrid", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"}
-])
-
-st.dataframe(
-    comparison_data,
-    column_config={
-        "Links clickeables": st.column_config.TextColumn("🔗 Links"),
-        "CSS avanzado": st.column_config.TextColumn("🎨 CSS"),
-        "Facilidad": st.column_config.TextColumn("⚙️ Facilidad")
-    },
-    hide_index=True,
-    use_container_width=True
-)
-
-# ========== RECOMENDACIÓN ==========
-st.success("""
-## 🎯 **Mi recomendación para tu caso:**
-
-### 🥇 **1ra opción: st.dataframe() + column_config**
-- ✅ Links clickeables nativos
-- ✅ Altura personalizable
-- ✅ Styling decente
-- ✅ Fácil de implementar
-- ✅ Mantenible
-
-### 🥈 **2da opción: HTML personalizado**
-- ✅ Control total sobre diseño
-- ✅ Links clickeables
-- ✅ CSS completamente personalizable
-- ⚠️ Más trabajo de desarrollo
-
-**¿Por qué no seguir con AgGrid?** Si ya tienes el flujo funcionando con AgGrid + botones externos, puede que sea mejor dejarlo así. Pero si quieres links directos en las celdas, `st.dataframe()` es tu mejor opción.
-""")
-
-
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -458,6 +160,189 @@ response = AgGrid(
     use_container_width=False,
     width=900
 )
+
+# ========== ALTERNATIVA: TABLA HTML + CSS PERSONALIZADO ==========
+st.divider()
+st.header("🆕 ALTERNATIVA: Tabla HTML con links clickeables")
+
+# Función para crear la tabla HTML
+def create_html_table(df):
+    html = """
+    <style>
+        .courses-table {
+            border-collapse: collapse;
+            margin: 25px auto;
+            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-width: 900px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }
+        .courses-table thead tr {
+            background-color: #136ac1;
+            color: #ffffff;
+            text-align: left;
+            font-weight: bold;
+        }
+        .courses-table th,
+        .courses-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+        }
+        .courses-table th {
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .courses-table tbody tr {
+            background-color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .courses-table tbody tr:nth-of-type(even) {
+            background-color: #f5f5f5;
+        }
+        .courses-table tbody tr:hover {
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+        }
+        .courses-table td:first-child {
+            font-weight: 500;
+            color: #2c3e50;
+            max-width: 400px;
+            line-height: 1.4;
+        }
+        .courses-table .fecha-col {
+            text-align: center;
+            font-weight: 500;
+            color: #34495e;
+        }
+        .courses-table .creditos-col {
+            text-align: center;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .courses-table .acceso-col {
+            text-align: center;
+        }
+        .courses-table a {
+            color: #136ac1;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 16px;
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        .courses-table a:hover {
+            background-color: #136ac1;
+            color: white;
+            transform: scale(1.05);
+        }
+        .no-link {
+            color: #bdc3c7;
+            font-style: italic;
+        }
+        @media (max-width: 768px) {
+            .courses-table {
+                font-size: 12px;
+                min-width: auto;
+            }
+            .courses-table th,
+            .courses-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+    
+    <div style="overflow-x: auto;">
+        <table class="courses-table">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Actividad (Comisión)</th>
+                    <th style="width: 15%;">Fecha Inicio</th>
+                    <th style="width: 15%;">Fecha Fin</th>
+                    <th style="width: 10%;">Créditos</th>
+                    <th style="width: 15%;">Acceso</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    # Generar filas
+    if len(df) == 0:
+        html += """
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
+                        No se encontraron cursos con los filtros seleccionados
+                    </td>
+                </tr>
+        """
+    else:
+        for _, row in df.iterrows():
+            html += "<tr>"
+            
+            # Actividad (Comisión)
+            html += f'<td title="{row["Actividad (Comisión)"]}">{row["Actividad (Comisión)"]}</td>'
+            
+            # Fecha inicio
+            html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
+            
+            # Fecha fin
+            html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
+            
+            # Créditos
+            html += f'<td class="creditos-col">{row["Créditos"]}</td>'
+            
+            # Acceso (Ver más)
+            if pd.notna(row["Ver más"]) and row["Ver más"]:
+                html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank">🌐 Acceder</a></td>'
+            else:
+                html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
+            
+            html += "</tr>"
+    
+    html += """
+            </tbody>
+        </table>
+    </div>
+    """
+    
+    return html
+
+# Mostrar la tabla HTML
+st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+
+# Mostrar información adicional
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("📚 Total de cursos", len(df_comisiones))
+
+with col2:
+    cursos_con_link = len(df_comisiones[df_comisiones["Ver más"].notna()])
+    st.metric("🔗 Con enlace", cursos_con_link)
+
+with col3:
+    creditos_total = df_comisiones["Créditos"].sum()
+    st.metric("⭐ Créditos totales", creditos_total)
+
+if len(df_comisiones) > 0:
+    st.success("✅ **Ventajas de esta tabla HTML:**")
+    st.write("• 🌐 **Links realmente clickeables** (no como en AgGrid)")
+    st.write("• 🎨 **Diseño profesional** con hover effects y animaciones")
+    st.write("• 📱 **Responsive** - se adapta a móviles")
+    st.write("• ⚡ **Más rápida** - no carga librerías pesadas")
+    st.write("• 🔧 **Fácil de personalizar** - CSS completamente editable")
+else:
+    st.info("ℹ️ Ajusta los filtros para ver los cursos disponibles")
+
+
 
 # ========== NUEVO: DROPDOWN DE ACTIVIDADES ==========
 actividades_unicas = df_comisiones["Actividad"].unique().tolist()
