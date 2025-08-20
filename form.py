@@ -49,78 +49,49 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== DATOS DESDE SUPABASE (usando la vista) ==========
+# ========== DATOS DESDE SUPABASE ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, id_comision_sai, nombre_actividad, estado_inscripcion, fecha_desde, fecha_hasta, id_actividad"
+        "id_comision, nombre_actividad, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta"
     ).execute()
     return resp.data if resp.data else []
 
-
 comisiones_raw = obtener_comisiones()
-# st.write("DEBUG vista:", comisiones_raw)  # 👈 podés descomentar para verificar qué campos trae
 
-# ====================
-# ARMADO DE ESTRUCTURA
-# ====================
-def format_fecha(f):
-    if f:
-        try:
-            return pd.to_datetime(f).strftime("%d/%m/%Y")
-        except Exception:
-            return f
-    return ""
-
-# --- 1. Filtros únicos ---
-organismos = sorted({c["organismo"] for c in comisiones_raw if c.get("organismo")})
-modalidades = sorted({c["modalidad"] for c in comisiones_raw if c.get("modalidad")})
-organismos.insert(0, "Todos")
-modalidades.insert(0, "Todos")
-
-st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
-col1, col2 = st.columns(2)
-with col1:
-    organismo_sel = st.selectbox("Organismo", organismos, index=0)
-with col2:
-    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
-
-st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
-
-# --- 2. Filtrado y armado de filas ---
+# --- Armado de filas ---
 filas = []
 for c in comisiones_raw:
-    if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-       (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
-        filas.append({
-            "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
-            "Actividad": c["nombre_actividad"],     # para session_state
-            "Comisión": c["id_comision"],           # uuid interno
-            "Comisión SAI": c["id_comision_sai"],   # identificador público
-            "Estado inscripción": c.get("estado_inscripcion", ""),
-            "Fecha inicio": format_fecha(c["fecha_desde"]),
-            "Fecha fin": format_fecha(c["fecha_hasta"]),
-        })
+    filas.append({
+        "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
+        "Actividad": c["nombre_actividad"],
+        "Comisión": c["id_comision_sai"],
+        "Fecha inicio": pd.to_datetime(c["fecha_desde"]).strftime("%d/%m/%Y") if c["fecha_desde"] else "",
+        "Fecha fin": pd.to_datetime(c["fecha_hasta"]).strftime("%d/%m/%Y") if c["fecha_hasta"] else "",
+        "Estado inscripción": c["estado_inscripcion"],
+        "ID interno (uuid)": c["id_comision"],  # 👈 lo ocultamos en tabla pero lo mostramos abajo
+    })
 
 df_comisiones = pd.DataFrame(filas)
 
-# ========== AGGRID CONFIGURACIÓN ==========
-gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=True)
+# ========== TABLA AGGRID ==========
+st.markdown("#### 1. Seleccioná una comisión en la tabla:")
 
+gb = GridOptionsBuilder.from_dataframe(df_comisiones)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, resizable=True)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
-# Ocultar columnas internas
+# Ajustes de columnas
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-
-# Ajustar columnas visibles
-gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500)
-gb.configure_column("Comisión SAI", flex=15)
+gb.configure_column("ID interno (uuid)", hide=True)
+gb.configure_column("Actividad (Comisión)", flex=40, minWidth=400)
 gb.configure_column("Estado inscripción", flex=20)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
 
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+# Paginación
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
 
 grid_options = gb.build()
 
@@ -130,59 +101,29 @@ response = AgGrid(
     height=400,
     theme="balham",
     allow_unsafe_jscode=True,
-    update_mode=GridUpdateMode.SELECTION_CHANGED
+    update_mode="SELECTION_CHANGED",
 )
 
 selected = response.get("selected_rows", [])
 
-# =======================
-# CONTROL DE SELECCIÓN
-# =======================
-if selected:
+# ========== MOSTRAR SELECCIÓN ==========
+if selected and isinstance(selected[0], dict):
     fila = selected[0]
-    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
-    st.session_state["comision_nombre"] = fila.get("Comisión", "")
-    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
-    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
+    st.success("✅ Comisión seleccionada:")
+    st.write(f"**Actividad:** {fila['Actividad']}")
+    st.write(f"**Comisión SAI:** {fila['Comisión']}")
+    st.write(f"**Estado inscripción:** {fila['Estado inscripción']}")
+    st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
+    st.write(f"**ID interno (uuid):** {fila['ID interno (uuid)']}")
 
-    st.markdown(
-        f"""
-        <h4>2. Validá tu CUIL para inscribirte en</h4>
-        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
-            {fila['Actividad (Comisión)']}
-        </span>
-        """,
-        unsafe_allow_html=True
-    )
-
-    col_cuil, _ = st.columns([1, 1])
-    with col_cuil:
-        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
-        cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-    # Validación de CUIL
-    if st.button("VALIDAR Y CONTINUAR", type="primary"):
-        if not validar_cuil(cuil):
-            st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
-        else:
-            resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-            if not resp.data:
-                st.error("❌ No se encontró ese usuario en la base de datos.")
-            else:
-                inscrip_existente = supabase.table("pruebainscripciones") \
-                    .select("id") \
-                    .eq("cuil_cuit", cuil) \
-                    .eq("comision", fila["Comisión"]) \
-                    .limit(1).execute()
-                if inscrip_existente.data:
-                    st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
-                else:
-                    st.success("¡Datos encontrados! Continuá completando el formulario...")
-                    st.session_state["cuil_valido"] = True
-                    st.session_state["datos_agenteform"] = resp.data[0]
-
+    # guardar en session_state para el formulario
+    st.session_state["actividad_nombre"] = fila["Actividad"]
+    st.session_state["comision_nombre"] = fila["Comisión"]
+    st.session_state["fecha_inicio"] = fila["Fecha inicio"]
+    st.session_state["fecha_fin"] = fila["Fecha fin"]
+    st.session_state["uuid"] = fila["ID interno (uuid)"]
 else:
-    st.info("Seleccioná una comisión para continuar.")
+    st.info("⚠️ Seleccioná una comisión para continuar.")
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
