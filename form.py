@@ -50,19 +50,21 @@ def obtener_comisiones():
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
+st.subheader("📦 DEBUG: Datos crudos de la vista")
+st.write(comisiones_raw)
 
-# ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
+# ========== CREAR DATAFRAME INTERMEDIO ==========
 df_temp = pd.DataFrame(comisiones_raw)
 
-# Validación y limpieza de datos críticos
+# Validación y limpieza de columnas críticas
 required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
 df_temp = df_temp.dropna(subset=required_cols)
 
-# Formateo y transformación para imitar la lógica del sistema anterior
+# Transformaciones para simular la lógica antigua
 df_temp["Actividad"] = df_temp["nombre_actividad"]
 df_temp["Comisión"] = df_temp["id_comision_sai"]
 
-# Manejo seguro de fechas
+# Manejo de fechas
 df_temp["fecha_desde"] = pd.to_datetime(df_temp["fecha_desde"], errors="coerce")
 df_temp["fecha_hasta"] = pd.to_datetime(df_temp["fecha_hasta"], errors="coerce")
 df_temp = df_temp.dropna(subset=["fecha_desde", "fecha_hasta"])
@@ -72,13 +74,16 @@ df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
 
+# DEBUG: mostrar el DataFrame intermedio
+st.subheader("📄 DEBUG: DataFrame intermedio (`df_temp`)")
+st.dataframe(df_temp)
+
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
 modalidades = sorted(df_temp["modalidad_cursada"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
-st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
 col1, col2 = st.columns(2)
 with col1:
     organismo_sel = st.selectbox("Organismo", organismos, index=0)
@@ -90,19 +95,18 @@ if organismo_sel != "Todos":
 if modalidad_sel != "Todos":
     df_temp = df_temp[df_temp["modalidad_cursada"] == modalidad_sel]
 
-# ========== ARMAR DF FINAL CON COLUMNAS VISIBLES ==========
+# ========== DF FINAL PARA LA TABLA ==========
 df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión",
     "Fecha inicio", "Fecha fin", "Créditos"
 ]]
 
-# ========== CONFIGURACIÓN AGGRID ==========
+# ========== AGGRID CONFIG ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-# Columnas visibles y ocultas
 gb.configure_column("Actividad (Comisión)", flex=50, tooltipField="Actividad (Comisión)",
                     wrapText=True, autoHeight=True, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
@@ -111,7 +115,6 @@ gb.configure_column("Fecha inicio", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, resizable=False, autoHeight=True)
 
-# Estilo visual
 custom_css = {
     ".ag-header": {
         "background-color": "#136ac1 !important",
@@ -137,6 +140,7 @@ custom_css = {
 grid_options = gb.build()
 
 # ========== MOSTRAR TABLA ==========
+st.subheader("📋 Comisiones disponibles")
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
@@ -148,28 +152,30 @@ response = AgGrid(
     width=900
 )
 
-# ========== SELECCIÓN ==========
+# ========== DEBUG SELECCIÓN ==========
 selected = response["selected_rows"] or []
-st.write("🔍 DEBUG selección:", selected)
+st.subheader("🔍 DEBUG selección:")
+st.write(selected)
 
-comision_id = None
+# ========== LÓGICA TRAS SELECCIÓN ==========
 if selected:
     fila = selected[0]
 
-    # Seguridad: verificar que los datos clave no estén vacíos
     if not fila.get("Actividad") or not fila.get("Comisión"):
         st.warning("La comisión seleccionada no tiene datos completos.")
         st.stop()
 
-    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
-    st.session_state["comision_nombre"] = fila.get("Comisión", "")
-    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
-    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
+    actividad_nombre = fila["Actividad"]
+    comision_nombre = fila["Comisión"]
+    fecha_inicio = fila["Fecha inicio"]
+    fecha_fin = fila["Fecha fin"]
 
-    actividad_nombre = st.session_state["actividad_nombre"]
-    comision_nombre = st.session_state["comision_nombre"]
-    fecha_inicio = st.session_state["fecha_inicio"]
-    fecha_fin = st.session_state["fecha_fin"]
+    st.session_state.update({
+        "actividad_nombre": actividad_nombre,
+        "comision_nombre": comision_nombre,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin
+    })
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
     if st.session_state.get("last_comision_id") != comision_id:
@@ -189,42 +195,6 @@ if selected:
         """,
         unsafe_allow_html=True
     )
-
-    col_cuil, _ = st.columns([1, 1])
-    with col_cuil:
-        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
-        cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-    if st.button("VALIDAR Y CONTINUAR", type="primary"):
-        if not validar_cuil(cuil):
-            st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
-            st.session_state["validado"] = False
-            st.session_state["cuil_valido"] = False
-        else:
-            resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-            if not resp.data:
-                st.session_state["validado"] = False
-                st.session_state["cuil_valido"] = False
-                st.error("❌ No se encontró ese usuario en la base de datos.")
-            else:
-                inscrip_existente = supabase.table("pruebainscripciones") \
-                    .select("id") \
-                    .eq("cuil_cuit", cuil) \
-                    .eq("comision", comision_nombre) \
-                    .limit(1).execute()
-                if inscrip_existente.data:
-                    st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
-                    st.session_state["validado"] = False
-                    st.session_state["cuil_valido"] = False
-                else:
-                    st.success("✅ Datos encontrados. Podés continuar.")
-                    st.session_state["validado"] = True
-                    st.session_state["cuil_valido"] = True
-                    st.session_state["cuil"] = cuil
-                    st.session_state["datos_agenteform"] = resp.data[0]
-
-elif selected and selected[0].get("Comisión") == "Sin comisiones":
-    st.warning("No hay comisiones disponibles para esta actividad.")
 
 
 
