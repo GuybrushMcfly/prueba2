@@ -5,22 +5,17 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
 import os
+import time
+from fpdf import FPDF
+from io import BytesIO
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
-
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    st.error("❌ No se encontraron las credenciales de Supabase en las variables de entorno.")
+    st.error("❌ No se encontraron las credenciales de Supabase.")
     st.stop()
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-# ========== FUNCIÓN PARA OBTENER COMISIONES ==========
-@st.cache_data(ttl=86400)
-def obtener_comisiones():
-    resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
-    return resp.data if resp.data else []
 
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
@@ -35,32 +30,35 @@ def validar_cuil(cuil: str) -> bool:
         verificador = 9
     return verificador == int(cuil[-1])
 
-# ========== DATOS ==========
+# ========== CARGAR COMISIONES ==========
+@st.cache_data(ttl=86400)
+def obtener_comisiones():
+    resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
+    return resp.data if resp.data else []
+
 comisiones_raw = obtener_comisiones()
 
+# ========== ESTRUCTURAR COMISIONES ==========
 actividades_unicas = {}
-for c in comisiones_raw:
-    if c["id_actividad"] and c["nombre_actividad"]:
-        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
-
 comisiones = defaultdict(list)
 for c in comisiones_raw:
-    comisiones[c["id_actividad"]].append({
-        "id": c["id_comision_sai"],
-        "fecha_inicio": c["fecha_desde"],
-        "fecha_fin": c["fecha_hasta"],
-        "organismo": c["organismo"],
-        "creditos": c["creditos"],
-        "modalidad": c["modalidad_cursada"],
-    })
+    id_act = c.get("id_actividad")
+    if id_act and c.get("nombre_actividad"):
+        actividades_unicas[id_act] = c["nombre_actividad"]
+        comisiones[id_act].append({
+            "id": c["id_comision_sai"],
+            "fecha_inicio": c["fecha_desde"],
+            "fecha_fin": c["fecha_hasta"],
+            "organismo": c["organismo"],
+            "creditos": c["creditos"],
+            "modalidad": c["modalidad_cursada"],
+        })
 
 def format_fecha(f):
-    if f:
-        try:
-            return pd.to_datetime(f).strftime("%d/%m/%Y")
-        except:
-            return f
-    return ""
+    try:
+        return pd.to_datetime(f).strftime("%d/%m/%Y") if f else ""
+    except:
+        return f
 
 # ========== FILTROS ==========
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
@@ -77,7 +75,7 @@ with col2:
 
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 
-# ========== ARMADO DE FILAS ==========
+# ========== ARMADO DE TABLA ==========
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     coms = comisiones.get(id_act, [])
@@ -93,29 +91,25 @@ for id_act, nombre_act in actividades_unicas.items():
                     "Fecha fin": format_fecha(c["fecha_fin"]),
                     "Créditos": c["creditos"],
                 })
-    else:
-        filas.append({
-            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",
-            "Actividad": nombre_act,
-            "Comisión": "Sin comisiones",
-            "Fecha inicio": "",
-            "Fecha fin": "",
-            "Créditos": "",
-        })
 
 df_comisiones = pd.DataFrame(filas)
 
-# ========== CONFIGURACIÓN AGGRID ==========
+# ========== AGGRID ==========
+
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+gb.configure_column("Actividad (Comisión)", minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("Actividad (Comisión)", minWidth=600, maxWidth=600)
 grid_options = gb.build()
 
 custom_css = {
-    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
+    ".ag-header": {
+        "background-color": "#136ac1 !important",
+        "color": "white !important",
+        "font-weight": "bold !important"
+    },
 }
 
 response = AgGrid(
@@ -125,14 +119,14 @@ response = AgGrid(
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
-    use_container_width=True,
+    use_container_width=True
 )
 
 selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
-# ========== MOSTRAR DETALLES DE SELECCIÓN ==========
+# ========== SELECCIÓN DE COMISIÓN ==========
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
@@ -147,11 +141,9 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     fecha_fin = st.session_state["fecha_fin"]
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
-
     if st.session_state.get("last_comision_id") != comision_id:
         st.session_state["validado"] = False
         st.session_state["cuil_valido"] = False
-        st.session_state["inscripcion_exitosa"] = False
         st.session_state["last_comision_id"] = comision_id
         for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
             st.session_state.pop(k, None)
@@ -170,6 +162,38 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     with col_cuil:
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
+
+    if st.button("VALIDAR Y CONTINUAR", type="primary"):
+        if not validar_cuil(cuil):
+            st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
+            st.session_state["validado"] = False
+            st.session_state["cuil_valido"] = False
+        else:
+            resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
+            if resp.data and len(resp.data) == 0:
+                st.session_state["validado"] = False
+                st.session_state["cuil_valido"] = False
+                st.error("❌ No se encontró ese usuario en la base de datos.")
+            else:
+                inscrip_existente = supabase.table("pruebainscripciones") \
+                    .select("id") \
+                    .eq("cuil_cuit", cuil) \
+                    .eq("comision", comision_nombre) \
+                    .limit(1).execute()
+                if inscrip_existente.data:
+                    st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
+                    st.session_state["validado"] = False
+                    st.session_state["cuil_valido"] = False
+                else:
+                    st.success("✅ Datos encontrados. Podés continuar.")
+                    st.session_state["validado"] = True
+                    st.session_state["cuil_valido"] = True
+                    st.session_state["cuil"] = cuil
+                    st.session_state["datos_agenteform"] = resp.data[0]
+
+elif selected and selected[0].get("Comisión") == "Sin comisiones":
+    st.warning("No hay comisiones disponibles para esta actividad.")
+
 
 
 
