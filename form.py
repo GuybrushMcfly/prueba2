@@ -182,6 +182,7 @@ custom_css = {
 # ======================================
 st.markdown("### 🧪 Tabla de prueba (simulada)")
 
+# Datos simulados
 df_simulada = pd.DataFrame([
     {
         "Actividad (Comisión)": "Curso de Python (CPY-001)",
@@ -201,13 +202,13 @@ df_simulada = pd.DataFrame([
     }
 ])
 
-# Configurar la tabla con checkbox
+# Configurar la tabla con checkbox y selección simple
 gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
 gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
-gb_sim.configure_grid_options(rowSelection='single')  # 🔧 Clave para que funcione con checkbox
+gb_sim.configure_grid_options(rowSelection='single')  # 🔧 Importante para que funcione con checkbox
 gb_sim.configure_pagination(paginationAutoPageSize=True)
 
-# Mostrar la tabla
+# Mostrar la tabla con update_mode=NO_UPDATE (requiere botón para leer selección)
 response_sim = AgGrid(
     df_simulada,
     gridOptions=gb_sim.build(),
@@ -215,15 +216,14 @@ response_sim = AgGrid(
     allow_unsafe_jscode=True,
     theme="balham",
     key="tabla_simulada",
-    update_mode=GridUpdateMode.SELECTION_CHANGED
+    update_mode=GridUpdateMode.NO_UPDATE  # 🔧 Esta es la clave
 )
 
-# Obtener la selección
-selected_sim = response_sim.get("selected_rows") or []
-
-# Botón para mostrar la fila seleccionada
+# Botón para leer la fila seleccionada
 if st.button("📥 Ver selección de tabla simulada"):
+    selected_sim = response_sim.get("selected_rows", [])
     st.write("🔍 Datos crudos seleccionados:", selected_sim)
+    
     if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
         fila = selected_sim[0]
         st.success("✅ Fila seleccionada en tabla simulada:")
