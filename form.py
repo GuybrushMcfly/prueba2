@@ -122,17 +122,38 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 # ========== CONFIGURACIÓN AGGRID ==========
+# ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
+gb.configure_default_column(
+    sortable=True,
+    wrapText=True,
+    autoHeight=False,
+    filter=False,
+    resizable=False
+)
+
 gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+
+# Paginación
+gb.configure_pagination(
+    paginationAutoPageSize=False,
+    paginationPageSize=15
+)
 
 # Visual principal
-gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
-                    tooltipField="Actividad (Comisión)", filter=False, resizable=False,
-                    minWidth=600, maxWidth=600)
+gb.configure_column(
+    "Actividad (Comisión)",
+    flex=50,
+    wrapText=True,
+    autoHeight=True,
+    tooltipField="Actividad (Comisión)",
+    filter=False,
+    resizable=False,
+    minWidth=600,
+    maxWidth=600
+)
 
-# Internas ocultas
+# Internas ocultas (pero accesibles en la selección)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 
@@ -141,16 +162,26 @@ gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, auto
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
 
+# Opciones generales de la grilla
 gb.configure_grid_options(
     suppressSizeToFit=False,
     suppressColumnVirtualisation=False,
     domLayout='normal'
 )
 
+# Estilo personalizado
 custom_css = {
-    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
-    ".ag-row": {"font-size": "14px !important"},
-    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-header": {
+        "background-color": "#136ac1 !important",
+        "color": "white !important",
+        "font-weight": "bold !important"
+    },
+    ".ag-row": {
+        "font-size": "14px !important"
+    },
+    ".ag-row:nth-child(even)": {
+        "background-color": "#f5f5f5 !important"
+    },
     ".ag-cell": {
         "white-space": "normal !important",
         "line-height": "1.2 !important",
@@ -160,14 +191,11 @@ custom_css = {
         "justify-content": "flex-start !important"
     }
 }
-# Internas ocultas (pero accesibles en selección)
-gb.configure_column("Actividad", field="Actividad", hide=True)
-gb.configure_column("Comisión", field="Comisión", hide=True)
 
-
-
+# Construir opciones
 grid_options = gb.build()
 
+# Render AgGrid
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
