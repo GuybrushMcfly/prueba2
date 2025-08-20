@@ -45,29 +45,29 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== DATOS DESDE SUPABASE ==========
-@st.cache_data(ttl=86400)  # 1 día
+@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta"
+        "id_comision, nombre_actividad, id_comision_sai, fecha_desde, fecha_hasta"
     ).execute()
     return resp.data if resp.data else []
 
-# --- OBTENER DATOS ---
-comisiones_raw = obtener_comisiones()
+comisiones = obtener_comisiones()
 
-# --- ARMAR DATAFRAME ---
+# Construir DataFrame con columna combinada
 filas = []
-for c in comisiones_raw:
+for c in comisiones:
     filas.append({
-        "Actividad (Comisión)": f"{c['id_comision_sai']} ({c['id_comision']})",  # visual
-        "Comisión SAI": c["id_comision_sai"],
-        "ID Comisión": c["id_comision"],
-        "Estado inscripción": c["estado_inscripcion"],
+        "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
+        "Actividad": c["nombre_actividad"],
+        "Comisión": c["id_comision_sai"],
         "Fecha inicio": pd.to_datetime(c["fecha_desde"]).strftime("%d/%m/%Y") if c["fecha_desde"] else "",
         "Fecha fin": pd.to_datetime(c["fecha_hasta"]).strftime("%d/%m/%Y") if c["fecha_hasta"] else "",
     })
 
 df_comisiones = pd.DataFrame(filas)
+st.dataframe(df_comisiones)
+
 
 # ========== TABLA AGGRID ==========
 st.markdown("### 📋 Seleccioná una comisión (vista_comisiones_abiertas)")
