@@ -41,7 +41,7 @@ def validar_cuil(cuil: str) -> bool:
         verificador = 9
     return verificador == int(cuil[-1])
 
-# ========== CARGA DE DATOS ==========
+# ========== CARGA DE DATOS DESDE VISTA ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
@@ -51,36 +51,20 @@ def obtener_comisiones():
 
 comisiones_raw = obtener_comisiones()
 
-# ========== ARMADO DE ESTRUCTURAS ==========
-actividades_unicas = {}
-for c in comisiones_raw:
-    if c["id_actividad"] and c["nombre_actividad"]:
-        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
+# ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
+df_temp = pd.DataFrame(comisiones_raw)
 
-comisiones = defaultdict(list)
-for c in comisiones_raw:
-    if c["id_actividad"]:
-        comisiones[c["id_actividad"]].append({
-            "id": c["id_comision_sai"],
-            "nombre": c["nombre_actividad"],
-            "fecha_inicio": c["fecha_desde"],
-            "fecha_fin": c["fecha_hasta"],
-            "organismo": c["organismo"],
-            "creditos": c["creditos"],
-            "modalidad": c["modalidad_cursada"],
-        })
+# Columnas necesarias con nombres compatibles
+df_temp["Actividad"] = df_temp["nombre_actividad"]
+df_temp["Comisión"] = df_temp["id_comision_sai"]
+df_temp["Fecha inicio"] = pd.to_datetime(df_temp["fecha_desde"]).dt.strftime("%d/%m/%Y")
+df_temp["Fecha fin"] = pd.to_datetime(df_temp["fecha_hasta"]).dt.strftime("%d/%m/%Y")
+df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
+df_temp.rename(columns={"creditos": "Créditos"}, inplace=True)
 
-def format_fecha(f):
-    if f:
-        try:
-            return pd.to_datetime(f).strftime("%d/%m/%Y")
-        except Exception:
-            return f
-    return ""
-
-# ========== FILTROS ==========
-organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c["modalidad_cursada"]})
+# ========== APLICAR FILTROS ==========
+organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
+modalidades = sorted(df_temp["modalidad_cursada"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
@@ -91,37 +75,17 @@ with col1:
 with col2:
     modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
-st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
+# Aplicar filtros al DataFrame
+if organismo_sel != "Todos":
+    df_temp = df_temp[df_temp["organismo"] == organismo_sel]
+if modalidad_sel != "Todos":
+    df_temp = df_temp[df_temp["modalidad_cursada"] == modalidad_sel]
 
-# ========== ARMADO DE FILAS ==========
-filas = []
-for id_act, nombre_act in actividades_unicas.items():
-    coms = comisiones.get(id_act, [])
-    if coms:
-        for c in coms:
-            if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-               (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
-                filas.append({
-                    "Actividad (Comisión)": f"{nombre_act} ({c['id']})",
-                    "Actividad": nombre_act,
-                    "Comisión": c["id"],
-                    "Fecha inicio": format_fecha(c["fecha_inicio"]),
-                    "Fecha fin": format_fecha(c["fecha_fin"]),
-                    "Créditos": c["creditos"],
-                })
-    else:
-        filas.append({
-            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",
-            "Actividad": nombre_act,
-            "Comisión": "Sin comisiones",
-            "Fecha inicio": "",
-            "Fecha fin": "",
-            "Créditos": "",
-        })
-
-df_comisiones = pd.DataFrame(filas)
-
-# ========== CONFIGURACIÓN AGGRID ==========
+# ========== ARMAR DF FINAL CON COLUMNAS VISIBLES ==========
+df_comisiones = df_temp[[
+    "Actividad (Comisión)", "Actividad", "Comisión",
+    "Fecha inicio", "Fecha fin", "Créditos"
+]]
 # ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(
