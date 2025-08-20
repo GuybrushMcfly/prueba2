@@ -119,41 +119,40 @@ selected = response.get("selected_rows") or []
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
-    comision_sai = fila["Comisión"]  # código visible al usuario
+    comision_sai = fila["Comisión"]
     fecha_ini = fila["Fecha inicio"]
     fecha_fin = fila["Fecha fin"]
-
-    # Paso clave: buscar UUID real en cursos_comisiones
-    comision_row = supabase.table("cursos_comisiones") \
-        .select("id") \
-        .eq("id_comision_sai", comision_sai) \
-        .limit(1).execute()
-
-    if not comision_row.data:
-        st.error("❌ No se encontró la comisión en la base de datos.")
-        st.stop()
-
-    comision_uuid = comision_row.data[0]["id"]
 
     st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
     st.markdown(f"**{actividad}**  \n_Comisión {comision_sai}_")
 
-    # 🔹 input siempre persistente
+    # input CUIL
     raw = st.text_input("CUIL/CUIT *", key="input_cuil")
     cuil = ''.join(filter(str.isdigit, raw))[:11]
-    st.write("🐞 DEBUG CUIL capturado:", cuil)
 
     if st.button("Validar CUIL", type="primary"):
         if not validar_cuil(cuil):
             st.error("CUIL inválido. Debe tener 11 dígitos.")
             st.stop()
 
+        # Buscar agente
         agente = supabase.table("agentes").select("*").eq("cuil", cuil).execute()
         st.write("🔎 DEBUG agente:", agente.data)
         if not agente.data:
             st.error("No se encontró ese agente.")
             st.stop()
 
+        # Buscar UUID real de la comisión
+        comision_row = supabase.table("cursos_comisiones") \
+            .select("id") \
+            .eq("id_comision_sai", comision_sai) \
+            .limit(1).execute()
+        if not comision_row.data:
+            st.error("❌ No se encontró la comisión en la base de datos.")
+            st.stop()
+        comision_uuid = comision_row.data[0]["id"]
+
+        # Chequear duplicado en cursos_inscripciones
         ya = supabase.table("cursos_inscripciones") \
             .select("id") \
             .eq("cuil", cuil) \
@@ -164,9 +163,9 @@ if selected:
             st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
 
+        # Si pasa, mostramos form
         datos = agente.data[0]
         st.success("CUIL válido. Completá tus datos para confirmar inscripción.")
-        st.session_state["cuil"] = cuil
 
         col1, col2 = st.columns(2)
         apellido = col1.text_input("Apellido", value=datos.get("apellido", ""))
@@ -177,7 +176,7 @@ if selected:
         if st.button("Confirmar inscripción"):
             nueva = {
                 "cuil": cuil,
-                "comision_id": comision_uuid,  # usamos UUID real
+                "comision_id": comision_uuid,  # UUID real
                 "fecha_inscripcion": datetime.today().strftime("%Y-%m-%d"),
                 "email": correo,
                 "tramo": tramo,
@@ -192,7 +191,7 @@ if selected:
             elif res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
-                # -------- Constancia PDF --------
+                # Constancia PDF
                 def generar_constancia_pdf(nombre_completo, actividad, comision, fecha_inicio, fecha_fin):
                     pdf = FPDF()
                     pdf.add_page()
