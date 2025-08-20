@@ -7,197 +7,36 @@ from collections import defaultdict
 import os
 
 import webbrowser
-
 import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
+import streamlit.components.v1 as components
 
-# ========== DATOS DE PRUEBA ==========
+# ========== DATOS ==========
 data = pd.DataFrame([
-    {
-        "ID": 1,
-        "Actividad": "Curso de Python",
-        "URL": "https://python.org",
-        "Categoría": "Programación"
-    },
-    {
-        "ID": 2,
-        "Actividad": "Curso de Streamlit", 
-        "URL": "https://streamlit.io",
-        "Categoría": "Web Apps"
-    },
-    {
-        "ID": 3,
-        "Actividad": "Documentación Pandas",
-        "URL": "https://pandas.pydata.org",
-        "Categoría": "Data Science"
-    },
-    {
-        "ID": 4,
-        "Actividad": "Tutorial NumPy",
-        "URL": "https://numpy.org",
-        "Categoría": "Matemáticas"
-    }
+    {"Actividad": "Curso Python", "Enlace": "https://python.org"},
+    {"Actividad": "Curso Streamlit", "Enlace": "https://streamlit.io"},
+    {"Actividad": "Curso Pandas", "Enlace": "https://pandas.pydata.org"}
 ])
 
-st.title("🚫 REALIDAD: Links en AgGrid NO funcionan")
-st.error("❌ **Confirmado:** AgGrid no puede ejecutar JavaScript interactivo dentro de las celdas por seguridad de Streamlit")
-
-st.divider()
-
-# ========== SOLUCIÓN 1: STREAMLIT DATAFRAME (LINKS REALES) ==========
-st.header("✅ SOLUCIÓN 1: st.dataframe() con links REALES")
-
-# Crear columna con links clickeables
-data_links = data.copy()
-data_links['🔗 Link Clickeable'] = data_links.apply(
-    lambda row: f"[🌐 {row['Actividad']}]({row['URL']})", axis=1
-)
-
-st.dataframe(
-    data_links[['Actividad', 'Categoría', '🔗 Link Clickeable']],
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "🔗 Link Clickeable": st.column_config.LinkColumn("Enlaces")
-    }
-)
-
-st.success("✅ **ESTOS LINKS SÍ FUNCIONAN** - Click en cualquier link azul")
-
-st.divider()
-
-# ========== SOLUCIÓN 2: AGGRID + BOTONES EXTERNOS ==========
-st.header("✅ SOLUCIÓN 2: AgGrid para seleccionar + Botones para abrir")
-
-st.info("👆 **Instrucciones:** Selecciona filas con los checkboxes, luego usa los botones de abajo")
-
+# ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(data)
-gb.configure_selection("multiple", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=True)
+gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_default_column(resizable=True, wrapText=True)
-
-# Mostrar URL como texto (no clickeable, pero visible)
-gb.configure_column("URL", header_name="🌐 Enlace", width=250)
-
 grid_options = gb.build()
 
-response = AgGrid(
-    data,
-    gridOptions=grid_options,
-    theme="alpine",
-    height=300,
-    use_container_width=True
-)
+# ========== MOSTRAR AGGRID ==========
+st.subheader("🧪 Seleccioná un curso para abrir el enlace")
+response = AgGrid(data, gridOptions=grid_options, theme="alpine", height=250, use_container_width=True)
 
-# BOTONES PARA FILAS SELECCIONADAS
-selected_rows = response.get("selected_rows", [])
+# ========== BOTÓN QUE ABRE LINK ==========
+selected = response["selected_rows"]
+if selected:
+    curso = selected[0]
+    st.success(f"Curso seleccionado: {curso['Actividad']}")
+    if st.button("🌐 Abrir link"):
+        components.html(f'<script>window.open("{curso["Enlace"]}", "_blank")</script>', height=0)
 
-if selected_rows:
-    st.write(f"**📋 {len(selected_rows)} elemento(s) seleccionado(s):**")
-    
-    # Crear botones para cada fila seleccionada
-    cols = st.columns(min(len(selected_rows), 3))
-    
-    for i, row in enumerate(selected_rows):
-        with cols[i % len(cols)]:
-            # Botón con JavaScript para abrir en nueva pestaña
-            if st.button(f"🌐 {row['Actividad']}", key=f"open_btn_{i}"):
-                js_code = f'''
-                <script>
-                    window.open("{row['URL']}", "_blank");
-                </script>
-                '''
-                st.components.v1.html(js_code, height=0)
-                st.success(f"🔗 Abriendo: {row['Actividad']}")
-    
-    # Botón para abrir TODOS los seleccionados
-    if len(selected_rows) > 1:
-        st.divider()
-        if st.button("🚀 Abrir TODOS los seleccionados", type="primary"):
-            for row in selected_rows:
-                js_code = f'<script>window.open("{row["URL"]}", "_blank");</script>'
-                st.components.v1.html(js_code, height=0)
-            st.balloons()
-            st.success(f"🎉 Abriendo {len(selected_rows)} enlaces!")
-
-else:
-    st.warning("⚠️ Selecciona una o más filas usando los checkboxes para ver los botones")
-
-st.divider()
-
-# ========== SOLUCIÓN 3: MENÚ LATERAL ==========
-st.header("✅ SOLUCIÓN 3: Navegación en sidebar")
-
-st.sidebar.header("🌐 Enlaces rápidos")
-st.sidebar.write("Click para abrir:")
-
-for _, row in data.iterrows():
-    if st.sidebar.button(f"🔗 {row['Actividad']}", key=f"sidebar_{row['ID']}"):
-        js_code = f'<script>window.open("{row["URL"]}", "_blank");</script>'
-        st.components.v1.html(js_code, height=0)
-        st.sidebar.success(f"✅ Abriendo {row['Actividad']}")
-
-# También agregar links directos en sidebar
-st.sidebar.divider()
-st.sidebar.write("**Enlaces directos:**")
-for _, row in data.iterrows():
-    st.sidebar.markdown(f"[🌐 {row['Actividad']}]({row['URL']})")
-
-st.divider()
-
-# ========== SOLUCIÓN 4: EXPANDABLE SECTIONS ==========
-st.header("✅ SOLUCIÓN 4: Secciones expandibles con links")
-
-for _, row in data.iterrows():
-    with st.expander(f"📁 {row['Actividad']} - {row['Categoría']}"):
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            st.write(f"**URL:** {row['URL']}")
-            st.markdown(f"[🌐 Abrir {row['Actividad']}]({row['URL']})")
-        
-        with col2:
-            if st.button("🔗 Nueva pestaña", key=f"expand_btn_{row['ID']}"):
-                js_code = f'<script>window.open("{row["URL"]}", "_blank");</script>'
-                st.components.v1.html(js_code, height=0)
-
-st.divider()
-
-# ========== INFORMACIÓN TÉCNICA ==========
-with st.expander("🔧 **¿Por qué AgGrid no puede tener links clickeables?**"):
-    st.markdown("""
-    ### 🚫 **Limitaciones técnicas:**
-    
-    1. **Seguridad de Streamlit:** No permite JavaScript arbitrario en componentes
-    2. **Sandbox de AgGrid:** Los elementos HTML se renderizan como texto
-    3. **CSP (Content Security Policy):** Bloquea scripts inline por seguridad
-    
-    ### ✅ **Alternativas que SÍ funcionan:**
-    
-    - **`st.dataframe()`** con `column_config.LinkColumn()` 
-    - **AgGrid para mostrar + botones externos** para acciones
-    - **Links en markdown** fuera de la tabla
-    - **JavaScript con `st.components.v1.html()`** para nueva pestaña
-    
-    ### 💡 **Recomendación:**
-    Si necesitas links clickeables, usa `st.dataframe()`. Si necesitas features avanzadas de AgGrid, úsalo para mostrar datos y botones externos para acciones.
-    """)
-
-# ========== DEMO FINAL ==========
-st.header("🎯 **DEMO: Mejor práctica combinada**")
-
-st.write("**Opción A:** Tabla simple con links reales")
-if st.button("📊 Mostrar tabla con links"):
-    st.dataframe(
-        data_links[['🔗 Link Clickeable', 'Categoría']],
-        use_container_width=True
-    )
-
-st.write("**Opción B:** Tabla avanzada + botones")
-if st.button("📋 Mostrar tabla interactiva"):
-    st.write("👆 Usa la tabla AgGrid de arriba (Solución 2)")
-    st.info("Selecciona filas → aparecerán botones para abrir links")
 
 
 
