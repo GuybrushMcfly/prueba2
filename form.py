@@ -233,6 +233,7 @@ else:
     st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
 
 
+
 # === Mostrar tabla con selección ===
 response = AgGrid(
     df_comisiones,
