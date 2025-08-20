@@ -160,6 +160,11 @@ custom_css = {
         "justify-content": "flex-start !important"
     }
 }
+# Internas ocultas (pero accesibles en selección)
+gb.configure_column("Actividad", field="Actividad", hide=True)
+gb.configure_column("Comisión", field="Comisión", hide=True)
+
+
 
 grid_options = gb.build()
 
