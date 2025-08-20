@@ -161,6 +161,11 @@ response = AgGrid(
 
 selected = response.get("selected_rows", [])
 
+# ========== DEBUG VISUAL ==========
+if selected:
+    st.subheader("🪪 Datos seleccionados (debug)")
+    st.json(selected[0])  # Mostramos el dict completo
+
 if selected:
     fila = selected[0]
     st.markdown(f"**Actividad seleccionada:** {fila['Actividad']} ({fila['Comisión']})")
