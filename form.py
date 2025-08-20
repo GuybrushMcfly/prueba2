@@ -55,6 +55,7 @@ for c in comisiones_raw:
         actividades_unicas[act_id] = act_nombre
         comisiones[act_id].append(c)
 
+# FILTROS
 organismos = sorted({c.get("organismo") for c in comisiones_raw if c.get("organismo")})
 modalidades = sorted({c.get("modalidad") for c in comisiones_raw if c.get("modalidad")})
 organismos.insert(0, "Todos")
@@ -74,27 +75,38 @@ for id_act, nombre_act in actividades_unicas.items():
                 "Actividad (Comisión)": f"{nombre_act} ({c.get('id_comision_sai')})",
                 "Actividad": nombre_act,
                 "Comisión": c.get("id_comision_sai"),
+                "comision_id": c.get("id"),  # 👈 uuid real de la comisión
                 "Fecha inicio": format_fecha(c.get("fecha_desde")),
                 "Fecha fin": format_fecha(c.get("fecha_hasta")),
                 "Créditos": c.get("creditos", ""),
-                "comision_id": c.get("id")  # UUID real de la comisión
             })
 
 df_comisiones = pd.DataFrame(filas).reset_index(drop=True)
+
 if df_comisiones.empty:
     st.warning("No hay comisiones disponibles con los filtros seleccionados.")
     st.stop()
 
 # ========== AGGRID ==========
-gb = GridOptionsBuilder.from_dataframe(df_comisiones.drop(columns=["comision_id"]))
+gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
 pre_sel = [0] if len(df_comisiones) > 0 else []
 gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+
+gb.configure_column("Actividad (Comisión)", flex=60, minWidth=600)
+gb.configure_column("Actividad", hide=True)
+gb.configure_column("Comisión", hide=True)
+gb.configure_column("comision_id", hide=True)
+gb.configure_column("Fecha inicio", flex=15)
+gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=10)
+
 grid_options = gb.build()
 
+st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
-    df_comisiones.drop(columns=["comision_id"]),
+    df_comisiones,
     gridOptions=grid_options,
     height=420,
     theme="balham",
@@ -104,22 +116,41 @@ response = AgGrid(
     key="grid_comisiones_view"
 )
 
-# ======== SELECCIÓN ========
-selected = response.get("selected_rows") or []
+# ======== EXTRACTOR ROBUSTO ========
+def extraer_seleccion(resp) -> list:
+    if not isinstance(resp, dict):
+        return []
+    return (
+        resp.get("selected_rows")
+        or resp.get("selected_data")
+        or (resp.get("grid_response") or {}).get("selected_rows")
+        or (resp.get("grid_response") or {}).get("selected_data")
+        or []
+    )
+
+selected = extraer_seleccion(response)
+if selected:
+    st.session_state["fila_sel"] = selected[0]
+elif "fila_sel" in st.session_state:
+    selected = [st.session_state["fila_sel"]]
+
+# ========== SI HAY SELECCIÓN ==========
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
     comision = fila["Comisión"]
+    comision_id = fila["comision_id"]  # uuid real
     fecha_ini = fila["Fecha inicio"]
     fecha_fin = fila["Fecha fin"]
-    comision_id = df_comisiones.loc[df_comisiones["Comisión"] == comision, "comision_id"].values[0]
 
-    st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
-    st.markdown(f"**{actividad}**  \n_Comisión {comision}_")
+    st.markdown("### 📝 Comisión seleccionada")
+    st.markdown(f"**{actividad}**  \n_Comisión {comision}_  \n_{fecha_ini} → {fecha_fin}_")
 
+    # 👇 SIEMPRE SE MUESTRA EL CAMPO CUIL
     raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
     cuil = ''.join(filter(str.isdigit, raw))[:11]
 
+    # 🔘 Botón para validar CUIL
     if st.button("Validar CUIL", type="primary"):
         if not validar_cuil(cuil):
             st.error("CUIL inválido. Debe tener 11 dígitos.")
@@ -137,8 +168,9 @@ if selected:
             .eq("comision_id", comision_id) \
             .limit(1).execute()
         st.write("🔎 DEBUG ya_inscripto:", ya.data)
+
         if ya.data:
-            st.warning("Ya estás inscripto en esta comisión.")
+            st.warning("⚠️ Ya estás inscripto en esta comisión.")
             st.stop()
 
         datos = agente.data[0]
@@ -156,20 +188,17 @@ if selected:
                 "cuil": cuil,
                 "comision_id": comision_id,
                 "fecha_inscripcion": datetime.now().strftime("%Y-%m-%d"),
-                "estado_inscripcion": "Preinscripto",
                 "apellido": apellido,
                 "nombre": nombre,
                 "email": correo,
                 "tramo": tramo,
             }
+
             st.write("📦 DEBUG INSERT cursos_inscripciones:", nueva)
-
             res = supabase.table("cursos_inscripciones").insert(nueva).execute()
-            st.write("📬 DEBUG respuesta insert:", {"data": res.data, "error": getattr(res, "error", None)})
+            st.write("📬 DEBUG respuesta insert:", res)
 
-            if getattr(res, "error", None):
-                st.error(f"❌ Error al registrar la inscripción: {res.error}")
-            elif res.data:
+            if res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
                 # -------- Constancia PDF --------
