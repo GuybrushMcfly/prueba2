@@ -221,7 +221,7 @@ response_sim = AgGrid(
 selected_sim = response_sim.get("selected_rows", [])
 
 # --- Mostrar selección debajo ---
-if selected_sim:
+if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
     fila_sim = selected_sim[0]
     st.success("✅ Selección actual:")
     st.write(f"**Actividad:** {fila_sim['Actividad']}")
@@ -230,6 +230,7 @@ if selected_sim:
     st.write(f"**Créditos:** {fila_sim['Créditos']}")
 else:
     st.info("Seleccioná una fila en la tabla de prueba para ver los datos.")
+
 
 
 # === Mostrar tabla con selección ===
