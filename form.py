@@ -166,11 +166,14 @@ response = AgGrid(
 st.divider()
 st.header("🆕 ALTERNATIVA: Tabla HTML con links clickeables")
 
-# Función para crear la tabla HTML con funcionalidad de click
+# Función para crear la tabla HTML con funcionalidad de selección
 def create_html_table(df, df_original):
-    html = """
+    # Generar un ID único para esta sesión
+    table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
+    
+    html = f"""
     <style>
-        .courses-table {
+        .courses-table {{
             border-collapse: collapse;
             margin: 25px auto;
             font-size: 14px;
@@ -180,62 +183,62 @@ def create_html_table(df, df_original):
             border-radius: 8px;
             overflow: hidden;
             background-color: white;
-        }
-        .courses-table thead tr {
+        }}
+        .courses-table thead tr {{
             background-color: #136ac1;
             color: #ffffff;
             text-align: left;
             font-weight: bold;
-        }
+        }}
         .courses-table th,
-        .courses-table td {
+        .courses-table td {{
             padding: 16px 12px;
             border-bottom: 1px solid #e0e0e0;
             vertical-align: middle;
-        }
-        .courses-table th {
+        }}
+        .courses-table th {{
             font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        .courses-table tbody tr {
+        }}
+        .courses-table tbody tr {{
             background-color: #ffffff;
             transition: all 0.3s ease;
             cursor: pointer;
-        }
-        .courses-table tbody tr:nth-of-type(even) {
+        }}
+        .courses-table tbody tr:nth-of-type(even) {{
             background-color: #f5f5f5;
-        }
-        .courses-table tbody tr:hover {
+        }}
+        .courses-table tbody tr:hover {{
             background-color: #e3f2fd;
             transform: translateY(-2px);
             box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
-        }
-        .courses-table tbody tr.selected {
+        }}
+        .courses-table tbody tr.selected {{
             background-color: #bbdefb !important;
             border-left: 4px solid #136ac1;
-        }
-        .courses-table td:first-child {
+        }}
+        .courses-table td:first-child {{
             font-weight: 500;
             color: #2c3e50;
             max-width: 400px;
             line-height: 1.4;
-        }
-        .courses-table .fecha-col {
+        }}
+        .courses-table .fecha-col {{
             text-align: center;
             font-weight: 500;
             color: #34495e;
-        }
-        .courses-table .creditos-col {
+        }}
+        .courses-table .creditos-col {{
             text-align: center;
             font-weight: bold;
             color: #27ae60;
-        }
-        .courses-table .acceso-col {
+        }}
+        .courses-table .acceso-col {{
             text-align: center;
-        }
-        .courses-table a {
+        }}
+        .courses-table a {{
             color: #136ac1;
             text-decoration: none;
             font-weight: bold;
@@ -244,86 +247,57 @@ def create_html_table(df, df_original):
             border-radius: 5px;
             transition: all 0.3s ease;
             display: inline-block;
-        }
-        .courses-table a:hover {
+        }}
+        .courses-table a:hover {{
             background-color: #136ac1;
             color: white;
             transform: scale(1.05);
-        }
-        .no-link {
+        }}
+        .no-link {{
             color: #bdc3c7;
             font-style: italic;
-        }
-        .detail-panel {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px solid #136ac1;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .detail-panel h3 {
-            color: #136ac1;
-            margin-top: 0;
-            border-bottom: 2px solid #136ac1;
-            padding-bottom: 10px;
-        }
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .detail-item {
-            background: white;
-            padding: 12px;
+        }}
+        .click-hint {{
+            background-color: #e8f5e8;
+            border: 1px solid #4CAF50;
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .detail-label {
-            font-weight: bold;
-            color: #136ac1;
-            margin-bottom: 5px;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .detail-value {
-            color: #2c3e50;
+            padding: 10px;
+            margin: 10px 0;
             font-size: 14px;
-            word-wrap: break-word;
-        }
-        @media (max-width: 768px) {
-            .courses-table {
+            color: #2e7d32;
+            text-align: center;
+        }}
+        @media (max-width: 768px) {{
+            .courses-table {{
                 font-size: 12px;
                 min-width: auto;
-            }
+            }}
             .courses-table th,
-            .courses-table td {
+            .courses-table td {{
                 padding: 12px 8px;
-            }
-            .detail-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+            }}
+        }}
     </style>
     
+    <div class="click-hint">
+        💡 <strong>Tip:</strong> Hacé click en cualquier fila para seleccionar esa actividad automáticamente en el dropdown de abajo
+    </div>
+    
     <div style="overflow-x: auto;">
-        <table class="courses-table" id="coursesTable">
+        <table class="courses-table" id="{table_id}">
             <thead>
                 <tr>
-                    <th style="width: 45%;">Actividad (Comisión) <small style="font-weight: normal; font-size: 11px;">(Click para ver detalles)</small></th>
+                    <th style="width: 45%;">Actividad (Comisión)</th>
                     <th style="width: 15%;">Fecha Inicio</th>
                     <th style="width: 15%;">Fecha Fin</th>
                     <th style="width: 10%;">Créditos</th>
                     <th style="width: 15%;">Acceso</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody>"""
     """
     
-    # Generar filas con datos completos embebidos
+    # Generar filas con funcionalidad de selección
     if len(df) == 0:
         html += """
                 <tr>
@@ -337,23 +311,13 @@ def create_html_table(df, df_original):
             # Buscar los datos completos del DataFrame original
             original_row = df_original[df_original["Actividad (Comisión)"] == row["Actividad (Comisión)"]].iloc[0]
             
-            # Crear atributos de datos para JavaScript
-            data_attrs = f'''
-                data-id-comision="{original_row.get('id_comision_sai', 'N/A')}"
-                data-id-actividad="{original_row.get('id_actividad', 'N/A')}"
-                data-organismo="{original_row.get('organismo', 'N/A')}"
-                data-modalidad="{original_row.get('modalidad_cursada', 'N/A')}"
-                data-nombre-actividad="{original_row.get('nombre_actividad', 'N/A')}"
-                data-fecha-desde="{original_row.get('fecha_desde', 'N/A')}"
-                data-fecha-hasta="{original_row.get('fecha_hasta', 'N/A')}"
-                data-creditos="{original_row.get('creditos', 'N/A')}"
-                data-link-externo="{original_row.get('link_externo', 'N/A')}"
-            '''
+            # Crear onclick para seleccionar actividad
+            onclick_code = f"selectActivity('{row['Actividad']}', this)"
             
-            html += f'<tr onclick="showDetails(this)" {data_attrs}>'
+            html += f'<tr onclick="{onclick_code}" style="cursor: pointer;">'
             
             # Actividad (Comisión)
-            html += f'<td title="{row["Actividad (Comisión)"]}">{row["Actividad (Comisión)"]}</td>'
+            html += f'<td title="Click para seleccionar esta actividad">{row["Actividad (Comisión)"]}</td>'
             
             # Fecha inicio
             html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
@@ -372,74 +336,74 @@ def create_html_table(df, df_original):
             
             html += "</tr>"
     
-    html += """
+    html += f"""
             </tbody>
         </table>
-    </div>
-    
-    <!-- Panel de detalles -->
-    <div id="detailPanel" class="detail-panel">
-        <h3>📋 Detalles del Curso Seleccionado</h3>
-        <div class="detail-grid" id="detailGrid">
-            <!-- Los detalles se cargan aquí con JavaScript -->
-        </div>
     </div>
     
     <script>
         let selectedRow = null;
         
-        function showDetails(row) {
+        function selectActivity(activityName, row) {{
             // Remover selección anterior
-            if (selectedRow) {
+            if (selectedRow) {{
                 selectedRow.classList.remove('selected');
-            }
+            }}
             
             // Marcar nueva selección
             selectedRow = row;
             row.classList.add('selected');
             
-            // Obtener datos de la fila
-            const details = {
-                'ID Comisión SAI': row.dataset.idComision,
-                'ID Actividad': row.dataset.idActividad,
-                'Nombre Actividad': row.dataset.nombreActividad,
-                'Organismo': row.dataset.organismo,
-                'Modalidad': row.dataset.modalidad,
-                'Fecha Desde': row.dataset.fechaDesde,
-                'Fecha Hasta': row.dataset.fechaHasta,
-                'Créditos': row.dataset.creditos,
-                'Link Externo': row.dataset.linkExterno
-            };
+            // Guardar la actividad seleccionada en sessionStorage para Streamlit
+            sessionStorage.setItem('selected_activity', activityName);
             
-            // Generar HTML para los detalles
-            let detailsHTML = '';
-            for (const [label, value] of Object.entries(details)) {
-                let displayValue = value === 'N/A' || value === 'nan' || value === 'None' || !value ? 
-                    '<span style="color: #bdc3c7; font-style: italic;">No disponible</span>' : value;
-                
-                // Hacer clickeable el link externo si existe
-                if (label === 'Link Externo' && value && value !== 'N/A' && value !== 'nan' && value !== 'None') {
-                    displayValue = `<a href="${value}" target="_blank" style="color: #136ac1; text-decoration: underline;">${value}</a>`;
-                }
-                
-                detailsHTML += `
-                    <div class="detail-item">
-                        <div class="detail-label">${label}</div>
-                        <div class="detail-value">${displayValue}</div>
-                    </div>
-                `;
-            }
+            // Enviar evento personalizado para notificar a Streamlit
+            window.parent.postMessage({{
+                type: 'streamlit:setQueryParam',
+                selected_activity: activityName
+            }}, '*');
             
-            // Mostrar el panel y actualizar contenido
-            document.getElementById('detailGrid').innerHTML = detailsHTML;
-            document.getElementById('detailPanel').style.display = 'block';
+            // Mostrar feedback visual
+            const feedback = document.createElement('div');
+            feedback.innerHTML = `
+                <div style="
+                    position: fixed; 
+                    top: 20px; 
+                    right: 20px; 
+                    background: #4CAF50; 
+                    color: white; 
+                    padding: 15px 20px; 
+                    border-radius: 8px; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+                    z-index: 1000; 
+                    font-family: 'Segoe UI', sans-serif;
+                    font-size: 14px;
+                    animation: slideIn 0.3s ease-out;
+                ">
+                    ✅ Actividad seleccionada: ${{activityName}}
+                    <br><small>Revisá el dropdown de abajo</small>
+                </div>
+            `;
             
-            // Scroll suave al panel de detalles
-            document.getElementById('detailPanel').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'nearest' 
-            });
-        }
+            document.body.appendChild(feedback);
+            
+            // Remover el feedback después de 3 segundos
+            setTimeout(() => {{
+                if (feedback.parentNode) {{
+                    feedback.parentNode.removeChild(feedback);
+                }}
+            }}, 3000);
+        }}
+        
+        // Agregar animación CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {{
+                from {{ transform: translateX(100%); opacity: 0; }}
+                to {{ transform: translateX(0); opacity: 1; }}
+            }}
+        `;
+        document.head.appendChild(style);
     </script>
     """
     
@@ -462,68 +426,15 @@ with col3:
     creditos_total = df_comisiones["Créditos"].sum()
     st.metric("⭐ Créditos totales", creditos_total)
 
-
-
-
-# ========== NUEVO: DROPDOWN DE ACTIVIDADES ==========
-actividades_unicas = df_comisiones["Actividad"].unique().tolist()
-actividades_unicas.insert(0, "-Seleccioná actividad-")
-
-actividad_dropdown = st.selectbox("🔽 Elegí una actividad", actividades_unicas)
-
-if actividad_dropdown != "-Seleccioná actividad-":
-    # Buscar una comisión asociada a esa actividad
-    fila = df_comisiones[df_comisiones["Actividad"] == actividad_dropdown].iloc[0]
-
-    st.session_state["actividad_nombre"] = fila["Actividad"]
-    st.session_state["comision_nombre"] = fila["Comisión"]
-    st.session_state["fecha_inicio"] = fila["Fecha inicio"]
-    st.session_state["fecha_fin"] = fila["Fecha fin"]
-
-    st.markdown(
-        f"""<h4>2. Validá tu CUIL para inscribirte en</h4>
-        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
-        {actividad_dropdown} ({fila["Comisión"]})
-        </span>""",
-        unsafe_allow_html=True
-    )
-
-    col_cuil, _ = st.columns([1, 1])
-    with col_cuil:
-        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
-        cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-        if st.button("VALIDAR Y CONTINUAR", type="primary"):
-            if not validar_cuil(cuil):
-                st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
-                st.session_state["validado"] = False
-                st.session_state["cuil_valido"] = False
-            else:
-                resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-                if not resp.data:
-                    st.session_state["validado"] = False
-                    st.session_state["cuil_valido"] = False
-                    st.error("❌ No se encontró ese usuario en la base de datos.")
-                else:
-                    inscrip_existente = supabase.table("pruebainscripciones") \
-                        .select("id") \
-                        .eq("cuil_cuit", cuil) \
-                        .eq("comision", fila["Comisión"]) \
-                        .limit(1).execute()
-
-                    if inscrip_existente.data:
-                        st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
-                        st.session_state["validado"] = False
-                        st.session_state["cuil_valido"] = False
-                    else:
-                        st.success("✅ Datos encontrados. Podés continuar.")
-                        st.session_state["validado"] = True
-                        st.session_state["cuil_valido"] = True
-                        st.session_state["cuil"] = cuil
-                        st.session_state["datos_agenteform"] = resp.data[0]
-
-
-
+if len(df_comisiones) > 0:
+    st.success("✅ **Ventajas de esta tabla HTML:**")
+    st.write("• 🌐 **Links realmente clickeables** (no como en AgGrid)")
+    st.write("• 🎨 **Diseño profesional** con hover effects y animaciones")
+    st.write("• 📱 **Responsive** - se adapta a móviles")
+    st.write("• ⚡ **Más rápida** - no carga librerías pesadas")
+    st.write("• 🔧 **Fácil de personalizar** - CSS completamente editable")
+else:
+    st.info("ℹ️ Ajusta los filtros para ver los cursos disponibles")
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if (
