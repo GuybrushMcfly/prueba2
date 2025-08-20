@@ -12,15 +12,17 @@ from st_aggrid.shared import JsCode
 data = pd.DataFrame([
     {
         "Actividad": "Curso A",
-        "Link sin texto": '<a href="https://example.com/a" target="_blank">https://example.com/a</a>',
+        "HTML directo": '<a href="https://example.com/a" target="_blank">https://example.com/a</a>',
         "Anchor básico": "https://example.com/a",
-        "Texto amigable": "https://example.com/a",  # Solo la URL, luego lo transformamos en link
+        "Texto amigable": "https://example.com/a",
+        "Botón JS": "https://example.com/a"
     },
     {
         "Actividad": "Curso B",
-        "Link sin texto": '<a href="https://example.com/b" target="_blank">https://example.com/b</a>',
+        "HTML directo": '<a href="https://example.com/b" target="_blank">https://example.com/b</a>',
         "Anchor básico": "https://example.com/b",
         "Texto amigable": "https://example.com/b",
+        "Botón JS": "https://example.com/b"
     }
 ])
 
@@ -29,35 +31,52 @@ gb = GridOptionsBuilder.from_dataframe(data)
 gb.configure_pagination()
 gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
 
-# 1️⃣ Link ya formateado como HTML completo (a veces no se renderiza en Linux)
-gb.configure_column("Link sin texto", header_name="HTML directo", cellRenderer="'' + params.value + ''")
-
-# 2️⃣ Link como string, renderizado con JsCode y anchor text básico ("LINK")
+# 1️⃣ HTML directo (probablemente NO funcione bien)
 gb.configure_column(
-    "Anchor básico",
-    header_name="Anchor con JsCode",
-    cellRenderer="""
-    (params) => {
-        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
-    }
-    """
+    "HTML directo",
+    header_name="HTML directo",
+    cellRenderer="'' + params.value + ''"
 )
 
-# 3️⃣ Link como string, pero texto personalizado como "Ver actividad"
+# 2️⃣ Anchor básico: muestra "LINK"
+gb.configure_column(
+    "Anchor básico",
+    header_name="Anchor LINK",
+    cellRenderer=JsCode("""
+    function(params) {
+        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
+    }
+    """)
+)
+
+# 3️⃣ Anchor con texto amigable
 gb.configure_column(
     "Texto amigable",
-    header_name="Ver más",
-    cellRenderer="""
-    (params) => {
+    header_name="🌐 Ver actividad",
+    cellRenderer=JsCode("""
+    function(params) {
         return params.value ? `<a href="${params.value}" target="_blank">🌐 Ver actividad</a>` : "";
     }
-    """
+    """)
+)
+
+# 4️⃣ Botón visual con onclick JS (sin interacción Python)
+gb.configure_column(
+    "Botón JS",
+    header_name="Botón",
+    cellRenderer=JsCode("""
+    function(params) {
+        return params.value
+            ? `<button onclick="window.open('${params.value}', '_blank')">🔗 Abrir</button>`
+            : "";
+    }
+    """)
 )
 
 grid_options = gb.build()
 
 # ========== MOSTRAR AGGRID ==========
-st.subheader("🧪 Prueba de anchor text (links clickeables)")
+st.subheader("🧪 Prueba de links clickeables en AgGrid")
 AgGrid(
     data,
     gridOptions=grid_options,
@@ -66,7 +85,6 @@ AgGrid(
     height=300,
     use_container_width=True
 )
-
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
