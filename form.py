@@ -6,23 +6,21 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 
-from st_aggrid.shared import JsCode
-
 # ========== DATOS DE PRUEBA ==========
 data = pd.DataFrame([
     {
         "Actividad": "Curso A",
-        "HTML directo": '<a href="https://example.com/a" target="_blank">https://example.com/a</a>',
-        "Anchor básico": "https://example.com/a",
-        "Texto amigable": "https://example.com/a",
-        "Botón JS": "https://example.com/a"
+        "Abrir desde selección": "https://example.com/a",
+        "Link Markdown": "https://example.com/a",
+        "Texto combinado": "Curso A|https://example.com/a",
+        "Abrir con botón": "https://example.com/a",
     },
     {
         "Actividad": "Curso B",
-        "HTML directo": '<a href="https://example.com/b" target="_blank">https://example.com/b</a>',
-        "Anchor básico": "https://example.com/b",
-        "Texto amigable": "https://example.com/b",
-        "Botón JS": "https://example.com/b"
+        "Abrir desde selección": "https://example.com/b",
+        "Link Markdown": "https://example.com/b",
+        "Texto combinado": "Curso B|https://example.com/b",
+        "Abrir con botón": "https://example.com/b",
     }
 ])
 
@@ -31,45 +29,47 @@ gb = GridOptionsBuilder.from_dataframe(data)
 gb.configure_pagination()
 gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
 
-# 1️⃣ HTML directo (probablemente NO funcione bien)
-gb.configure_column(
-    "HTML directo",
-    header_name="HTML directo",
-    cellRenderer="'' + params.value + ''"
-)
+# 1️⃣ Link oculto, se usa luego del checkbox
+gb.configure_column("Abrir desde selección", header_name="Seleccionable", hide=True)
 
-# 2️⃣ Anchor básico: muestra "LINK"
+# 2️⃣ Link como texto Markdown (se mostrará en Streamlit debajo si se selecciona)
 gb.configure_column(
-    "Anchor básico",
-    header_name="Anchor LINK",
+    "Link Markdown",
+    header_name="🔗 Markdown",
     cellRenderer=JsCode("""
-    function(params) {
-        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
-    }
+        function(params) {
+            return `[LINK](${params.value})`;
+        }
     """)
 )
 
-# 3️⃣ Anchor con texto amigable
+# 3️⃣ Texto + Link (dividido por "|")
 gb.configure_column(
-    "Texto amigable",
-    header_name="🌐 Ver actividad",
+    "Texto combinado",
+    header_name="Texto+Link",
     cellRenderer=JsCode("""
-    function(params) {
-        return params.value ? `<a href="${params.value}" target="_blank">🌐 Ver actividad</a>` : "";
-    }
+        function(params) {
+            const partes = params.value.split("|");
+            if (partes.length === 2) {
+                const texto = partes[0];
+                const url = partes[1];
+                return `<a href="${url}" target="_blank">${texto}</a>`;
+            }
+            return "";
+        }
     """)
 )
 
-# 4️⃣ Botón visual con onclick JS (sin interacción Python)
+# 4️⃣ Botón visual (no interactivo con Python pero sí funcional en JS)
 gb.configure_column(
-    "Botón JS",
-    header_name="Botón",
+    "Abrir con botón",
+    header_name="Botón JS",
     cellRenderer=JsCode("""
-    function(params) {
-        return params.value
-            ? `<button onclick="window.open('${params.value}', '_blank')">🔗 Abrir</button>`
-            : "";
-    }
+        function(params) {
+            return params.value 
+                ? `<button onclick="window.open('${params.value}', '_blank')">🌐 Ir</button>` 
+                : "";
+        }
     """)
 )
 
@@ -77,7 +77,7 @@ grid_options = gb.build()
 
 # ========== MOSTRAR AGGRID ==========
 st.subheader("🧪 Prueba de links clickeables en AgGrid")
-AgGrid(
+response = AgGrid(
     data,
     gridOptions=grid_options,
     allow_unsafe_jscode=True,
@@ -85,6 +85,19 @@ AgGrid(
     height=300,
     use_container_width=True
 )
+
+# ========== BOTÓN REAL SI SELECCIONÁS ==========
+selected = response["selected_rows"]
+if selected:
+    url = selected[0].get("Abrir desde selección")
+    if url:
+        st.markdown(f"### 🌐 Enlace seleccionado: [{url}]({url})")
+        if st.button("🔗 Abrir en nueva pestaña"):
+            st.components.v1.html(f"<script>window.open('{url}', '_blank')</script>", height=0)
+
+
+
+
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
