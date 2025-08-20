@@ -166,15 +166,22 @@ response = AgGrid(
     df_comisiones,
     gridOptions=gb.build(),
     height=500,
-    allow_unsafe_jscode=True,  # IMPORTANTE para permitir el JavaScript personalizado
+    allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
     use_container_width=True,
-    update_mode='SELECTION_CHANGED',  # Forzar actualización cuando cambia la selección
-    key='comisiones_grid'  # Key única para el componente
+    update_mode='SELECTION_CHANGED',
+    key='comisiones_grid'
 )
 
+# DEBUG ADICIONAL - Ver toda la respuesta de AgGrid
+st.write("🔍 Debug - Respuesta completa de AgGrid:")
+st.write(response)
+
 selected = response.get("selected_rows", [])
+
+# DEBUG - Ver qué hay en selected
+st.write("🔍 Debug - selected rows:", selected)
 
 # ========== DEBUG VISUAL ==========
 if selected:
