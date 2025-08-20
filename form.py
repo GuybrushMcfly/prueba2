@@ -44,7 +44,7 @@ def validar_cuil(cuil: str) -> bool:
     return verificador == int(cuil[-1])
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
-#@st.cache_data(ttl=86400)
+@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
         "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, creditos, modalidad_cursada, link_externo"
@@ -166,14 +166,14 @@ response = AgGrid(
 st.divider()
 st.header("🆕 ALTERNATIVA: Tabla HTML con links clickeables")
 
-# Función para crear la tabla HTML
-def create_html_table(df):
+# Función para crear la tabla HTML con funcionalidad de click
+def create_html_table(df, df_original):
     html = """
     <style>
         .courses-table {
             border-collapse: collapse;
             margin: 25px auto;
-            font-size: 12px;
+            font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-width: 900px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -202,6 +202,7 @@ def create_html_table(df):
         .courses-table tbody tr {
             background-color: #ffffff;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .courses-table tbody tr:nth-of-type(even) {
             background-color: #f5f5f5;
@@ -210,6 +211,10 @@ def create_html_table(df):
             background-color: #e3f2fd;
             transform: translateY(-2px);
             box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+        }
+        .courses-table tbody tr.selected {
+            background-color: #bbdefb !important;
+            border-left: 4px solid #136ac1;
         }
         .courses-table td:first-child {
             font-weight: 500;
@@ -249,6 +254,46 @@ def create_html_table(df):
             color: #bdc3c7;
             font-style: italic;
         }
+        .detail-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #136ac1;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .detail-panel h3 {
+            color: #136ac1;
+            margin-top: 0;
+            border-bottom: 2px solid #136ac1;
+            padding-bottom: 10px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .detail-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #136ac1;
+            margin-bottom: 5px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-value {
+            color: #2c3e50;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
         @media (max-width: 768px) {
             .courses-table {
                 font-size: 12px;
@@ -258,14 +303,17 @@ def create_html_table(df):
             .courses-table td {
                 padding: 12px 8px;
             }
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     
     <div style="overflow-x: auto;">
-        <table class="courses-table">
+        <table class="courses-table" id="coursesTable">
             <thead>
                 <tr>
-                    <th style="width: 45%;">Actividad (Comisión)</th>
+                    <th style="width: 45%;">Actividad (Comisión) <small style="font-weight: normal; font-size: 11px;">(Click para ver detalles)</small></th>
                     <th style="width: 15%;">Fecha Inicio</th>
                     <th style="width: 15%;">Fecha Fin</th>
                     <th style="width: 10%;">Créditos</th>
@@ -275,7 +323,7 @@ def create_html_table(df):
             <tbody>
     """
     
-    # Generar filas
+    # Generar filas con datos completos embebidos
     if len(df) == 0:
         html += """
                 <tr>
@@ -285,8 +333,24 @@ def create_html_table(df):
                 </tr>
         """
     else:
-        for _, row in df.iterrows():
-            html += "<tr>"
+        for idx, row in df.iterrows():
+            # Buscar los datos completos del DataFrame original
+            original_row = df_original[df_original["Actividad (Comisión)"] == row["Actividad (Comisión)"]].iloc[0]
+            
+            # Crear atributos de datos para JavaScript
+            data_attrs = f'''
+                data-id-comision="{original_row.get('id_comision_sai', 'N/A')}"
+                data-id-actividad="{original_row.get('id_actividad', 'N/A')}"
+                data-organismo="{original_row.get('organismo', 'N/A')}"
+                data-modalidad="{original_row.get('modalidad_cursada', 'N/A')}"
+                data-nombre-actividad="{original_row.get('nombre_actividad', 'N/A')}"
+                data-fecha-desde="{original_row.get('fecha_desde', 'N/A')}"
+                data-fecha-hasta="{original_row.get('fecha_hasta', 'N/A')}"
+                data-creditos="{original_row.get('creditos', 'N/A')}"
+                data-link-externo="{original_row.get('link_externo', 'N/A')}"
+            '''
+            
+            html += f'<tr onclick="showDetails(this)" {data_attrs}>'
             
             # Actividad (Comisión)
             html += f'<td title="{row["Actividad (Comisión)"]}">{row["Actividad (Comisión)"]}</td>'
@@ -300,9 +364,9 @@ def create_html_table(df):
             # Créditos
             html += f'<td class="creditos-col">{row["Créditos"]}</td>'
             
-            # Acceso (Ver más)
+            # Acceso (Ver más) - prevenir propagación del click
             if pd.notna(row["Ver más"]) and row["Ver más"]:
-                html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank">🌐 Acceder</a></td>'
+                html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
             else:
                 html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
             
@@ -312,12 +376,77 @@ def create_html_table(df):
             </tbody>
         </table>
     </div>
+    
+    <!-- Panel de detalles -->
+    <div id="detailPanel" class="detail-panel">
+        <h3>📋 Detalles del Curso Seleccionado</h3>
+        <div class="detail-grid" id="detailGrid">
+            <!-- Los detalles se cargan aquí con JavaScript -->
+        </div>
+    </div>
+    
+    <script>
+        let selectedRow = null;
+        
+        function showDetails(row) {
+            // Remover selección anterior
+            if (selectedRow) {
+                selectedRow.classList.remove('selected');
+            }
+            
+            // Marcar nueva selección
+            selectedRow = row;
+            row.classList.add('selected');
+            
+            // Obtener datos de la fila
+            const details = {
+                'ID Comisión SAI': row.dataset.idComision,
+                'ID Actividad': row.dataset.idActividad,
+                'Nombre Actividad': row.dataset.nombreActividad,
+                'Organismo': row.dataset.organismo,
+                'Modalidad': row.dataset.modalidad,
+                'Fecha Desde': row.dataset.fechaDesde,
+                'Fecha Hasta': row.dataset.fechaHasta,
+                'Créditos': row.dataset.creditos,
+                'Link Externo': row.dataset.linkExterno
+            };
+            
+            // Generar HTML para los detalles
+            let detailsHTML = '';
+            for (const [label, value] of Object.entries(details)) {
+                let displayValue = value === 'N/A' || value === 'nan' || value === 'None' || !value ? 
+                    '<span style="color: #bdc3c7; font-style: italic;">No disponible</span>' : value;
+                
+                // Hacer clickeable el link externo si existe
+                if (label === 'Link Externo' && value && value !== 'N/A' && value !== 'nan' && value !== 'None') {
+                    displayValue = `<a href="${value}" target="_blank" style="color: #136ac1; text-decoration: underline;">${value}</a>`;
+                }
+                
+                detailsHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">${label}</div>
+                        <div class="detail-value">${displayValue}</div>
+                    </div>
+                `;
+            }
+            
+            // Mostrar el panel y actualizar contenido
+            document.getElementById('detailGrid').innerHTML = detailsHTML;
+            document.getElementById('detailPanel').style.display = 'block';
+            
+            // Scroll suave al panel de detalles
+            document.getElementById('detailPanel').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest' 
+            });
+        }
+    </script>
     """
     
     return html
 
-# Mostrar la tabla HTML
-st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+# Mostrar la tabla HTML con funcionalidad de detalles
+st.markdown(create_html_table(df_comisiones, df_temp), unsafe_allow_html=True)
 
 # Mostrar información adicional
 col1, col2, col3 = st.columns(3)
@@ -333,15 +462,6 @@ with col3:
     creditos_total = df_comisiones["Créditos"].sum()
     st.metric("⭐ Créditos totales", creditos_total)
 
-if len(df_comisiones) > 0:
-    st.success("✅ **Ventajas de esta tabla HTML:**")
-    st.write("• 🌐 **Links realmente clickeables** (no como en AgGrid)")
-    st.write("• 🎨 **Diseño profesional** con hover effects y animaciones")
-    st.write("• 📱 **Responsive** - se adapta a móviles")
-    st.write("• ⚡ **Más rápida** - no carga librerías pesadas")
-    st.write("• 🔧 **Fácil de personalizar** - CSS completamente editable")
-else:
-    st.info("ℹ️ Ajusta los filtros para ver los cursos disponibles")
 
 
 
