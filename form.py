@@ -6,132 +6,302 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 import streamlit.components.v1 as components
+import plotly.graph_objects as go
 
-import streamlit as st
-import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder
-
-# ========== DATOS DE PRUEBA ==========
+# Datos de ejemplo
 data = pd.DataFrame([
-    {
-        "ID": 1,
-        "Actividad": "Curso Python",
-        "URL": "https://python.org",
-        "Categoría": "Programación"
-    },
-    {
-        "ID": 2,
-        "Actividad": "Curso Streamlit", 
-        "URL": "https://streamlit.io",
-        "Categoría": "Web Apps"
-    },
-    {
-        "ID": 3,
-        "Actividad": "Curso Pandas",
-        "URL": "https://pandas.pydata.org",
-        "Categoría": "Data Science"
-    }
+    {"Actividad": "Curso de Python Avanzado para Data Science", "URL": "https://python.org", "Categoría": "Programación", "Duración": "40 horas"},
+    {"Actividad": "Desarrollo de Aplicaciones Web con Streamlit", "URL": "https://streamlit.io", "Categoría": "Web Development", "Duración": "25 horas"},
+    {"Actividad": "Análisis de Datos con Pandas y NumPy", "URL": "https://pandas.pydata.org", "Categoría": "Data Science", "Duración": "30 horas"},
+    {"Actividad": "Machine Learning con Scikit-learn", "URL": "https://scikit-learn.org", "Categoría": "AI/ML", "Duración": "50 horas"}
 ])
 
-# ========== SOLUCIÓN 2: AGGRID + BOTONES EXTERNOS ==========
-st.header("✅ SOLUCIÓN 2: AgGrid para seleccionar + Botones para abrir")
+st.title("🎨 Alternativas a AgGrid para tablas estilizadas")
 
-st.info("👆 **Instrucciones:** Selecciona filas con los checkboxes, luego usa los botones de abajo")
+# ========== OPCIÓN 1: ST.DATAFRAME CON COLUMN_CONFIG (RECOMENDADA) ==========
+st.header("✅ 1. st.dataframe() con column_config (Streamlit >= 1.23)")
 
-gb = GridOptionsBuilder.from_dataframe(data)
-gb.configure_selection("multiple", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=True)
-gb.configure_default_column(resizable=True, wrapText=True)
+st.info("🆕 **La mejor alternativa:** Funciona con links clickeables + personalización avanzada")
 
-# Mostrar URL como texto (no clickeable, pero visible)
-gb.configure_column("URL", header_name="🌐 Enlace", width=250)
+# Crear DataFrame con links
+data_with_links = data.copy()
 
-grid_options = gb.build()
-
-response = AgGrid(
+styled_df = st.dataframe(
     data,
-    gridOptions=grid_options,
-    theme="alpine",
-    height=300,
-    use_container_width=True
+    column_config={
+        "Actividad": st.column_config.TextColumn(
+            "📚 Curso",
+            help="Nombre del curso disponible",
+            max_chars=100,
+            width="large"
+        ),
+        "URL": st.column_config.LinkColumn(
+            "🔗 Enlace",
+            help="Haz click para abrir el curso",
+            display_text=r"https://.*\.(.+)",  # Regex para mostrar solo el dominio
+            width="medium"
+        ),
+        "Categoría": st.column_config.SelectboxColumn(
+            "🏷️ Categoría",
+            help="Tipo de curso",
+            width="medium",
+            options=["Programación", "Web Development", "Data Science", "AI/ML"]
+        ),
+        "Duración": st.column_config.ProgressColumn(
+            "⏱️ Horas",
+            help="Duración del curso",
+            min_value=0,
+            max_value=60,
+            format="%d hrs",
+            width="small"
+        ),
+    },
+    height=300,  # ✅ ALTURA PERSONALIZABLE
+    use_container_width=True,
+    hide_index=True
 )
 
-# BOTONES PARA FILAS SELECCIONADAS
-selected_rows = response.get("selected_rows", [])
-
-if selected_rows:
-    st.write(f"**📋 {len(selected_rows)} elemento(s) seleccionado(s):**")
-    
-    # Crear botones para cada fila seleccionada
-    cols = st.columns(min(len(selected_rows), 3))
-    
-    for i, row in enumerate(selected_rows):
-        with cols[i % len(cols)]:
-            # Botón con JavaScript para abrir en nueva pestaña
-            if st.button(f"🌐 {row['Actividad']}", key=f"open_btn_{i}"):
-                js_code = f'''
-                <script>
-                    window.open("{row['URL']}", "_blank");
-                </script>
-                '''
-                st.components.v1.html(js_code, height=0)
-                st.success(f"🔗 Abriendo: {row['Actividad']}")
-    
-    # Botón para abrir TODOS los seleccionados
-    if len(selected_rows) > 1:
-        st.divider()
-        if st.button("🚀 Abrir TODOS los seleccionados", type="primary"):
-            for row in selected_rows:
-                js_code = f'<script>window.open("{row["URL"]}", "_blank");</script>'
-                st.components.v1.html(js_code, height=0)
-            st.balloons()
-            st.success(f"🎉 Abriendo {len(selected_rows)} enlaces!")
-
-else:
-    st.warning("⚠️ Selecciona una o más filas usando los checkboxes para ver los botones")
+st.success("✅ **Ventajas:** Links clickeables + altura personalizable + buen styling")
 
 st.divider()
 
-# ========== TU CÓDIGO ORIGINAL ADAPTADO ==========
-st.header("🔧 Tu código original con el fix")
+# ========== OPCIÓN 2: PANDAS STYLER CON CSS ==========
+st.header("🎨 2. Pandas Styler + CSS personalizado")
 
-# Usar exactamente tus datos
-data_original = pd.DataFrame([
-    {"Actividad": "Curso Python", "Enlace": "https://python.org"},
-    {"Actividad": "Curso Streamlit", "Enlace": "https://streamlit.io"},
-    {"Actividad": "Curso Pandas", "Enlace": "https://pandas.pydata.org"}
+# Función de styling personalizado
+def style_dataframe(df):
+    return df.style \
+        .set_properties(**{
+            'background-color': '#f0f2f6',
+            'color': '#262730',
+            'border': '1px solid #e6e9ef',
+            'padding': '12px',  # ✅ ALTURA DE CELDA
+            'text-align': 'left'
+        }) \
+        .set_table_styles([
+            # Estilo del header
+            {
+                'selector': 'th',
+                'props': [
+                    ('background-color', '#4CAF50'),
+                    ('color', 'white'),
+                    ('font-weight', 'bold'),
+                    ('padding', '15px'),  # ✅ ALTURA DEL HEADER
+                    ('border', '1px solid #45a049')
+                ]
+            },
+            # Hover effect
+            {
+                'selector': 'tbody tr:hover',
+                'props': [('background-color', '#e8f5e8')]
+            },
+            # Styling general de la tabla
+            {
+                'selector': '',
+                'props': [
+                    ('border-collapse', 'collapse'),
+                    ('margin', '25px 0'),
+                    ('font-size', '16px'),  # ✅ TAMAÑO DE FUENTE
+                    ('min-width', '400px')
+                ]
+            }
+        ])
+
+# Aplicar styling
+styled_data = style_dataframe(data)
+st.dataframe(styled_data, height=300, use_container_width=True)
+
+# Código CSS personalizado adicional
+st.markdown("""
+<style>
+    /* CSS personalizado para tablas */
+    .stDataFrame > div {
+        border: 2px solid #4CAF50;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.success("✅ **Ventajas:** CSS completamente personalizable + altura ajustable")
+
+st.divider()
+
+# ========== OPCIÓN 3: PLOTLY TABLE (MUY ESTILIZADO) ==========
+st.header("🚀 3. Plotly Table (súper profesional)")
+
+fig = go.Figure(data=[go.Table(
+    columnwidth=[300, 150, 120, 100],  # ✅ ANCHO DE COLUMNAS
+    header=dict(
+        values=list(data.columns),
+        fill_color='#4CAF50',
+        font=dict(color='white', size=16),
+        align='center',
+        height=50  # ✅ ALTURA DEL HEADER
+    ),
+    cells=dict(
+        values=[data[col] for col in data.columns],
+        fill_color=[['#f0f2f6', '#ffffff'] * len(data)],  # Colores alternados
+        font=dict(color='#262730', size=14),
+        align='left',
+        height=40  # ✅ ALTURA DE FILAS
+    )
+)])
+
+fig.update_layout(
+    title="📊 Tabla con Plotly - Súper Profesional",
+    title_x=0.5,
+    height=400,  # ✅ ALTURA TOTAL
+    margin=dict(l=0, r=0, t=50, b=0)
+)
+
+st.plotly_chart(fig, use_container_width=True)
+st.warning("⚠️ **Limitación:** Los links no son clickeables en Plotly Table")
+
+st.divider()
+
+# ========== OPCIÓN 4: HTML PERSONALIZADO ==========
+st.header("🛠️ 4. HTML + CSS personalizado completo")
+
+# Generar HTML personalizado
+def create_html_table(df):
+    html = """
+    <style>
+        .custom-table {
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 16px;
+            font-family: 'Arial', sans-serif;
+            min-width: 400px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .custom-table thead tr {
+            background-color: #4CAF50;
+            color: #ffffff;
+            text-align: left;
+        }
+        .custom-table th,
+        .custom-table td {
+            padding: 18px 15px;  /* ✅ ALTURA PERSONALIZABLE */
+            border-bottom: 1px solid #dddddd;
+        }
+        .custom-table tbody tr {
+            background-color: #f3f3f3;
+        }
+        .custom-table tbody tr:nth-of-type(even) {
+            background-color: #f9f9f9;
+        }
+        .custom-table tbody tr:hover {
+            background-color: #e8f5e8;
+            transform: scale(1.02);
+            transition: all 0.3s ease;
+        }
+        .custom-table a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .custom-table a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    
+    <table class="custom-table">
+        <thead>
+            <tr>
+    """
+    
+    # Headers
+    for col in df.columns:
+        if col == "URL":
+            html += f"<th>🔗 Enlace</th>"
+        else:
+            html += f"<th>{col}</th>"
+    html += "</tr></thead><tbody>"
+    
+    # Rows
+    for _, row in df.iterrows():
+        html += "<tr>"
+        for col in df.columns:
+            if col == "URL":
+                html += f'<td><a href="{row[col]}" target="_blank">🌐 Abrir</a></td>'
+            else:
+                html += f"<td>{row[col]}</td>"
+        html += "</tr>"
+    
+    html += "</tbody></table>"
+    return html
+
+st.markdown(create_html_table(data), unsafe_allow_html=True)
+st.success("✅ **Ventajas:** Control total sobre CSS + links clickeables + animaciones")
+
+st.divider()
+
+# ========== OPCIÓN 5: STREAMLIT ELEMENTS (EXPERIMENTAL) ==========
+st.header("🧪 5. Alternativa: streamlit-elements")
+
+st.code("""
+# Instalar: pip install streamlit-elements
+from streamlit_elements import elements, mui
+
+with elements("demo"):
+    mui.DataGrid(
+        rows=data.to_dict('records'),
+        columns=[
+            {"field": "Actividad", "headerName": "Curso", "width": 300},
+            {"field": "URL", "headerName": "Enlace", "width": 200},
+        ],
+        autoHeight=True,
+        rowHeight=60,  # ✅ ALTURA PERSONALIZABLE
+    )
+""")
+
+st.info("📦 **Requiere instalación:** `pip install streamlit-elements`")
+
+# ========== COMPARACIÓN FINAL ==========
+st.header("📊 Comparación de alternativas")
+
+comparison_data = pd.DataFrame([
+    {"Método": "st.dataframe + column_config", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "⚠️ Limitado", "Facilidad": "🟢 Fácil"},
+    {"Método": "Pandas Styler", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"},
+    {"Método": "Plotly Table", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"},
+    {"Método": "HTML personalizado", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🔴 Difícil"},
+    {"Método": "streamlit-elements", "Links clickeables": "✅", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🔴 Difícil"},
+    {"Método": "AgGrid", "Links clickeables": "❌", "Altura personalizable": "✅", "CSS avanzado": "✅", "Facilidad": "🟡 Medio"}
 ])
 
-# Tu configuración original + el fix
-gb2 = GridOptionsBuilder.from_dataframe(data_original)
-gb2.configure_selection("multiple", use_checkbox=True)
-gb2.configure_column("Enlace", header_name="🌐 Link", width=300)
-grid_options2 = gb2.build()
+st.dataframe(
+    comparison_data,
+    column_config={
+        "Links clickeables": st.column_config.TextColumn("🔗 Links"),
+        "CSS avanzado": st.column_config.TextColumn("🎨 CSS"),
+        "Facilidad": st.column_config.TextColumn("⚙️ Facilidad")
+    },
+    hide_index=True,
+    use_container_width=True
+)
 
-# Tu AgGrid original
-st.subheader("🧪 Seleccioná cursos para abrir el link")
-response2 = AgGrid(data_original, gridOptions=grid_options2, theme="balham", height=300, use_container_width=True)
+# ========== RECOMENDACIÓN ==========
+st.success("""
+## 🎯 **Mi recomendación para tu caso:**
 
-# Tu lógica de botones CON EL FIX
-selected = response2.get("selected_rows", [])
-if selected:
-    st.success(f"Seleccionaste {len(selected)} curso(s)")
-    for i, row in enumerate(selected):
-        if st.button(f"🌐 Abrir {row['Actividad']}", key=f"boton_{i}"):
-            # EL FIX: st.components.v1.html en lugar de components.html
-            st.components.v1.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
-    if len(selected) > 1:
-        st.markdown("---")
-        if st.button("🚀 Abrir todos"):
-            for row in selected:
-                # EL FIX: st.components.v1.html en lugar de components.html
-                st.components.v1.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
-            st.balloons()
-else:
-    st.info("Seleccioná al menos un curso para ver los botones.")
+### 🥇 **1ra opción: st.dataframe() + column_config**
+- ✅ Links clickeables nativos
+- ✅ Altura personalizable
+- ✅ Styling decente
+- ✅ Fácil de implementar
+- ✅ Mantenible
 
-st.info("🔍 **¿Cuál es la diferencia?** Solo cambié `components.html()` por `st.components.v1.html()`")
+### 🥈 **2da opción: HTML personalizado**
+- ✅ Control total sobre diseño
+- ✅ Links clickeables
+- ✅ CSS completamente personalizable
+- ⚠️ Más trabajo de desarrollo
 
+**¿Por qué no seguir con AgGrid?** Si ya tienes el flujo funcionando con AgGrid + botones externos, puede que sea mejor dejarlo así. Pero si quieres links directos en las celdas, `st.dataframe()` es tu mejor opción.
+""")
 
 
 
