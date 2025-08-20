@@ -81,13 +81,13 @@ organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
-# ========== FILTROS: ORGANISMO Y MODALIDAD ==========
+# ========== FILTROS ==========
+
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
 modalidades = sorted(df_temp["modalidad_cursada"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
-st.markdown("### 🔍 Filtrar por organismo y modalidad")
 col1, col2 = st.columns(2)
 with col1:
     organismo_sel = st.selectbox("Organismo", organismos, index=0)
@@ -100,14 +100,11 @@ if organismo_sel != "Todos":
 if modalidad_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["modalidad_cursada"] == modalidad_sel]
 
-# ========== PREPARAR DF PARA TABLA HTML ==========
+# ========== TABLA HTML ==========
+
 df_comisiones = df_filtrado[[
     "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos", "Ver más"
 ]].reset_index(drop=True)
-
-# ========== TABLA HTML + CSS PERSONALIZADO ==========
-st.divider()
-st.header("🆕 Tabla HTML con links clickeables")
 
 def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
@@ -115,7 +112,7 @@ def create_html_table(df):
     <style>
         .courses-table {{
             border-collapse: collapse;
-            margin: 25px auto;
+            margin: 10px auto 30px auto;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-width: 900px;
@@ -131,26 +128,12 @@ def create_html_table(df):
             font-weight: bold;
         }}
         .courses-table th, .courses-table td {{
-            padding: 16px 12px;
+            padding: 14px 12px;
             border-bottom: 1px solid #e0e0e0;
-            vertical-align: middle;
-        }}
-        .courses-table tbody tr {{
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }}
-        .courses-table tbody tr:nth-child(even) {{
-            background-color: #f5f5f5;
         }}
         .courses-table tbody tr:hover {{
             background-color: #e3f2fd;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
-        }}
-        .courses-table td:first-child {{
-            font-weight: 500;
-            color: #2c3e50;
-            max-width: 400px;
+            cursor: pointer;
         }}
         .courses-table .fecha-col, .courses-table .creditos-col, .courses-table .acceso-col {{
             text-align: center;
@@ -168,23 +151,12 @@ def create_html_table(df):
         .courses-table a:hover {{
             background-color: #136ac1;
             color: white;
-            transform: scale(1.05);
         }}
-        .click-hint {{
-            background-color: #e8f5e8;
-            border: 1px solid #4CAF50;
-            border-radius: 6px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #2e7d32;
-            text-align: center;
+        .no-link {{
+            color: #bdc3c7;
+            font-style: italic;
         }}
     </style>
-
-    <div class="click-hint">
-        💡 <strong>Tip:</strong> Hacé click en cualquier fila para ver los detalles de esa actividad más abajo
-    </div>
 
     <div style="overflow-x: auto;">
         <table class="courses-table" id="{table_id}">
@@ -199,10 +171,11 @@ def create_html_table(df):
             </thead>
             <tbody>
     """
+
     if df.empty:
         html += """
             <tr><td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
-                No se encontraron cursos con los filtros seleccionados
+                No se encontraron cursos
             </td></tr>
         """
     else:
@@ -242,25 +215,23 @@ def create_html_table(df):
     """
     return html
 
-# Renderizar tabla HTML
+# Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
-# ========== DETALLES DE ACTIVIDAD AL HACER CLICK ==========
+# ========== DETALLES DE LA ACTIVIDAD SELECCIONADA ==========
 selected_activity = st.query_params.get("selected_activity", None)
 
 if selected_activity and selected_activity in df_temp["Actividad (Comisión)"].values:
     seleccion = df_temp[df_temp["Actividad (Comisión)"] == selected_activity].iloc[0]
-    st.markdown("### 🎯 Actividad seleccionada")
     st.markdown(f"""
-        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px;">
+        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
             <strong>📘 Actividad:</strong> {seleccion["Actividad"]}<br>
             <strong>🆔 Comisión:</strong> {seleccion["Comisión"]}<br>
             <strong>📅 Fechas:</strong> {seleccion["Fecha inicio"]} al {seleccion["Fecha fin"]}<br>
             <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}
         </div>
     """, unsafe_allow_html=True)
-else:
-    st.info("📌 Hacé clic en una fila para ver los detalles de la actividad.")
+
 
 
 
