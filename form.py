@@ -56,15 +56,12 @@ st.write("🧪 DEBUG: Datos crudos desde vista_comisiones_abiertas", comisiones_
 df_temp = pd.DataFrame(comisiones_raw)
 st.write("🧪 DEBUG: DataFrame intermedio df_temp antes de limpiar", df_temp)
 
-# Validación y limpieza de datos críticos
 required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
 df_temp = df_temp.dropna(subset=required_cols)
 
-# Formateo y transformación para imitar la lógica del sistema anterior
 df_temp["Actividad"] = df_temp["nombre_actividad"]
 df_temp["Comisión"] = df_temp["id_comision_sai"]
 
-# Manejo seguro de fechas
 df_temp["fecha_desde"] = pd.to_datetime(df_temp["fecha_desde"], errors="coerce")
 df_temp["fecha_hasta"] = pd.to_datetime(df_temp["fecha_hasta"], errors="coerce")
 df_temp = df_temp.dropna(subset=["fecha_desde", "fecha_hasta"])
@@ -106,7 +103,6 @@ gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filt
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-# Columnas visibles y ocultas
 gb.configure_column("Actividad (Comisión)", flex=50, tooltipField="Actividad (Comisión)", wrapText=True, autoHeight=True, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
@@ -114,7 +110,6 @@ gb.configure_column("Fecha inicio", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, resizable=False, autoHeight=True)
 
-# Estilo visual
 custom_css = {
     ".ag-header": {
         "background-color": "#136ac1 !important",
@@ -159,6 +154,15 @@ comision_id = None
 if selected:
     fila = selected[0]
 
+    # 🔍 Nuevo debug de fila completa
+    st.write("🧪 DEBUG: Fila seleccionada completa:", fila)
+
+    # Verificación de claves esenciales
+    st.write("🧪 DEBUG: Contenido clave - Actividad:", fila.get("Actividad"))
+    st.write("🧪 DEBUG: Contenido clave - Comisión:", fila.get("Comisión"))
+    st.write("🧪 DEBUG: Contenido clave - Fecha inicio:", fila.get("Fecha inicio"))
+    st.write("🧪 DEBUG: Contenido clave - Fecha fin:", fila.get("Fecha fin"))
+
     if not fila.get("Actividad") or not fila.get("Comisión"):
         st.warning("La comisión seleccionada no tiene datos completos.")
         st.stop()
@@ -173,7 +177,7 @@ if selected:
     fecha_fin = st.session_state["fecha_fin"]
 
     comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
-    st.write("🔍 DEBUG comisión_id:", comision_id)
+    st.write("🆔 DEBUG: comision_id generado:", comision_id)
 
     if st.session_state.get("last_comision_id") != comision_id:
         st.session_state["validado"] = False
@@ -228,7 +232,6 @@ if selected:
 
 elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
-
 
 
 
