@@ -202,7 +202,10 @@ df_simulada = pd.DataFrame([
 ])
 
 gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
-gb_sim.configure_selection(selection_mode="single", use_checkbox=False)
+gb_sim.configure_selection(
+    selection_mode="single", 
+    use_checkbox=True  # ✅ Selección con checkbox
+)
 gb_sim.configure_pagination(paginationAutoPageSize=True)
 
 response_sim = AgGrid(
@@ -226,6 +229,7 @@ if st.button("📥 Ver selección de tabla simulada"):
         st.write(f"**Créditos:** {fila['Créditos']}")
     else:
         st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
+
 
 
 
