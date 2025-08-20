@@ -1,27 +1,18 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, datetime
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder
 from supabase import create_client, Client
 from collections import defaultdict
-import time
-from fpdf import FPDF
-from io import BytesIO
 import os
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
-
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     st.error("❌ No se encontraron las credenciales de Supabase en las variables de entorno.")
     st.stop()
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-@st.cache_resource
-def init_connection():
-    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
@@ -48,82 +39,150 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ========== DATOS DESDE SUPABASE (usando la vista) ==========
-# ========== DATOS DESDE SUPABASE ==========
+# ========== OBTENER DATOS ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
-    resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, nombre_actividad, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta"
+    resp = supabase.table("comisiones").select(
+        "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
     ).execute()
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
 
-# --- Armado de filas ---
-filas = []
+actividades_unicas = {}
 for c in comisiones_raw:
-    filas.append({
-        "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
-        "Actividad": c["nombre_actividad"],
-        "Comisión": c["id_comision_sai"],
-        "Fecha inicio": pd.to_datetime(c["fecha_desde"]).strftime("%d/%m/%Y") if c["fecha_desde"] else "",
-        "Fecha fin": pd.to_datetime(c["fecha_hasta"]).strftime("%d/%m/%Y") if c["fecha_hasta"] else "",
-        "Estado inscripción": c["estado_inscripcion"],
-        "ID interno (uuid)": c["id_comision"],  # 👈 lo ocultamos en tabla pero lo mostramos abajo
-    })
+    if c["id_actividad"] and c["nombre_actividad"]:
+        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
+
+comisiones = defaultdict(list)
+for c in comisiones_raw:
+    if c["id_actividad"]:
+        comisiones[c["id_actividad"]].append({
+            "id": c["id_comision"],
+            "nombre": c["nombre_actividad"],
+            "fecha_inicio": c["fecha_inicio"],
+            "fecha_fin": c["fecha_fin"],
+            "organismo": c["organismo"],
+            "creditos": c["creditos"],
+            "modalidad": c["modalidad"],
+        })
+
+def format_fecha(f):
+    if f:
+        try:
+            return pd.to_datetime(f).strftime("%d/%m/%Y")
+        except Exception:
+            return f
+    return ""
+
+# ========== FILTROS ==========
+organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
+modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
+organismos.insert(0, "Todos")
+modalidades.insert(0, "Todos")
+
+st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
+col1, col2 = st.columns(2)
+with col1:
+    organismo_sel = st.selectbox("Organismo", organismos, index=0)
+with col2:
+    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
+
+# ========== ARMAR TABLA ==========
+filas = []
+for id_act, nombre_act in actividades_unicas.items():
+    coms = comisiones.get(id_act, [])
+    for c in coms:
+        if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
+           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+            filas.append({
+                "Actividad (Comisión)": f"{nombre_act} ({c['id']})",
+                "Actividad": nombre_act,
+                "Comisión": c["id"],
+                "Fecha inicio": format_fecha(c["fecha_inicio"]),
+                "Fecha fin": format_fecha(c["fecha_fin"]),
+                "Créditos": c["creditos"]
+            })
 
 df_comisiones = pd.DataFrame(filas)
 
-# ========== TABLA AGGRID ==========
-st.markdown("#### 1. Seleccioná una comisión en la tabla:")
-
+# ========== AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, resizable=True)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
-
-# Ajustes de columnas
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("ID interno (uuid)", hide=True)
-gb.configure_column("Actividad (Comisión)", flex=40, minWidth=400)
-gb.configure_column("Estado inscripción", flex=20)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=10)
 
-# Paginación
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
-
-grid_options = gb.build()
+custom_css = {
+    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
+    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-cell": {
+        "white-space": "normal !important",
+        "line-height": "1.2 !important",
+        "display": "flex !important",
+        "align-items": "center !important"
+    }
+}
 
 response = AgGrid(
     df_comisiones,
-    gridOptions=grid_options,
-    height=400,
+    gridOptions=gb.build(),
+    height=500,
     theme="balham",
     allow_unsafe_jscode=True,
-    update_mode="SELECTION_CHANGED",
+    custom_css=custom_css,
+    use_container_width=False,
+    width=900
 )
 
-selected = response.get("selected_rows", [])
+selected = response["selected_rows"]
+if isinstance(selected, pd.DataFrame):
+    selected = selected.to_dict("records")
 
-# ========== MOSTRAR SELECCIÓN ==========
-if selected and isinstance(selected[0], dict):
+# ========== MOSTRAR DETALLES DE SELECCIÓN ==========
+comision_id = None
+if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
-    st.success("✅ Comisión seleccionada:")
-    st.write(f"**Actividad:** {fila['Actividad']}")
-    st.write(f"**Comisión SAI:** {fila['Comisión']}")
-    st.write(f"**Estado inscripción:** {fila['Estado inscripción']}")
-    st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
-    st.write(f"**ID interno (uuid):** {fila['ID interno (uuid)']}")
+    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
+    st.session_state["comision_nombre"] = fila.get("Comisión", "")
+    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
+    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
 
-    # guardar en session_state para el formulario
-    st.session_state["actividad_nombre"] = fila["Actividad"]
-    st.session_state["comision_nombre"] = fila["Comisión"]
-    st.session_state["fecha_inicio"] = fila["Fecha inicio"]
-    st.session_state["fecha_fin"] = fila["Fecha fin"]
-    st.session_state["uuid"] = fila["ID interno (uuid)"]
-else:
-    st.info("⚠️ Seleccioná una comisión para continuar.")
+    actividad_nombre = st.session_state["actividad_nombre"]
+    comision_nombre = st.session_state["comision_nombre"]
+    fecha_inicio = st.session_state["fecha_inicio"]
+    fecha_fin = st.session_state["fecha_fin"]
+
+    comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
+
+    if st.session_state.get("last_comision_id") != comision_id:
+        st.session_state["validado"] = False
+        st.session_state["cuil_valido"] = False
+        st.session_state["inscripcion_exitosa"] = False
+        st.session_state["last_comision_id"] = comision_id
+        for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
+            st.session_state.pop(k, None)
+
+    st.markdown(
+        f"""
+        <h4>2. Validá tu CUIL para inscribirte en:</h4>
+        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
+            {actividad_nombre} ({comision_nombre})
+        </span>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col_cuil, _ = st.columns([1, 1])
+    with col_cuil:
+        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
+        cuil = ''.join(filter(str.isdigit, raw))[:11]
+
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
