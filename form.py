@@ -172,9 +172,8 @@ response = AgGrid(
 )
 
 # ========== SELECCIÓN ==========
-selected = response["selected_rows"]
-if isinstance(selected, pd.DataFrame):
-    selected = selected.to_dict("records")
+selected = response["selected_rows"] or []
+
 
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
