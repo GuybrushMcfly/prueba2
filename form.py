@@ -10,7 +10,7 @@ import os
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    st.error("❌ No se encontraron las credenciales de Supabase en las variables de entorno.")
+    st.error("❌ No se encontraron las credenciales de Supabase.")
     st.stop()
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -39,27 +39,38 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ========== OBTENER DATOS ==========
+# ========== DATOS DESDE SUPABASE ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
-    resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta, organismo, modalidad_cursada, id_actividad, nombre_actividad"
-    ).execute()
+    resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
 
-# Agrupar comisiones por actividad
+# Agrupar por actividad
+actividades_unicas = {}
+for c in comisiones_raw:
+    if c["id_actividad"] and c["nombre_actividad"]:
+        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
+
 comisiones = defaultdict(list)
 for c in comisiones_raw:
     if c["id_actividad"]:
-        comisiones[c["id_actividad"]].append(c)
+        comisiones[c["id_actividad"]].append({
+            "id": c["id_comision_sai"],
+            "nombre": c["nombre_actividad"],
+            "fecha_inicio": c["fecha_desde"],
+            "fecha_fin": c["fecha_hasta"],
+            "organismo": c["organismo"],
+            "creditos": c["creditos"],
+            "modalidad": c["modalidad_cursada"]
+        })
 
 def format_fecha(f):
     if f:
         try:
             return pd.to_datetime(f).strftime("%d/%m/%Y")
-        except Exception:
+        except:
             return f
     return ""
 
@@ -76,20 +87,33 @@ with col1:
 with col2:
     modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
+st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
+
 # ========== ARMAR TABLA ==========
 filas = []
-for id_act, lista in comisiones.items():
-    for c in lista:
-        if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-           (modalidad_sel == "Todos" or c["modalidad_cursada"] == modalidad_sel):
-            filas.append({
-                "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
-                "Actividad": c["nombre_actividad"],
-                "Comisión": c["id_comision_sai"],
-                "Fecha inicio": format_fecha(c["fecha_desde"]),
-                "Fecha fin": format_fecha(c["fecha_hasta"]),
-                "Estado": c["estado_inscripcion"]
-            })
+for id_act, nombre_act in actividades_unicas.items():
+    coms = comisiones.get(id_act, [])
+    if coms:
+        for c in coms:
+            if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
+               (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+                filas.append({
+                    "Actividad (Comisión)": f"{nombre_act} ({c['id']})",
+                    "Actividad": nombre_act,
+                    "Comisión": c["id"],
+                    "Fecha inicio": format_fecha(c["fecha_inicio"]),
+                    "Fecha fin": format_fecha(c["fecha_fin"]),
+                    "Créditos": c["creditos"]
+                })
+    else:
+        filas.append({
+            "Actividad (Comisión)": f"{nombre_act} (Sin comisiones)",
+            "Actividad": nombre_act,
+            "Comisión": "Sin comisiones",
+            "Fecha inicio": "",
+            "Fecha fin": "",
+            "Créditos": ""
+        })
 
 df_comisiones = pd.DataFrame(filas)
 
@@ -98,13 +122,17 @@ gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, minWidth=600, maxWidth=600)
+
+# Columnas visibles y ocultas
+gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
+                    tooltipField="Actividad (Comisión)", minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("Fecha inicio", flex=15)
-gb.configure_column("Fecha fin", flex=15)
-gb.configure_column("Estado", flex=10)
+gb.configure_column("Fecha inicio", flex=15, filter=False)
+gb.configure_column("Fecha fin", flex=15, filter=False)
+gb.configure_column("Créditos", flex=10, filter=False)
 
+# Estilo
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
     ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
@@ -127,21 +155,14 @@ response = AgGrid(
     width=900
 )
 
+# ========== DETALLE SELECCIÓN ==========
 selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
-# ========== MOSTRAR DETALLES DE SELECCIÓN ==========
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
-    st.markdown("#### ✅ Comisión seleccionada:")
-    st.write(f"**Actividad:** {fila['Actividad']}")
-    st.write(f"**Comisión:** {fila['Comisión']}")
-    st.write(f"**Fecha inicio:** {fila['Fecha inicio']}")
-    st.write(f"**Fecha fin:** {fila['Fecha fin']}")
-    st.write(f"**Créditos:** {fila['Créditos']}")
-
     st.session_state["actividad_nombre"] = fila.get("Actividad", "")
     st.session_state["comision_nombre"] = fila.get("Comisión", "")
     st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
@@ -164,7 +185,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
     st.markdown(
         f"""
-        <h4>2. Validá tu CUIL para inscribirte en:</h4>
+        <h4>2. Validá tu CUIL para inscribirte en</h4>
         <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
             {actividad_nombre} ({comision_nombre})
         </span>
@@ -176,6 +197,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     with col_cuil:
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
+
 
 
 
