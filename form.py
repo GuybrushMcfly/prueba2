@@ -96,7 +96,7 @@ with col1:
 with col2:
     modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
-st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
+st.markdown("#### 1. Seleccioná una comisión en la tabla (clic en la fila):")
 
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
@@ -126,8 +126,7 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
-gb.configure_selection(selection_mode="single", use_checkbox=True)
+gb.configure_selection(selection_mode="single", use_checkbox=False)  # SIN checkbox
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, tooltipField="Actividad (Comisión)", filter=False, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
@@ -150,107 +149,30 @@ custom_css = {
     },
 }
 
-grid_options = gb.build()
-
 response = AgGrid(
     df_comisiones,
-    gridOptions=grid_options,
+    gridOptions=gb.build(),
     height=500,
     allow_unsafe_jscode=True,
     theme="balham",
     custom_css=custom_css,
-    use_container_width=False,
-    width=900
+    use_container_width=True
 )
 
-selected = response["selected_rows"]
-if isinstance(selected, pd.DataFrame):
-    selected = selected.to_dict("records")
+selected = response.get("selected_rows", [])
 
-
-
-# CONTROLAR REINICIO FLAG
-# =======================
-comision_id = None
-if selected and selected[0].get("Comisión") != "Sin comisiones":
+if selected:
     fila = selected[0]
-    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
-    st.session_state["comision_nombre"] = fila.get("Comisión", "")
-    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
-    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
-
-    actividad_nombre = st.session_state["actividad_nombre"]
-    comision_nombre = st.session_state["comision_nombre"]
-    fecha_inicio = st.session_state["fecha_inicio"]
-    fecha_fin = st.session_state["fecha_fin"]
-
-    comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
-    # Reiniciar flags si cambiás de comisión
-    if st.session_state.get("last_comision_id") != comision_id:
-        st.session_state["validado"] = False
-        st.session_state["cuil_valido"] = False
-        st.session_state["inscripcion_exitosa"] = False
-        st.session_state["last_comision_id"] = comision_id
-        for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
-            st.session_state.pop(k, None)
-
-    st.markdown(
-        f"""
-        <h4>2. Validá tu CUIL para inscribirte en</h4>
-        <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
-            {actividad_nombre} ({comision_nombre})
-        </span>
-        """,
-        unsafe_allow_html=True
-    )
-
-    col_cuil, _ = st.columns([1, 1])
-    with col_cuil:
-        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
-        cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-    # Validación de CUIL y consulta a agentesform
-    if st.button("VALIDAR Y CONTINUAR", type="primary"):
-        if not validar_cuil(cuil):
-            st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
-            st.session_state["validado"] = False
-            st.session_state["cuil_valido"] = False
+    st.markdown(f"**Actividad seleccionada:** {fila['Actividad']} ({fila['Comisión']})")
+    cuil = st.text_input("Ingresá tu CUIL/CUIT")
+    if st.button("Validar CUIL"):
+        if validar_cuil(cuil):
+            st.success("CUIL válido")
         else:
-            resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-            if resp.data and len(resp.data) == 0:
-                st.session_state["validado"] = False
-                st.session_state["cuil_valido"] = False
-                st.error(
-                    "❌ No se encontró ese usuario en la base de datos. "
-                    "Verificá los datos ingresados o comunicate con la Dirección de Capacitación."
-                )
-            else:
-                comision = st.session_state.get("comision_nombre", "")
-                inscrip_existente = supabase.table("pruebainscripciones") \
-                    .select("id") \
-                    .eq("cuil_cuit", cuil) \
-                    .eq("comision", comision) \
-                    .limit(1) \
-                    .execute()
-    
-                if inscrip_existente.data and len(inscrip_existente.data) > 0:
-                    st.session_state["validado"] = False
-                    st.session_state["cuil_valido"] = False
-                    st.warning("⚠️ Ya realizaste la preinscripción en esa comisión. No es necesario volver a inscribirse.")
-                else:
-                    st.session_state["validado"] = True
-                    st.session_state["cuil_valido"] = True
-                    st.session_state["cuil"] = cuil
-                    st.session_state["datos_agenteform"] = resp.data[0]
-                    st.success("¡Datos encontrados! Revisá y completá tus datos si es necesario.")
-    
-    # Atención: estos bloques NO deben estar indentados dentro del if anterior,
-    # van alineados al if st.button(...) (fuera del else y fuera del botón):
-    
-    elif selected and selected[0].get("Comisión") == "Sin comisiones":
-        st.warning("No hay comisiones disponibles para esta actividad.")
-    else:
-        st.info("Seleccioná una comisión para continuar.")
+            st.error("CUIL inválido. Debe tener 11 dígitos válidos.")
+else:
+    st.info("Seleccioná una fila haciendo clic para continuar.")
+
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
