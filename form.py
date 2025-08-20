@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from supabase import create_client, Client
 import os
 
@@ -14,10 +13,6 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     st.stop()
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-@st.cache_resource
-def init_connection():
-    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== DATOS DESDE SUPABASE ==========
 @st.cache_data(ttl=86400)
@@ -34,7 +29,7 @@ filas = []
 for c in comisiones:
     filas.append({
         "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
-        "ID Comisión": c["id_comision"],   # 🔹 lo dejamos oculto, pero disponible
+        "ID Comisión": c["id_comision"],   # lo ocultamos en la tabla
         "Comisión SAI": c["id_comision_sai"],
         "Estado inscripción": c.get("estado_inscripcion", ""),
         "Fecha inicio": pd.to_datetime(c["fecha_desde"]).strftime("%d/%m/%Y") if c["fecha_desde"] else "",
@@ -49,7 +44,7 @@ st.markdown("### 📋 Seleccioná una comisión (vista_comisiones_abiertas)")
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
 
-# Checkbox para seleccionar una sola fila
+# Checkbox para selección única
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
 # Ocultar ID técnico
@@ -73,12 +68,13 @@ response = AgGrid(
     height=400,
     theme="balham",
     allow_unsafe_jscode=True,
-    key="tabla_comisiones"
+    key="tabla_comisiones",
+    update_mode=GridUpdateMode.SELECTION_CHANGED  # 🔑 CLAVE: refresca al tildar checkbox
 )
 
 selected = response.get("selected_rows", [])
 
-# ========== MOSTRAR SELECCIÓN ==========
+# ========== MOSTRAR SELECCIÓN (automático como en el viejo) ==========
 if selected and isinstance(selected[0], dict):
     fila = selected[0]
     st.success("✅ Comisión seleccionada:")
@@ -86,5 +82,6 @@ if selected and isinstance(selected[0], dict):
     st.write(f"**Comisión SAI:** {fila['Comisión SAI']}")
     st.write(f"**Estado inscripción:** {fila['Estado inscripción']}")
     st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
+    st.write(f"**ID interno (uuid):** {fila['ID Comisión']}")  # lo tenés para inscribir
 else:
     st.info("⚠️ Seleccioná una comisión para continuar.")
