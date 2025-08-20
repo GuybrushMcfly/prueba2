@@ -220,7 +220,8 @@ response_sim = AgGrid(
 selected_sim = response_sim.get("selected_rows", [])
 
 if st.button("📥 Ver selección de tabla simulada"):
-    if selected_sim and isinstance(selected_sim[0], dict):
+    st.write("🔍 Datos crudos seleccionados:", selected_sim)  # TEMPORAL para verificar
+    if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
         fila = selected_sim[0]
         st.success("✅ Fila seleccionada en tabla simulada:")
         st.write(f"**Actividad:** {fila['Actividad']}")
