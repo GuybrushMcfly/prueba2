@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from datetime import datetime, date
+from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid import GridUpdateMode, DataReturnMode
 from supabase import create_client, Client
 from collections import defaultdict
@@ -12,6 +12,9 @@ import os
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    st.error("❌ No se encontraron las credenciales de Supabase.")
+    st.stop()
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== UTILIDADES ==========
@@ -28,113 +31,126 @@ def format_fecha(f):
     if f:
         try:
             return pd.to_datetime(f).strftime("%d/%m/%Y")
-        except:
+        except Exception:
             return f
     return ""
 
 @st.cache_data(ttl=86400)
 def obtener_comisiones_abiertas():
+    # ⚠️ Usamos la VIEW
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
+
+# ========== PAGE/UI ==========
+st.set_page_config(layout="wide")
+st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
 # ========== CARGA Y AGRUPAMIENTO ==========
 comisiones_raw = obtener_comisiones_abiertas()
 actividades_unicas = {}
 comisiones = defaultdict(list)
 for c in comisiones_raw:
-    act_id = c["id_actividad"]
-    act_nombre = c["nombre_actividad"]
-    actividades_unicas[act_id] = act_nombre
-    comisiones[act_id].append(c)
-
-# ========== UI ==========
-st.set_page_config(layout="wide")
-st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
+    act_id = c.get("id_actividad")
+    act_nombre = c.get("nombre_actividad")
+    if act_id and act_nombre:
+        actividades_unicas[act_id] = act_nombre
+        comisiones[act_id].append(c)
 
 # FILTROS
-organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
+organismos = sorted({c.get("organismo") for c in comisiones_raw if c.get("organismo")})
+modalidades = sorted({c.get("modalidad") for c in comisiones_raw if c.get("modalidad")})
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
 col1, col2 = st.columns(2)
-organismo_sel = col1.selectbox("Organismo", organismos)
-modalidad_sel = col2.selectbox("Modalidad", modalidades)
+organismo_sel = col1.selectbox("Organismo", organismos, index=0)
+modalidad_sel = col2.selectbox("Modalidad", modalidades, index=0)
 
 # ARMADO DE TABLA
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones[id_act]:
-        if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+        if (organismo_sel == "Todos" or c.get("organismo") == organismo_sel) and \
+           (modalidad_sel == "Todos" or c.get("modalidad") == modalidad_sel):
             filas.append({
-                "Actividad (Comisión)": f"{nombre_act} ({c['id_comision_sai']})",
+                "Actividad (Comisión)": f"{nombre_act} ({c.get('id_comision_sai')})",
                 "Actividad": nombre_act,
-                "Comisión": c["id_comision_sai"],
-                "Fecha inicio": format_fecha(c["fecha_desde"]),
-                "Fecha fin": format_fecha(c["fecha_hasta"]),
-                "Créditos": c.get("creditos", "")
+                "Comisión": c.get("id_comision_sai"),
+                "Fecha inicio": format_fecha(c.get("fecha_desde")),
+                "Fecha fin": format_fecha(c.get("fecha_hasta")),
+                "Créditos": c.get("creditos", ""),
             })
 
 df_comisiones = pd.DataFrame(filas).reset_index(drop=True)
 
-# Si está vacía, evitar el crash
 if df_comisiones.empty:
     st.warning("No hay comisiones disponibles con los filtros seleccionados.")
     st.stop()
 
-df_comisiones["__idx"] = df_comisiones.index.astype(str)
-
-# CONFIGURAR AGGRID
+# ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
-gb.configure_selection("single", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
+gb.configure_selection(selection_mode="single", use_checkbox=True)  # igual que en tu versión que funcionaba
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+
+# visibles y ocultas
+gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("__idx", hide=True)
+gb.configure_column("Fecha inicio", flex=15)
+gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=10)
 
+# Opciones suaves (sin getRowNodeId para no interferir con la selección)
 grid_options = gb.build()
-# IDs de fila (opcional). Si sospechás que esto interfiere, podés comentarlo.
-grid_options["getRowNodeId"] = JsCode("function(data) { return data.__idx; }")
 grid_options["rowSelection"] = "single"
-grid_options["suppressRowClickSelection"] = False  # <-- aseguramos click + checkbox
+grid_options["suppressRowClickSelection"] = False
 grid_options["rowDeselection"] = True
 
-st.markdown("#### 1. Seleccioná una comisión:")
+st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
+    height=420,
     theme="balham",
-    height=300,
     allow_unsafe_jscode=True,
-    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    # Forzamos que dispare rerun en cambios de selección y de modelo
+    update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.MODEL_CHANGED,
     data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-    key="comisiones_grid"
+    key="grid_comisiones_view"
 )
 
-# ================= DEBUG AGGRID =================
-st.markdown("### 🐞 DEBUG: Respuesta AgGrid")
-try:
-    st.write("response keys:", list(response.keys()))
-except Exception as e:
-    st.write("response no iterable:", e)
+# ======== EXTRACTOR ROBUSTO DE SELECCIÓN ========
+def extraer_seleccion(resp) -> list:
+    if not isinstance(resp, dict):
+        return []
+    cand = (
+        resp.get("selected_rows")
+        or resp.get("selected_data")
+        or (resp.get("grid_response") or {}).get("selected_rows")
+        or (resp.get("grid_response") or {}).get("selected_data")
+        or []
+    )
+    return cand or []
 
-st.write("selected_rows (raw) =", response.get("selected_rows", None))
-st.write("selected_data (raw) =", response.get("selected_data", None))
-st.write("event_data (raw) =", response.get("event_data", None))
+# Debug útil
+st.markdown("### 🐞 DEBUG AgGrid")
+st.write("keys:", list(response.keys()))
+st.write("selected_rows:", response.get("selected_rows"))
+st.write("selected_data:", response.get("selected_data"))
+st.write("event_data:", response.get("event_data"))
 
-# Fallback robusto: probamos distintas ubicaciones donde st_aggrid suele poner la selección
-selected = (
-    response.get("selected_rows")
-    or response.get("selected_data")
-    or (response.get("grid_response") or {}).get("selected_rows")
-    or (response.get("grid_response") or {}).get("selected_data")
-    or []
-) or []
+selected = extraer_seleccion(response)
 
-st.markdown("### 🐞 DEBUG: Fila seleccionada (fallback)")
-st.write("selected =", selected)
+# Persistimos la selección para no perderla en reruns
+if selected:
+    st.session_state["fila_sel"] = selected[0]
+elif "fila_sel" in st.session_state:
+    # Si no hay selección nueva, usamos la última válida (mejora UX)
+    selected = [st.session_state["fila_sel"]]
+
+st.markdown("### 🐞 DEBUG: Fila seleccionada (final)")
+st.write(selected)
 
 # ========== SI HAY SELECCIÓN ==========
 if selected:
@@ -147,10 +163,10 @@ if selected:
     st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
     st.markdown(f"**{actividad}**  \n_Comisión {comision}_")
 
-    raw = st.text_input("CUIL/CUIT *")
+    raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
     cuil = ''.join(filter(str.isdigit, raw))[:11]
 
-    if st.button("Validar CUIL"):
+    if st.button("Validar CUIL", type="primary"):
         if not validar_cuil(cuil):
             st.error("CUIL inválido. Debe tener 11 dígitos.")
             st.stop()
@@ -161,16 +177,19 @@ if selected:
             st.error("No se encontró ese agente.")
             st.stop()
 
-        ya_inscripto = supabase.table("cursos_inscripciones") \
+        ya = supabase.table("cursos_inscripciones") \
             .select("id") \
-            .eq("cuil", cuil).eq("id_comision_sai", comision).limit(1).execute()
-        st.write("🔎 DEBUG ya_inscripto:", ya_inscripto.data)
-        if ya_inscripto.data:
+            .eq("cuil", cuil) \
+            .eq("id_comision_sai", comision) \
+            .limit(1).execute()
+        st.write("🔎 DEBUG ya_inscripto:", ya.data)
+        if ya.data:
             st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
 
         datos = agente.data[0]
         st.success("CUIL válido. Completá tus datos para confirmar inscripción.")
+        st.session_state["cuil"] = cuil  # persiste
 
         col1, col2 = st.columns(2)
         apellido = col1.text_input("Apellido", value=datos.get("apellido", ""))
@@ -179,15 +198,12 @@ if selected:
         tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
 
         if st.button("Confirmar inscripción"):
-            # Parseo seguro de fechas
-            try:
-                fecha_desde_sql = datetime.strptime(fecha_ini, "%d/%m/%Y").strftime("%Y-%m-%d")
-            except Exception:
-                fecha_desde_sql = None
-            try:
-                fecha_hasta_sql = datetime.strptime(fecha_fin, "%d/%m/%Y").strftime("%Y-%m-%d")
-            except Exception:
-                fecha_hasta_sql = None
+            # Parseo seguro de fechas (pueden venir vacías)
+            def to_sql(dmy):
+                try:
+                    return datetime.strptime(dmy, "%d/%m/%Y").strftime("%Y-%m-%d") if dmy else None
+                except Exception:
+                    return None
 
             nueva = {
                 "cuil": cuil,
@@ -197,11 +213,11 @@ if selected:
                 "tramo": tramo,
                 "id_comision_sai": comision,
                 "nombre_actividad": actividad,
-                "fecha_desde": fecha_desde_sql,
-                "fecha_hasta": fecha_hasta_sql,
+                "fecha_desde": to_sql(fecha_ini),
+                "fecha_hasta": to_sql(fecha_fin),
             }
 
-            st.write("📦 DEBUG a insertar en cursos_inscripciones:", nueva)
+            st.write("📦 DEBUG INSERT cursos_inscripciones:", nueva)
             res = supabase.table("cursos_inscripciones").insert(nueva).execute()
             st.write("📬 DEBUG respuesta insert:", {"data": res.data, "error": getattr(res, "error", None)})
 
@@ -210,7 +226,7 @@ if selected:
             elif res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
-                # Constancia PDF
+                # -------- Constancia PDF --------
                 def generar_constancia_pdf(nombre_completo, actividad, comision, fecha_inicio, fecha_fin):
                     pdf = FPDF()
                     pdf.add_page()
@@ -242,4 +258,4 @@ if selected:
             else:
                 st.error("❌ Ocurrió un error al registrar la inscripción.")
 else:
-    st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
+    st.info
