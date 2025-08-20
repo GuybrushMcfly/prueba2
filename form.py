@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from supabase import create_client, Client
 from collections import defaultdict
 from io import BytesIO
@@ -76,29 +76,43 @@ for id_act, nombre_act in actividades_unicas.items():
             })
 
 df_comisiones = pd.DataFrame(filas).reset_index(drop=True)
-df_comisiones["__idx"] = df_comisiones.index  # columna de índice para estabilidad
+
+# Si está vacía, evitar el crash
+if df_comisiones.empty:
+    st.warning("No hay comisiones disponibles con los filtros seleccionados.")
+    st.stop()
+
+df_comisiones["__idx"] = df_comisiones.index.astype(str)
 
 # CONFIGURAR AGGRID
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
 gb.configure_selection("single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
-
-# Columnas internas
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 gb.configure_column("__idx", hide=True)
 
 grid_options = gb.build()
+grid_options["getRowNodeId"] = JsCode("function(data) { return data.__idx; }")
+grid_options["rowSelection"] = "single"
 
 st.markdown("#### 1. Seleccioná una comisión:")
-response = AgGrid(df_comisiones, gridOptions=grid_options, theme="balham", height=300)
+response = AgGrid(
+    df_comisiones,
+    gridOptions=grid_options,
+    theme="balham",
+    height=300,
+    allow_unsafe_jscode=True
+)
 
-# DEBUG: VER QUÉ DEVUELVE AGGRID
+selected = response.get("selected_rows", [])
+
+# DEBUG VISUAL
 st.markdown("### 🐞 DEBUG: Fila seleccionada")
-st.write("selected =", response.get("selected_rows"))
+st.write("selected =", selected)
 
-selected = response.get("selected_rows")
+# ========== SI HAY SELECCIÓN ==========
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
@@ -154,6 +168,7 @@ if selected:
             if res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
+                # Constancia PDF
                 def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
                     pdf = FPDF()
                     pdf.add_page()
