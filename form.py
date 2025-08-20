@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
-from st_aggrid import GridUpdateMode, DataReturnMode  # <-- agregado
+from st_aggrid import GridUpdateMode, DataReturnMode
 from supabase import create_client, Client
 from collections import defaultdict
 from io import BytesIO
@@ -88,42 +88,52 @@ df_comisiones["__idx"] = df_comisiones.index.astype(str)
 # CONFIGURAR AGGRID
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
-gb.configure_selection("single", use_checkbox=True)  # selección única con checkbox
+gb.configure_selection("single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 gb.configure_column("__idx", hide=True)
 
 grid_options = gb.build()
+# IDs de fila (opcional). Si sospechás que esto interfiere, podés comentarlo.
 grid_options["getRowNodeId"] = JsCode("function(data) { return data.__idx; }")
 grid_options["rowSelection"] = "single"
+grid_options["suppressRowClickSelection"] = False  # <-- aseguramos click + checkbox
+grid_options["rowDeselection"] = True
 
 st.markdown("#### 1. Seleccioná una comisión:")
-
-# *** CLAVE DEL PROBLEMA ***
-# Agregamos update_mode=GridUpdateMode.SELECTION_CHANGED para que AgGrid dispare el evento
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
     theme="balham",
     height=300,
     allow_unsafe_jscode=True,
-    update_mode=GridUpdateMode.SELECTION_CHANGED,      # <-- agregado (antes no disparaba el cambio)
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
     data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-    key="comisiones_grid"  # <-- clave estable para evitar resets de estado
+    key="comisiones_grid"
 )
 
-# DEBUG VISUAL AMPLIADO
+# ================= DEBUG AGGRID =================
 st.markdown("### 🐞 DEBUG: Respuesta AgGrid")
 try:
     st.write("response keys:", list(response.keys()))
 except Exception as e:
     st.write("response no iterable:", e)
+
 st.write("selected_rows (raw) =", response.get("selected_rows", None))
+st.write("selected_data (raw) =", response.get("selected_data", None))
+st.write("event_data (raw) =", response.get("event_data", None))
 
-selected = response.get("selected_rows", []) or []  # defensivo: None -> []
+# Fallback robusto: probamos distintas ubicaciones donde st_aggrid suele poner la selección
+selected = (
+    response.get("selected_rows")
+    or response.get("selected_data")
+    or (response.get("grid_response") or {}).get("selected_rows")
+    or (response.get("grid_response") or {}).get("selected_data")
+    or []
+) or []
 
-st.markdown("### 🐞 DEBUG: Fila seleccionada")
+st.markdown("### 🐞 DEBUG: Fila seleccionada (fallback)")
 st.write("selected =", selected)
 
 # ========== SI HAY SELECCIÓN ==========
@@ -146,7 +156,7 @@ if selected:
             st.stop()
 
         agente = supabase.table("agentes").select("*").eq("cuil", cuil).execute()
-        st.write("🔎 DEBUG agente:", agente.data)  # debug
+        st.write("🔎 DEBUG agente:", agente.data)
         if not agente.data:
             st.error("No se encontró ese agente.")
             st.stop()
@@ -154,7 +164,7 @@ if selected:
         ya_inscripto = supabase.table("cursos_inscripciones") \
             .select("id") \
             .eq("cuil", cuil).eq("id_comision_sai", comision).limit(1).execute()
-        st.write("🔎 DEBUG ya_inscripto:", ya_inscripto.data)  # debug
+        st.write("🔎 DEBUG ya_inscripto:", ya_inscripto.data)
         if ya_inscripto.data:
             st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
@@ -169,7 +179,7 @@ if selected:
         tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
 
         if st.button("Confirmar inscripción"):
-            # OJO: si alguna fecha viniera vacía, strptime fallaría; dejamos try/except por seguridad
+            # Parseo seguro de fechas
             try:
                 fecha_desde_sql = datetime.strptime(fecha_ini, "%d/%m/%Y").strftime("%Y-%m-%d")
             except Exception:
@@ -232,5 +242,4 @@ if selected:
             else:
                 st.error("❌ Ocurrió un error al registrar la inscripción.")
 else:
-    # Para claridad UX
     st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
