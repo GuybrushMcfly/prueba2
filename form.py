@@ -177,9 +177,11 @@ custom_css = {
 }
 
 
+# ======================================
+# 🧪 1. TABLA SIMULADA
+# ======================================
 st.markdown("### 🧪 Tabla de prueba (simulada)")
 
-# --- DataFrame de ejemplo ---
 df_simulada = pd.DataFrame([
     {
         "Actividad (Comisión)": "Curso de Python (CPY-001)",
@@ -199,16 +201,10 @@ df_simulada = pd.DataFrame([
     }
 ])
 
-# --- Configurar tabla ---
 gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
-gb_sim.configure_selection(
-    selection_mode="single", 
-    use_checkbox=False,
-    suppressRowClickSelection=False
-)
+gb_sim.configure_selection(selection_mode="single", use_checkbox=False)
 gb_sim.configure_pagination(paginationAutoPageSize=True)
 
-# --- Mostrar tabla simulada ---
 response_sim = AgGrid(
     df_simulada,
     gridOptions=gb_sim.build(),
@@ -220,16 +216,16 @@ response_sim = AgGrid(
 
 selected_sim = response_sim.get("selected_rows", [])
 
-# --- Mostrar selección debajo ---
-if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
-    fila_sim = selected_sim[0]
-    st.success("✅ Selección actual:")
-    st.write(f"**Actividad:** {fila_sim['Actividad']}")
-    st.write(f"**Comisión:** {fila_sim['Comisión']}")
-    st.write(f"**Fechas:** {fila_sim['Fecha inicio']} → {fila_sim['Fecha fin']}")
-    st.write(f"**Créditos:** {fila_sim['Créditos']}")
-else:
-    st.info("Seleccioná una fila en la tabla de prueba para ver los datos.")
+if st.button("📥 Ver selección de tabla simulada"):
+    if selected_sim and isinstance(selected_sim[0], dict):
+        fila = selected_sim[0]
+        st.success("✅ Fila seleccionada en tabla simulada:")
+        st.write(f"**Actividad:** {fila['Actividad']}")
+        st.write(f"**Comisión:** {fila['Comisión']}")
+        st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
+        st.write(f"**Créditos:** {fila['Créditos']}")
+    else:
+        st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
 
 
 
