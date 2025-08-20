@@ -173,7 +173,7 @@ def create_html_table(df):
         .courses-table {
             border-collapse: collapse;
             margin: 25px auto;
-            font-size: 14px;
+            font-size: 12px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-width: 900px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
