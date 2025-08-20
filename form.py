@@ -1,12 +1,10 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid import GridUpdateMode, DataReturnMode
 from supabase import create_client, Client
 from collections import defaultdict
-from io import BytesIO
-from fpdf import FPDF
 import os
 
 # ========== CONEXIÓN A SUPABASE ==========
@@ -18,15 +16,6 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== UTILIDADES ==========
-def validar_cuil(cuil: str) -> bool:
-    if not cuil.isdigit() or len(cuil) != 11:
-        return False
-    mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
-    total = sum(int(cuil[i]) * mult[i] for i in range(10))
-    verificador = 11 - (total % 11)
-    verificador = 0 if verificador == 11 else (9 if verificador == 10 else verificador)
-    return verificador == int(cuil[-1])
-
 def format_fecha(f):
     if f:
         try:
@@ -37,7 +26,6 @@ def format_fecha(f):
 
 @st.cache_data(ttl=86400)
 def obtener_comisiones_abiertas():
-    # Usamos la VIEW
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
@@ -45,7 +33,6 @@ def obtener_comisiones_abiertas():
 st.set_page_config(layout="wide")
 st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
-# ========== CARGA Y AGRUPAMIENTO ==========
 comisiones_raw = obtener_comisiones_abiertas()
 actividades_unicas = {}
 comisiones = defaultdict(list)
@@ -66,7 +53,7 @@ col1, col2 = st.columns(2)
 organismo_sel = col1.selectbox("Organismo", organismos, index=0)
 modalidad_sel = col2.selectbox("Modalidad", modalidades, index=0)
 
-# ARMADO DE TABLA
+# ARMADO DE TABLA (incluimos el UUID oculto)
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones[id_act]:
@@ -76,6 +63,7 @@ for id_act, nombre_act in actividades_unicas.items():
                 "Actividad (Comisión)": f"{nombre_act} ({c.get('id_comision_sai')})",
                 "Actividad": nombre_act,
                 "Comisión": c.get("id_comision_sai"),
+                "UUID": c.get("id"),   # 👈 lo traemos de la view
                 "Fecha inicio": format_fecha(c.get("fecha_desde")),
                 "Fecha fin": format_fecha(c.get("fecha_hasta")),
                 "Créditos": c.get("creditos", ""),
@@ -90,23 +78,15 @@ if df_comisiones.empty:
 # ========== AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
-# Pre-seleccionamos 1ª fila para romper el estado 'None' inicial
-pre_sel = [0] if len(df_comisiones) > 0 else []
-gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
+gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
+# Ocultamos columnas técnicas
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("Fecha inicio", flex=15)
-gb.configure_column("Fecha fin", flex=15)
-gb.configure_column("Créditos", flex=10)
+gb.configure_column("UUID", hide=True)
 
 grid_options = gb.build()
-grid_options["rowSelection"] = "single"
-grid_options["suppressRowClickSelection"] = False
-grid_options["rowDeselection"] = True
-# NO usamos getRowNodeId para no interferir
 
 st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
@@ -115,173 +95,42 @@ response = AgGrid(
     height=420,
     theme="balham",
     allow_unsafe_jscode=True,
-    update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.MODEL_CHANGED,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
     data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
     key="grid_comisiones_view"
 )
 
-# ======== DEBUG COMPLETO ========
+# ======== DEBUG MEJORADO ========
 st.markdown("### 🐞 DEBUG AgGrid")
 st.write("keys:", list(response.keys()))
 st.write("selected_rows:", response.get("selected_rows"))
 st.write("selected_data:", response.get("selected_data"))
-st.write("event_data:", response.get("event_data"))
-st.write("grid_state:", response.get("grid_state"))
-st.write("grid_response:", response.get("grid_response"))
+st.write("grid_response.selectedItems:", (response.get("grid_response") or {}).get("selectedItems"))
 
 # ======== EXTRACTOR ROBUSTO ========
 def extraer_seleccion(resp) -> list:
     if not isinstance(resp, dict):
         return []
-    # 1) Lugares típicos
+    # revisamos en orden
     cand = (
         resp.get("selected_rows")
         or resp.get("selected_data")
-        or (resp.get("grid_response") or {}).get("selected_rows")
-        or (resp.get("grid_response") or {}).get("selected_data")
+        or (resp.get("grid_response") or {}).get("selectedItems")
         or []
     )
     if cand:
         return cand
-    # 2) Algunos builds guardan la selección en grid_state
-    gs = resp.get("grid_state") or {}
-    # intentamos distintos nombres posibles
-    for key in ("selected", "selected_rows", "selection", "rowSelection"):
-        val = gs.get(key)
-        if val:
-            try:
-                # puede venir como dict/obj; intentamos normalizar a list[dict]
-                if isinstance(val, dict):
-                    val = [val]
-                return val
-            except Exception:
-                pass
     return []
 
 selected = extraer_seleccion(response)
 
-# Persistimos / recuperamos última selección
-if selected:
-    st.session_state["fila_sel"] = selected[0]
-elif "fila_sel" in st.session_state:
-    selected = [st.session_state["fila_sel"]]
-
 st.markdown("### 🐞 DEBUG: Fila seleccionada (final)")
 st.write(selected)
 
-# ======== FALLBACK MANUAL (si la grilla no devuelve nada) ========
-if not selected:
-    st.info("No se detectó la selección desde la grilla (issue de st_aggrid). Usá este selector alternativo.")
-    opciones = [f"{r['Actividad (Comisión)']}" for _, r in df_comisiones.iterrows()]
-    idx = st.selectbox("Elegí una comisión:", range(len(opciones)), format_func=lambda i: opciones[i])
-    if idx is not None:
-        selected = [df_comisiones.iloc[int(idx)].to_dict()]
-        st.session_state["fila_sel"] = selected[0]
-        st.success("Selección aplicada desde el selector alternativo.")
-
-# ========== SI HAY SELECCIÓN ==========
+# ======== SI HAY SELECCIÓN ==========
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
     comision = fila["Comisión"]
-    fecha_ini = fila["Fecha inicio"]
-    fecha_fin = fila["Fecha fin"]
-
-    st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
-    st.markdown(f"**{actividad}**  \n_Comisión {comision}_")
-
-    raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
-    cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-    if st.button("Validar CUIL", type="primary"):
-        if not validar_cuil(cuil):
-            st.error("CUIL inválido. Debe tener 11 dígitos.")
-            st.stop()
-
-        agente = supabase.table("agentes").select("*").eq("cuil", cuil).execute()
-        st.write("🔎 DEBUG agente:", agente.data)
-        if not agente.data:
-            st.error("No se encontró ese agente.")
-            st.stop()
-
-        ya = supabase.table("cursos_inscripciones") \
-            .select("id") \
-            .eq("cuil", cuil) \
-            .eq("id_comision_sai", comision) \
-            .limit(1).execute()
-        st.write("🔎 DEBUG ya_inscripto:", ya.data)
-        if ya.data:
-            st.warning("Ya estás inscripto en esta comisión.")
-            st.stop()
-
-        datos = agente.data[0]
-        st.success("CUIL válido. Completá tus datos para confirmar inscripción.")
-        st.session_state["cuil"] = cuil
-
-        col1, col2 = st.columns(2)
-        apellido = col1.text_input("Apellido", value=datos.get("apellido", ""))
-        nombre = col2.text_input("Nombre", value=datos.get("nombre", ""))
-        correo = st.text_input("Correo electrónico", value=datos.get("email", ""))
-        tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
-
-        if st.button("Confirmar inscripción"):
-            def to_sql(dmy):
-                try:
-                    return datetime.strptime(dmy, "%d/%m/%Y").strftime("%Y-%m-%d") if dmy else None
-                except Exception:
-                    return None
-
-            nueva = {
-                "cuil": cuil,
-                "apellido": apellido,
-                "nombre": nombre,
-                "correo": correo,
-                "tramo": tramo,
-                "id_comision_sai": comision,
-                "nombre_actividad": actividad,
-                "fecha_desde": to_sql(fecha_ini),
-                "fecha_hasta": to_sql(fecha_fin),
-            }
-
-            st.write("📦 DEBUG INSERT cursos_inscripciones:", nueva)
-            res = supabase.table("cursos_inscripciones").insert(nueva).execute()
-            st.write("📬 DEBUG respuesta insert:", {"data": res.data, "error": getattr(res, "error", None)})
-
-            if getattr(res, "error", None):
-                st.error(f"❌ Error al registrar la inscripción: {res.error}")
-            elif res.data:
-                st.success("✅ Inscripción registrada correctamente")
-
-                # -------- Constancia PDF --------
-                def generar_constancia_pdf(nombre_completo, actividad, comision, fecha_inicio, fecha_fin):
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_font("Helvetica", "B", 14)
-                    pdf.set_text_color(19, 106, 193)
-                    pdf.cell(0, 10, "Constancia de Preinscripción", ln=True, align="C")
-                    pdf.set_font("Helvetica", "", 12)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.ln(10)
-                    pdf.multi_cell(0, 10,
-                        f"{nombre_completo}, te preinscribiste exitosamente en:\n\n"
-                        f"Actividad: {actividad}\n"
-                        f"Comisión: {comision}\n"
-                        f"Inicio: {fecha_inicio}\n"
-                        f"Fin: {fecha_fin}\n\n"
-                        f"Esta inscripción no garantiza vacante. "
-                        f"Recibirás confirmación por correo si es otorgada.\n\n"
-                        f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-                    )
-                    return BytesIO(pdf.output(dest='S').encode("latin1"))
-
-                buffer = generar_constancia_pdf(f"{nombre} {apellido}", actividad, comision, fecha_ini, fecha_fin)
-                st.download_button(
-                    label="📄 Descargar constancia",
-                    data=buffer,
-                    file_name="constancia_inscripcion.pdf",
-                    mime="application/pdf"
-                )
-            else:
-                st.error("❌ Ocurrió un error al registrar la inscripción.")
-else:
-    st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
+    uuid_comision = fila["UUID"]   # 👈 ya lo tenés acá
+    st.success(f"Seleccionaste: {actividad} - Comisión {comision} (UUID={uuid_comision})")
