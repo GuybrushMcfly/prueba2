@@ -70,7 +70,9 @@ df_temp["Fecha inicio"] = df_temp["fecha_desde"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
-df_temp["Ver más"] = df_temp["link_externo"]
+
+# ========== CONVERTIR link_externo en HTML ==========
+df_temp["Ver más"] = df_temp["link_externo"]  # solo la URL
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -96,16 +98,140 @@ df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos", "Ver más"
 ]].reset_index(drop=True)
 
-# ========== TABLA HTML PERSONALIZADA ==========
+# ========== ALTERNATIVA: TABLA HTML + CSS PERSONALIZADO ==========
 st.divider()
-st.header("🆕 Tabla de actividades disponibles")
+st.header("🆕 Tabla HTML con links clickeables")
 
+# Función para crear la tabla HTML con funcionalidad de selección
 def create_html_table(df, df_original):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
-    html = f"""<style> ... (TODO: pegás acá el mismo bloque CSS+JS que ya tenías) ... </style>"""
-    
-    # Agregás la parte dinámica de las filas
-    html += "<tbody>"
+
+    html = f"""
+    <style>
+        .courses-table {{
+            border-collapse: collapse;
+            margin: 25px auto;
+            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-width: 900px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }}
+        .courses-table thead tr {{
+            background-color: #136ac1;
+            color: #ffffff;
+            text-align: left;
+            font-weight: bold;
+        }}
+        .courses-table th,
+        .courses-table td {{
+            padding: 16px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+        }}
+        .courses-table th {{
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .courses-table tbody tr {{
+            background-color: #ffffff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }}
+        .courses-table tbody tr:nth-of-type(even) {{
+            background-color: #f5f5f5;
+        }}
+        .courses-table tbody tr:hover {{
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+        }}
+        .courses-table tbody tr.selected {{
+            background-color: #bbdefb !important;
+            border-left: 4px solid #136ac1;
+        }}
+        .courses-table td:first-child {{
+            font-weight: 500;
+            color: #2c3e50;
+            max-width: 400px;
+            line-height: 1.4;
+        }}
+        .courses-table .fecha-col {{
+            text-align: center;
+            font-weight: 500;
+            color: #34495e;
+        }}
+        .courses-table .creditos-col {{
+            text-align: center;
+            font-weight: bold;
+            color: #27ae60;
+        }}
+        .courses-table .acceso-col {{
+            text-align: center;
+        }}
+        .courses-table a {{
+            color: #136ac1;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 16px;
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }}
+        .courses-table a:hover {{
+            background-color: #136ac1;
+            color: white;
+            transform: scale(1.05);
+        }}
+        .no-link {{
+            color: #bdc3c7;
+            font-style: italic;
+        }}
+        .click-hint {{
+            background-color: #e8f5e8;
+            border: 1px solid #4CAF50;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #2e7d32;
+            text-align: center;
+        }}
+        @media (max-width: 768px) {{
+            .courses-table {{
+                font-size: 12px;
+                min-width: auto;
+            }}
+            .courses-table th,
+            .courses-table td {{
+                padding: 12px 8px;
+            }}
+        }}
+    </style>
+
+    <div class="click-hint">
+        💡 <strong>Tip:</strong> Hacé click en cualquier fila para seleccionar esa actividad automáticamente en el dropdown de abajo
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="courses-table" id="{table_id}">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Actividad (Comisión)</th>
+                    <th style="width: 15%;">Fecha Inicio</th>
+                    <th style="width: 15%;">Fecha Fin</th>
+                    <th style="width: 10%;">Créditos</th>
+                    <th style="width: 15%;">Acceso</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
     if len(df) == 0:
         html += """
             <tr>
@@ -117,8 +243,8 @@ def create_html_table(df, df_original):
     else:
         for idx, row in df.iterrows():
             onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-            html += f'<tr onclick="{onclick_code}">'
-            html += f'<td>{row["Actividad (Comisión)"]}</td>'
+            html += f'<tr onclick="{onclick_code}" style="cursor: pointer;">'
+            html += f'<td title="Click para seleccionar esta actividad">{row["Actividad (Comisión)"]}</td>'
             html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
             html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
             html += f'<td class="creditos-col">{row["Créditos"]}</td>'
@@ -127,7 +253,28 @@ def create_html_table(df, df_original):
             else:
                 html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
             html += "</tr>"
-    html += "</tbody></table></div><script> ... (JS completo con postMessage) ... </script>"
+
+    html += f"""
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let selectedRow = null;
+        function selectActivity(activityName, row) {{
+            if (selectedRow) {{
+                selectedRow.classList.remove('selected');
+            }}
+            selectedRow = row;
+            row.classList.add('selected');
+            sessionStorage.setItem('selected_activity', activityName);
+            window.parent.postMessage({{
+                type: 'streamlit:setQueryParam',
+                selected_activity: activityName
+            }}, '*');
+        }}
+    </script>
+    """
     return html
 
 st.markdown(create_html_table(df_comisiones, df_temp), unsafe_allow_html=True)
@@ -145,7 +292,7 @@ with col3:
 
 # ========== SELECCIÓN DEL DROPDOWN BASADO EN LA TABLA ==========
 st.divider()
-selected_activity = st.experimental_get_query_params().get("selected_activity", [None])[0]
+selected_activity = st.query_params.get("selected_activity", None)
 
 if not df_temp.empty:
     actividad_list = df_temp["Actividad (Comisión)"].tolist()
@@ -163,6 +310,7 @@ if not df_temp.empty:
             <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}
         </div>
     """, unsafe_allow_html=True)
+
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if (
