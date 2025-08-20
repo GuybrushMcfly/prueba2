@@ -6,94 +6,193 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 
+import webbrowser
+
 # ========== DATOS DE PRUEBA ==========
 data = pd.DataFrame([
     {
-        "Actividad": "Curso A",
-        "Abrir desde selección": "https://example.com/a",
-        "Link Markdown": "https://example.com/a",
-        "Texto combinado": "Curso A|https://example.com/a",
-        "Abrir con botón": "https://example.com/a",
+        "ID": 1,
+        "Actividad": "Curso de Python",
+        "URL": "https://python.org",
+        "Descripción": "Aprende Python desde cero"
     },
     {
-        "Actividad": "Curso B",
-        "Abrir desde selección": "https://example.com/b",
-        "Link Markdown": "https://example.com/b",
-        "Texto combinado": "Curso B|https://example.com/b",
-        "Abrir con botón": "https://example.com/b",
+        "ID": 2,
+        "Actividad": "Curso de Streamlit",
+        "URL": "https://streamlit.io",
+        "Descripción": "Crea apps web con Python"
+    },
+    {
+        "ID": 3,
+        "Actividad": "Documentación AgGrid",
+        "URL": "https://docs.streamlit.io/library/api-reference/data/st.dataframe",
+        "Descripción": "Tablas interactivas"
     }
 ])
 
-# ========== CONFIGURACIÓN AGGRID ==========
-gb = GridOptionsBuilder.from_dataframe(data)
-gb.configure_pagination()
-gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+st.title("🔗 Links Clickeables en AgGrid - Soluciones que SÍ funcionan")
 
-# 1️⃣ Link oculto, se usa luego del checkbox
-gb.configure_column("Abrir desde selección", header_name="Seleccionable", hide=True)
+# ========== SOLUCIÓN 1: SELECCIÓN + BOTONES EXTERNOS ==========
+st.header("1️⃣ Solución: Selección + Botones externos")
 
-# 2️⃣ Link como texto Markdown (se mostrará en Streamlit debajo si se selecciona)
-gb.configure_column(
-    "Link Markdown",
-    header_name="🔗 Markdown",
-    cellRenderer=JsCode("""
-        function(params) {
-            return `[LINK](${params.value})`;
-        }
-    """)
-)
+gb1 = GridOptionsBuilder.from_dataframe(data)
+gb1.configure_selection("single", use_checkbox=True)
+gb1.configure_pagination()
+gb1.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
 
-# 3️⃣ Texto + Link (dividido por "|")
-gb.configure_column(
-    "Texto combinado",
-    header_name="Texto+Link",
-    cellRenderer=JsCode("""
-        function(params) {
-            const partes = params.value.split("|");
-            if (partes.length === 2) {
-                const texto = partes[0];
-                const url = partes[1];
-                return `<a href="${url}" target="_blank">${texto}</a>`;
-            }
-            return "";
-        }
-    """)
-)
+# Mostrar URL como texto plano
+gb1.configure_column("URL", header_name="🌐 Enlace", width=200)
 
-# 4️⃣ Botón visual (no interactivo con Python pero sí funcional en JS)
-gb.configure_column(
-    "Abrir con botón",
-    header_name="Botón JS",
-    cellRenderer=JsCode("""
-        function(params) {
-            return params.value 
-                ? `<button onclick="window.open('${params.value}', '_blank')">🌐 Ir</button>` 
-                : "";
-        }
-    """)
-)
+grid_options1 = gb1.build()
 
-grid_options = gb.build()
-
-# ========== MOSTRAR AGGRID ==========
-st.subheader("🧪 Prueba de links clickeables en AgGrid")
-response = AgGrid(
+response1 = AgGrid(
     data,
-    gridOptions=grid_options,
-    allow_unsafe_jscode=True,
-    theme="balham",
-    height=300,
-    use_container_width=True
+    gridOptions=grid_options1,
+    theme="alpine",
+    height=200,
+    use_container_width=True,
+    key="grid1"
 )
 
-# ========== BOTÓN REAL SI SELECCIONÁS ==========
-selected = response["selected_rows"]
-if selected:
-    url = selected[0].get("Abrir desde selección")
-    if url:
-        st.markdown(f"### 🌐 Enlace seleccionado: [{url}]({url})")
-        if st.button("🔗 Abrir en nueva pestaña"):
-            st.components.v1.html(f"<script>window.open('{url}', '_blank')</script>", height=0)
+# Botones para filas seleccionadas
+if response1["selected_rows"]:
+    selected_row = response1["selected_rows"][0]
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.info(f"**Seleccionado:** {selected_row['Actividad']}")
+    
+    with col2:
+        if st.button("🔗 Abrir Link", key="btn1"):
+            st.markdown(f"[👉 {selected_row['Actividad']}]({selected_row['URL']})")
+    
+    with col3:
+        # JavaScript para abrir en nueva pestaña
+        if st.button("🌐 Nueva Pestaña", key="btn2"):
+            js_code = f"""
+            <script>
+                window.open('{selected_row['URL']}', '_blank');
+            </script>
+            """
+            st.components.v1.html(js_code, height=0)
+
+st.divider()
+
+# ========== SOLUCIÓN 2: MÚLTIPLES SELECCIONES ==========
+st.header("2️⃣ Solución: Múltiples selecciones")
+
+gb2 = GridOptionsBuilder.from_dataframe(data)
+gb2.configure_selection("multiple", use_checkbox=True)
+gb2.configure_pagination()
+gb2.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+
+grid_options2 = gb2.build()
+
+response2 = AgGrid(
+    data,
+    gridOptions=grid_options2,
+    theme="balham",
+    height=200,
+    use_container_width=True,
+    key="grid2"
+)
+
+# Abrir múltiples links
+if response2["selected_rows"]:
+    st.write(f"**{len(response2['selected_rows'])} elementos seleccionados:**")
+    
+    cols = st.columns(min(len(response2["selected_rows"]), 4))
+    
+    for i, row in enumerate(response2["selected_rows"]):
+        with cols[i % len(cols)]:
+            if st.button(f"🔗 {row['Actividad']}", key=f"multi_btn_{i}"):
+                st.markdown(f"[👉 Abrir {row['Actividad']}]({row['URL']})")
+
+st.divider()
+
+# ========== SOLUCIÓN 3: DOBLE CLICK (CALLBACK) ==========
+st.header("3️⃣ Solución: Doble click en fila")
+
+gb3 = GridOptionsBuilder.from_dataframe(data)
+gb3.configure_pagination()
+gb3.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+
+# Configurar evento de doble click
+gb3.configure_grid_options(onRowDoubleClicked=JsCode("""
+    function(event) {
+        // Esta función se ejecuta al hacer doble click
+        console.log('Doble click en:', event.data);
+    }
+"""))
+
+grid_options3 = gb3.build()
+
+st.info("💡 **Instrucciones:** Haz doble click en cualquier fila para ver los datos")
+
+response3 = AgGrid(
+    data,
+    gridOptions=grid_options3,
+    allow_unsafe_jscode=True,
+    theme="streamlit",
+    height=200,
+    use_container_width=True,
+    key="grid3"
+)
+
+# Detectar cambios en la grilla (incluyendo doble clicks)
+if hasattr(response3, 'event_data') and response3.event_data:
+    if response3.event_data.get('type') == 'rowDoubleClicked':
+        clicked_row = response3.event_data['data']
+        st.success(f"🎯 **Doble click detectado!**")
+        st.markdown(f"**Actividad:** {clicked_row['Actividad']}")
+        st.markdown(f"**Link:** [{clicked_row['URL']}]({clicked_row['URL']})")
+
+st.divider()
+
+# ========== SOLUCIÓN 4: TABLA NATIVA DE STREAMLIT ==========
+st.header("4️⃣ Alternativa: Tabla nativa con links")
+
+# Crear DataFrame con links en formato Markdown
+data_with_links = data.copy()
+data_with_links['Link Clickeable'] = data_with_links.apply(
+    lambda row: f"[🔗 {row['Actividad']}]({row['URL']})", axis=1
+)
+
+# Mostrar con st.dataframe (los links SÍ funcionan aquí)
+st.dataframe(
+    data_with_links[['Actividad', 'Link Clickeable', 'Descripción']],
+    use_container_width=True,
+    hide_index=True
+)
+
+st.success("✅ En esta tabla los links SÍ son clickeables!")
+
+# ========== SOLUCIÓN 5: SIDEBAR PARA NAVEGACIÓN ==========
+st.sidebar.header("🌐 Navegación rápida")
+st.sidebar.write("Links de las actividades:")
+
+for _, row in data.iterrows():
+    if st.sidebar.button(f"🔗 {row['Actividad']}", key=f"sidebar_{row['ID']}"):
+        st.sidebar.markdown(f"[👉 Ir a {row['Actividad']}]({row['URL']})")
+
+# ========== INFORMACIÓN ADICIONAL ==========
+with st.expander("ℹ️ ¿Por qué no funcionan los links en AgGrid?"):
+    st.write("""
+    **Razones técnicas:**
+    
+    1. **Seguridad:** Streamlit limita la ejecución de JavaScript por seguridad
+    2. **Sandbox:** AgGrid corre en un contexto aislado
+    3. **HTML estático:** Los elementos HTML se renderizan como texto
+    
+    **Soluciones recomendadas:**
+    
+    ✅ **Selección + botones externos** (más control)
+    ✅ **Tabla nativa de Streamlit** (links nativos)
+    ✅ **Doble click + callbacks** (más interactivo)
+    ✅ **Sidebar navigation** (UX limpia)
+    """)
+
+st.info("💡 **Recomendación:** Usa la Solución 1 (selección + botones) para máximo control y UX clara.")
 
 
 
