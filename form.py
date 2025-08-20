@@ -70,11 +70,7 @@ df_temp["Fecha inicio"] = df_temp["fecha_desde"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
-
-# ========== CONVERTIR link_externo en HTML ==========
-
-df_temp["Ver más"] = df_temp["link_externo"]  # solo la URL
-
+df_temp["Ver más"] = df_temp["link_externo"]
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -98,343 +94,75 @@ if modalidad_sel != "Todos":
 # ========== ARMAR DF FINAL CON COLUMNAS VISIBLES ==========
 df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos", "Ver más"
-]]
+]].reset_index(drop=True)
 
-# 🛠️ RESET INDEX por recomendación de foros
-df_comisiones = df_comisiones.reset_index(drop=True)
-
-# ========== CONFIGURACIÓN AGGRID ==========
-gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
-gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-
-gb.configure_column("Actividad (Comisión)", flex=50, tooltipField="Actividad (Comisión)", wrapText=True, autoHeight=True, resizable=False, minWidth=600, maxWidth=600)
-gb.configure_column("Actividad", hide=True)
-gb.configure_column("Comisión", hide=True)
-gb.configure_column("Fecha inicio", flex=15, resizable=False, autoHeight=True)
-gb.configure_column("Fecha fin", flex=15, resizable=False, autoHeight=True)
-gb.configure_column("Créditos", flex=13, resizable=False, autoHeight=True)
-gb.configure_column(
-    "Ver más",
-    header_name="Acceso",
-    cellRenderer='''(params) => {
-        return params.value ? `<a href="${params.value}" target="_blank">🌐 Acceder</a>` : "";
-    }''',
-    flex=10,
-    resizable=False
-)
-
-custom_css = {
-    ".ag-header": {
-        "background-color": "#136ac1 !important",
-        "color": "white !important",
-        "font-weight": "bold !important"
-    },
-    ".ag-row": {
-        "font-size": "14px !important"
-    },
-    ".ag-row:nth-child(even)": {
-        "background-color": "#f5f5f5 !important"
-    },
-    ".ag-cell": {
-        "white-space": "normal !important",
-        "line-height": "1.2 !important",
-        "vertical-align": "middle !important",
-        "display": "flex !important",
-        "align-items": "center !important",
-        "justify-content": "flex-start !important"
-    }
-}
-
-grid_options = gb.build()
-
-# ========== MOSTRAR TABLA ==========
-response = AgGrid(
-    df_comisiones,
-    gridOptions=grid_options,
-    update_mode="SELECTION_CHANGED",
-    height=500,
-    allow_unsafe_jscode=True,  # ¡Esto es fundamental!
-    theme="balham",
-    custom_css=custom_css,
-    use_container_width=False,
-    width=900
-)
-
-# ========== ALTERNATIVA: TABLA HTML + CSS PERSONALIZADO ==========
+# ========== TABLA HTML PERSONALIZADA ==========
 st.divider()
-st.header("🆕 ALTERNATIVA: Tabla HTML con links clickeables")
+st.header("🆕 Tabla de actividades disponibles")
 
-# Función para crear la tabla HTML con funcionalidad de selección
 def create_html_table(df, df_original):
-    # Generar un ID único para esta sesión
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
+    html = f"""<style> ... (TODO: pegás acá el mismo bloque CSS+JS que ya tenías) ... </style>"""
     
-    html = f"""
-    <style>
-        .courses-table {{
-            border-collapse: collapse;
-            margin: 25px auto;
-            font-size: 14px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-width: 900px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: white;
-        }}
-        .courses-table thead tr {{
-            background-color: #136ac1;
-            color: #ffffff;
-            text-align: left;
-            font-weight: bold;
-        }}
-        .courses-table th,
-        .courses-table td {{
-            padding: 16px 12px;
-            border-bottom: 1px solid #e0e0e0;
-            vertical-align: middle;
-        }}
-        .courses-table th {{
-            font-size: 15px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        .courses-table tbody tr {{
-            background-color: #ffffff;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }}
-        .courses-table tbody tr:nth-of-type(even) {{
-            background-color: #f5f5f5;
-        }}
-        .courses-table tbody tr:hover {{
-            background-color: #e3f2fd;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
-        }}
-        .courses-table tbody tr.selected {{
-            background-color: #bbdefb !important;
-            border-left: 4px solid #136ac1;
-        }}
-        .courses-table td:first-child {{
-            font-weight: 500;
-            color: #2c3e50;
-            max-width: 400px;
-            line-height: 1.4;
-        }}
-        .courses-table .fecha-col {{
-            text-align: center;
-            font-weight: 500;
-            color: #34495e;
-        }}
-        .courses-table .creditos-col {{
-            text-align: center;
-            font-weight: bold;
-            color: #27ae60;
-        }}
-        .courses-table .acceso-col {{
-            text-align: center;
-        }}
-        .courses-table a {{
-            color: #136ac1;
-            text-decoration: none;
-            font-weight: bold;
-            padding: 8px 16px;
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }}
-        .courses-table a:hover {{
-            background-color: #136ac1;
-            color: white;
-            transform: scale(1.05);
-        }}
-        .no-link {{
-            color: #bdc3c7;
-            font-style: italic;
-        }}
-        .click-hint {{
-            background-color: #e8f5e8;
-            border: 1px solid #4CAF50;
-            border-radius: 6px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #2e7d32;
-            text-align: center;
-        }}
-        @media (max-width: 768px) {{
-            .courses-table {{
-                font-size: 12px;
-                min-width: auto;
-            }}
-            .courses-table th,
-            .courses-table td {{
-                padding: 12px 8px;
-            }}
-        }}
-    </style>
-    
-    <div class="click-hint">
-        💡 <strong>Tip:</strong> Hacé click en cualquier fila para seleccionar esa actividad automáticamente en el dropdown de abajo
-    </div>
-    
-    <div style="overflow-x: auto;">
-        <table class="courses-table" id="{table_id}">
-            <thead>
-                <tr>
-                    <th style="width: 45%;">Actividad (Comisión)</th>
-                    <th style="width: 15%;">Fecha Inicio</th>
-                    <th style="width: 15%;">Fecha Fin</th>
-                    <th style="width: 10%;">Créditos</th>
-                    <th style="width: 15%;">Acceso</th>
-                </tr>
-            </thead>
-            <tbody>"""
-    """
-    
-    # Generar filas con funcionalidad de selección
+    # Agregás la parte dinámica de las filas
+    html += "<tbody>"
     if len(df) == 0:
         html += """
-               <tr>
-                    <td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
-                        No se encontraron cursos con los filtros seleccionados
-                    </td>
-               </tr>
+            <tr>
+                <td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
+                    No se encontraron cursos con los filtros seleccionados
+                </td>
+            </tr>
         """
     else:
         for idx, row in df.iterrows():
-            # Buscar los datos completos del DataFrame original
-            original_row = df_original[df_original["Actividad (Comisión)"] == row["Actividad (Comisión)"]].iloc[0]
-            
-            # Crear onclick para seleccionar actividad
-            onclick_code = f"selectActivity('{row['Actividad']}', this)"
-            
-            html += f'<tr onclick="{onclick_code}" style="cursor: pointer;">'
-            
-            # Actividad (Comisión)
-            html += f'<td title="Click para seleccionar esta actividad">{row["Actividad (Comisión)"]}</td>'
-            
-            # Fecha inicio
+            onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
+            html += f'<tr onclick="{onclick_code}">'
+            html += f'<td>{row["Actividad (Comisión)"]}</td>'
             html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
-            
-            # Fecha fin
             html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
-            
-            # Créditos
             html += f'<td class="creditos-col">{row["Créditos"]}</td>'
-            
-            # Acceso (Ver más) - prevenir propagación del click
             if pd.notna(row["Ver más"]) and row["Ver más"]:
                 html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
             else:
                 html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
-            
             html += "</tr>"
-    
-    html += f"""
-            </tbody>
-        </table>
-    </div>
-    
-    <script>
-        let selectedRow = null;
-        
-        function selectActivity(activityName, row) {{
-            // Remover selección anterior
-            if (selectedRow) {{
-                selectedRow.classList.remove('selected');
-            }}
-            
-            // Marcar nueva selección
-            selectedRow = row;
-            row.classList.add('selected');
-            
-            // Guardar la actividad seleccionada en sessionStorage para Streamlit
-            sessionStorage.setItem('selected_activity', activityName);
-            
-            // Enviar evento personalizado para notificar a Streamlit
-            window.parent.postMessage({{
-                type: 'streamlit:setQueryParam',
-                selected_activity: activityName
-            }}, '*');
-            
-            // Mostrar feedback visual
-            const feedback = document.createElement('div');
-            feedback.innerHTML = `
-                <div style="
-                    position: fixed; 
-                    top: 20px; 
-                    right: 20px; 
-                    background: #4CAF50; 
-                    color: white; 
-                    padding: 15px 20px; 
-                    border-radius: 8px; 
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
-                    z-index: 1000; 
-                    font-family: 'Segoe UI', sans-serif;
-                    font-size: 14px;
-                    animation: slideIn 0.3s ease-out;
-                ">
-                    ✅ Actividad seleccionada: ${{activityName}}
-                    <br><small>Revisá el dropdown de abajo</small>
-                </div>
-            `;
-            
-            document.body.appendChild(feedback);
-            
-            // Remover el feedback después de 3 segundos
-            setTimeout(() => {{
-                if (feedback.parentNode) {{
-                    feedback.parentNode.removeChild(feedback);
-                }}
-            }}, 3000);
-        }}
-        
-        // Agregar animación CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {{
-                from {{ transform: translateX(100%); opacity: 0; }}
-                to {{ transform: translateX(0); opacity: 1; }}
-            }}
-        `;
-        document.head.appendChild(style);
-    </script>
-    """
-    
+    html += "</tbody></table></div><script> ... (JS completo con postMessage) ... </script>"
     return html
 
-# Mostrar la tabla HTML con funcionalidad de detalles
 st.markdown(create_html_table(df_comisiones, df_temp), unsafe_allow_html=True)
 
-# Mostrar información adicional
+# ========== MÉTRICAS ==========
 col1, col2, col3 = st.columns(3)
-
 with col1:
     st.metric("📚 Total de cursos", len(df_comisiones))
-
 with col2:
     cursos_con_link = len(df_comisiones[df_comisiones["Ver más"].notna()])
     st.metric("🔗 Con enlace", cursos_con_link)
-
 with col3:
     creditos_total = df_comisiones["Créditos"].sum()
     st.metric("⭐ Créditos totales", creditos_total)
 
-if len(df_comisiones) > 0:
-    st.success("✅ **Ventajas de esta tabla HTML:**")
-    st.write("• 🌐 **Links realmente clickeables** (no como en AgGrid)")
-    st.write("• 🎨 **Diseño profesional** con hover effects y animaciones")
-    st.write("• 📱 **Responsive** - se adapta a móviles")
-    st.write("• ⚡ **Más rápida** - no carga librerías pesadas")
-    st.write("• 🔧 **Fácil de personalizar** - CSS completamente editable")
-else:
-    st.info("ℹ️ Ajusta los filtros para ver los cursos disponibles")
+# ========== SELECCIÓN DEL DROPDOWN BASADO EN LA TABLA ==========
+st.divider()
+selected_activity = st.experimental_get_query_params().get("selected_activity", [None])[0]
+
+if not df_temp.empty:
+    actividad_list = df_temp["Actividad (Comisión)"].tolist()
+    default_index = actividad_list.index(selected_activity) if selected_activity in actividad_list else 0
+
+    st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
+    actividad_elegida = st.selectbox("Actividad (Comisión)", actividad_list, index=default_index)
+
+    seleccion = df_temp[df_temp["Actividad (Comisión)"] == actividad_elegida].iloc[0]
+    st.markdown(f"""
+        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px;">
+            <strong>📘 Actividad:</strong> {seleccion["Actividad"]}<br>
+            <strong>🆔 Comisión:</strong> {seleccion["Comisión"]}<br>
+            <strong>📅 Fechas:</strong> {seleccion["Fecha inicio"]} al {seleccion["Fecha fin"]}<br>
+            <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}
+        </div>
+    """, unsafe_allow_html=True)
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if (
