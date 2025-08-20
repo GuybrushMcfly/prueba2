@@ -173,6 +173,8 @@ response = AgGrid(
 
 # ========== SELECCIÓN ==========
 selected = response["selected_rows"] or []
+st.write("🔍 DEBUG selección:", selected)
+
 
 
 comision_id = None
