@@ -12,6 +12,10 @@ import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
 import streamlit.components.v1 as components
 
+import streamlit as st
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
+
 # ========== DATOS DE PRUEBA ==========
 data = pd.DataFrame([
     {"Actividad": "Curso Python", "Enlace": "https://python.org"},
@@ -22,30 +26,91 @@ data = pd.DataFrame([
 # ========== CONFIGURAR AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(data)
 gb.configure_selection("multiple", use_checkbox=True)
+gb.configure_pagination(paginationAutoPageSize=True)
+gb.configure_default_column(resizable=True, wrapText=True)
 gb.configure_column("Enlace", header_name="🌐 Link", width=300)
+
 grid_options = gb.build()
 
 # ========== MOSTRAR AGGRID ==========
 st.subheader("🧪 Seleccioná cursos para abrir el link")
-response = AgGrid(data, gridOptions=grid_options, theme="balham", height=300, use_container_width=True)
 
-# ========== MOSTRAR BOTONES ==========
+response = AgGrid(
+    data, 
+    gridOptions=grid_options, 
+    theme="balham", 
+    height=300, 
+    use_container_width=True
+)
+
+# ========== MOSTRAR BOTONES (MEJORADO) ==========
 selected = response.get("selected_rows", [])
 
 if selected:
-    st.success(f"Seleccionaste {len(selected)} curso(s)")
+    st.success(f"✅ Seleccionaste {len(selected)} curso(s)")
+    
+    # Crear columnas dinámicas para los botones
+    cols = st.columns(min(len(selected), 3))  # máximo 3 columnas
+    
     for i, row in enumerate(selected):
-        if st.button(f"🌐 Abrir {row['Actividad']}", key=f"boton_{i}"):
-            components.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
-
+        with cols[i % len(cols)]:  # distribuir botones en columnas
+            if st.button(f"🌐 {row['Actividad']}", key=f"boton_{i}", use_container_width=True):
+                # Usar st.components.v1.html en lugar de components.html
+                js_code = f'<script>window.open("{row["Enlace"]}", "_blank");</script>'
+                st.components.v1.html(js_code, height=0)
+                st.success(f"🔗 Abriendo: {row['Actividad']}")
+    
+    # Botón para abrir todos (solo si hay más de 1)
     if len(selected) > 1:
-        st.markdown("---")
-        if st.button("🚀 Abrir todos"):
-            for row in selected:
-                components.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
-            st.balloons()
+        st.divider()
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            if st.button("🚀 Abrir TODOS los cursos", type="primary", use_container_width=True):
+                for row in selected:
+                    js_code = f'<script>window.open("{row["Enlace"]}", "_blank");</script>'
+                    st.components.v1.html(js_code, height=0)
+                st.balloons()
+                st.success(f"🎉 Abriendo {len(selected)} enlaces!")
+                
+                # Mostrar lista de lo que se está abriendo
+                with st.expander("📋 Enlaces que se están abriendo:"):
+                    for row in selected:
+                        st.write(f"• {row['Actividad']}: {row['Enlace']}")
+
 else:
-    st.info("Seleccioná al menos un curso para ver los botones.")
+    st.info("ℹ️ Seleccioná al menos un curso usando los checkboxes para ver los botones.")
+    st.write("👆 **Tip:** Hacé click en los cuadraditos de la primera columna para seleccionar")
+
+# ========== EXTRAS ÚTILES ==========
+st.divider()
+
+# Mostrar estadísticas
+with st.expander("📊 Estadísticas de selección"):
+    st.write(f"**Total de cursos disponibles:** {len(data)}")
+    st.write(f"**Cursos seleccionados:** {len(selected)}")
+    if selected:
+        st.write("**Enlaces seleccionados:**")
+        for row in selected:
+            st.write(f"• [{row['Actividad']}]({row['Enlace']})")
+
+# Botón para limpiar selección
+if selected:
+    st.divider()
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🔄 Limpiar selección", help="Recargar la página para empezar de nuevo"):
+            st.experimental_rerun()
+
+# Agregar links directos como alternativa
+st.sidebar.header("🌐 Enlaces directos")
+st.sidebar.write("Como alternativa, podés usar estos enlaces:")
+
+for _, row in data.iterrows():
+    st.sidebar.markdown(f"[🔗 {row['Actividad']}]({row['Enlace']})")
+
+st.sidebar.divider()
+st.sidebar.info("💡 Los enlaces del sidebar se abren en la misma pestaña, los botones principales en nueva pestaña.")
 
 
 
