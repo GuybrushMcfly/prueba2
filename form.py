@@ -75,7 +75,7 @@ for id_act, nombre_act in actividades_unicas.items():
                 "Actividad (Comisión)": f"{nombre_act} ({c.get('id_comision_sai')})",
                 "Actividad": nombre_act,
                 "Comisión": c.get("id_comision_sai"),
-                "UUID": c.get("id_comision"),   # 👈 ahora usamos el UUID real
+                "UUID": c.get("id_comision"),
                 "Fecha inicio": format_fecha(c.get("fecha_desde")),
                 "Fecha fin": format_fecha(c.get("fecha_hasta")),
                 "Créditos": c.get("creditos", ""),
@@ -90,22 +90,17 @@ if df_comisiones.empty:
 # ========== AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
-pre_sel = [0] if len(df_comisiones) > 0 else []
-gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
+gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-
 gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("UUID", hide=True)  # ocultamos el UUID pero lo tenemos en la data
+gb.configure_column("UUID", hide=True)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
 gb.configure_column("Créditos", flex=10)
 
 grid_options = gb.build()
-grid_options["rowSelection"] = "single"
-grid_options["suppressRowClickSelection"] = False
-grid_options["rowDeselection"] = True
 
 st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
@@ -114,32 +109,24 @@ response = AgGrid(
     height=420,
     theme="balham",
     allow_unsafe_jscode=True,
-    update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.MODEL_CHANGED,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
     data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
     key="grid_comisiones_view"
 )
 
-# ======== DEBUG COMPLETO ========
-st.markdown("### 🐞 DEBUG AgGrid")
-st.write("keys:", list(response.keys()))
-st.write("selected_rows:", response.get("selected_rows"))
-st.write("selected_data:", response.get("selected_data"))
-st.write("event_data:", response.get("event_data"))
-st.write("grid_state:", response.get("grid_state"))
-st.write("grid_response:", response.get("grid_response"))
-
-# ======== EXTRACTOR ROBUSTO ========
+# ========== EXTRACTOR ROBUSTO ==========
 def extraer_seleccion(resp) -> list:
     if not isinstance(resp, dict):
         return []
-    cand = (
-        resp.get("selected_rows")
-        or resp.get("selected_data")
-        or (resp.get("grid_response") or {}).get("selected_rows")
-        or (resp.get("grid_response") or {}).get("selected_data")
-        or []
+    seleccion = resp.get("selected_rows", [])
+    if isinstance(seleccion, list) and len(seleccion) > 0:
+        return seleccion
+    seleccion_alt = (
+        resp.get("selected_data") or
+        (resp.get("grid_response") or {}).get("selected_rows") or
+        (resp.get("grid_response") or {}).get("selected_data") or []
     )
-    return cand if cand else []
+    return seleccion_alt if isinstance(seleccion_alt, list) and len(seleccion_alt) > 0 else []
 
 selected = extraer_seleccion(response)
 
@@ -148,8 +135,10 @@ if selected:
 elif "fila_sel" in st.session_state:
     selected = [st.session_state["fila_sel"]]
 
-st.markdown("### 🐞 DEBUG: Fila seleccionada (final)")
-st.write(selected)
+# ========== DEBUG SELECCIÓN ==========
+st.markdown("### 🐞 DEBUG DE SELECCIÓN")
+st.write("🔑 Claves disponibles:", list(response.keys()))
+st.write("🟢 Fila seleccionada:", selected)
 
 # ========== SI HAY SELECCIÓN ==========
 if selected:
@@ -162,7 +151,6 @@ if selected:
 
     st.success(f"Seleccionaste: {actividad} - Comisión {comision} (UUID={uuid_comision})")
 
-    # Campo CUIL siempre visible al seleccionar
     raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
     cuil = ''.join(filter(str.isdigit, raw))[:11]
 
@@ -172,7 +160,7 @@ if selected:
             st.stop()
 
         agente = supabase.table("agentes").select("*").eq("cuil", cuil).execute()
-        st.write("🔎 DEBUG agente:", agente.data)
+        st.write("🔍 DEBUG agente:", agente.data)
         if not agente.data:
             st.error("No se encontró ese agente.")
             st.stop()
@@ -182,7 +170,7 @@ if selected:
             .eq("cuil", cuil) \
             .eq("comision_id", uuid_comision) \
             .limit(1).execute()
-        st.write("🔎 DEBUG ya_inscripto:", ya.data)
+        st.write("🔍 DEBUG ya_inscripto:", ya.data)
         if ya.data:
             st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
@@ -200,7 +188,7 @@ if selected:
         if st.button("Confirmar inscripción"):
             nueva = {
                 "cuil": cuil,
-                "comision_id": uuid_comision,  # 👈 usamos el UUID real
+                "comision_id": uuid_comision,
                 "fecha_inscripcion": datetime.now().strftime("%Y-%m-%d"),
                 "apellido": apellido,
                 "nombre": nombre,
