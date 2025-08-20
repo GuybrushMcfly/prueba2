@@ -104,6 +104,11 @@ df_comisiones = df_filtrado[[
 
 def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
+
+    if df.empty:
+        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
+        return ""
+
     html = f"""
     <style>
         .courses-table {{
@@ -127,11 +132,23 @@ def create_html_table(df):
             padding: 14px 12px;
             border-bottom: 1px solid #e0e0e0;
         }}
-        .courses-table tbody tr:hover {{
-            background-color: #e3f2fd;
+        .courses-table tbody tr {{
+            background-color: #ffffff;
+            transition: all 0.3s ease;
             cursor: pointer;
         }}
-        .courses-table .fecha-col, .courses-table .creditos-col, .courses-table .acceso-col {{
+        .courses-table tbody tr:hover {{
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+        }}
+        .courses-table tbody tr.selected {{
+            background-color: #bbdefb !important;
+            border-left: 4px solid #136ac1;
+        }}
+        .courses-table .fecha-col,
+        .courses-table .creditos-col,
+        .courses-table .acceso-col {{
             text-align: center;
         }}
         .courses-table a {{
@@ -147,6 +164,7 @@ def create_html_table(df):
         .courses-table a:hover {{
             background-color: #136ac1;
             color: white;
+            transform: scale(1.05);
         }}
         .no-link {{
             color: #bdc3c7;
@@ -170,10 +188,6 @@ def create_html_table(df):
             </thead>
             <tbody>
     """
-
-    if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados.")
-        return ""
 
     for _, row in df.iterrows():
         onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
@@ -214,6 +228,7 @@ def create_html_table(df):
 
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+
 
 # ========== DROPDOWN DE ACTIVIDAD ==========
 st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
