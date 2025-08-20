@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 from st_aggrid import AgGrid, GridOptionsBuilder
 from st_aggrid import GridUpdateMode, DataReturnMode
 from supabase import create_client, Client
@@ -37,6 +37,7 @@ def format_fecha(f):
 
 @st.cache_data(ttl=86400)
 def obtener_comisiones_abiertas():
+    # Usamos la VIEW
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
@@ -75,7 +76,6 @@ for id_act, nombre_act in actividades_unicas.items():
                 "Actividad (Comisión)": f"{nombre_act} ({c.get('id_comision_sai')})",
                 "Actividad": nombre_act,
                 "Comisión": c.get("id_comision_sai"),
-                "comision_id": c.get("id"),  # 👈 uuid real de la comisión
                 "Fecha inicio": format_fecha(c.get("fecha_desde")),
                 "Fecha fin": format_fecha(c.get("fecha_hasta")),
                 "Créditos": c.get("creditos", ""),
@@ -90,19 +90,23 @@ if df_comisiones.empty:
 # ========== AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
+# Pre-seleccionamos 1ª fila para romper el estado 'None' inicial
 pre_sel = [0] if len(df_comisiones) > 0 else []
 gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-gb.configure_column("Actividad (Comisión)", flex=60, minWidth=600)
+gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("comision_id", hide=True)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
 gb.configure_column("Créditos", flex=10)
 
 grid_options = gb.build()
+grid_options["rowSelection"] = "single"
+grid_options["suppressRowClickSelection"] = False
+grid_options["rowDeselection"] = True
+# NO usamos getRowNodeId para no interferir
 
 st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
@@ -116,41 +120,79 @@ response = AgGrid(
     key="grid_comisiones_view"
 )
 
+# ======== DEBUG COMPLETO ========
+st.markdown("### 🐞 DEBUG AgGrid")
+st.write("keys:", list(response.keys()))
+st.write("selected_rows:", response.get("selected_rows"))
+st.write("selected_data:", response.get("selected_data"))
+st.write("event_data:", response.get("event_data"))
+st.write("grid_state:", response.get("grid_state"))
+st.write("grid_response:", response.get("grid_response"))
+
 # ======== EXTRACTOR ROBUSTO ========
 def extraer_seleccion(resp) -> list:
     if not isinstance(resp, dict):
         return []
-    return (
+    # 1) Lugares típicos
+    cand = (
         resp.get("selected_rows")
         or resp.get("selected_data")
         or (resp.get("grid_response") or {}).get("selected_rows")
         or (resp.get("grid_response") or {}).get("selected_data")
         or []
     )
+    if cand:
+        return cand
+    # 2) Algunos builds guardan la selección en grid_state
+    gs = resp.get("grid_state") or {}
+    # intentamos distintos nombres posibles
+    for key in ("selected", "selected_rows", "selection", "rowSelection"):
+        val = gs.get(key)
+        if val:
+            try:
+                # puede venir como dict/obj; intentamos normalizar a list[dict]
+                if isinstance(val, dict):
+                    val = [val]
+                return val
+            except Exception:
+                pass
+    return []
 
 selected = extraer_seleccion(response)
+
+# Persistimos / recuperamos última selección
 if selected:
     st.session_state["fila_sel"] = selected[0]
 elif "fila_sel" in st.session_state:
     selected = [st.session_state["fila_sel"]]
+
+st.markdown("### 🐞 DEBUG: Fila seleccionada (final)")
+st.write(selected)
+
+# ======== FALLBACK MANUAL (si la grilla no devuelve nada) ========
+if not selected:
+    st.info("No se detectó la selección desde la grilla (issue de st_aggrid). Usá este selector alternativo.")
+    opciones = [f"{r['Actividad (Comisión)']}" for _, r in df_comisiones.iterrows()]
+    idx = st.selectbox("Elegí una comisión:", range(len(opciones)), format_func=lambda i: opciones[i])
+    if idx is not None:
+        selected = [df_comisiones.iloc[int(idx)].to_dict()]
+        st.session_state["fila_sel"] = selected[0]
+        st.success("Selección aplicada desde el selector alternativo.")
 
 # ========== SI HAY SELECCIÓN ==========
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
     comision = fila["Comisión"]
-    comision_id = fila["comision_id"]  # uuid real
     fecha_ini = fila["Fecha inicio"]
     fecha_fin = fila["Fecha fin"]
 
-    st.markdown("### 📝 Comisión seleccionada")
-    st.markdown(f"**{actividad}**  \n_Comisión {comision}_  \n_{fecha_ini} → {fecha_fin}_")
+    st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
+    st.markdown(f"**{actividad}**  \n_Comisión {comision}_")
 
-    # 👇 SIEMPRE SE MUESTRA EL CAMPO CUIL
     raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
     cuil = ''.join(filter(str.isdigit, raw))[:11]
 
-    # 🔘 Botón para validar CUIL
     if st.button("Validar CUIL", type="primary"):
         if not validar_cuil(cuil):
             st.error("CUIL inválido. Debe tener 11 dígitos.")
@@ -165,12 +207,11 @@ if selected:
         ya = supabase.table("cursos_inscripciones") \
             .select("id") \
             .eq("cuil", cuil) \
-            .eq("comision_id", comision_id) \
+            .eq("id_comision_sai", comision) \
             .limit(1).execute()
         st.write("🔎 DEBUG ya_inscripto:", ya.data)
-
         if ya.data:
-            st.warning("⚠️ Ya estás inscripto en esta comisión.")
+            st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
 
         datos = agente.data[0]
@@ -184,21 +225,31 @@ if selected:
         tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
 
         if st.button("Confirmar inscripción"):
+            def to_sql(dmy):
+                try:
+                    return datetime.strptime(dmy, "%d/%m/%Y").strftime("%Y-%m-%d") if dmy else None
+                except Exception:
+                    return None
+
             nueva = {
                 "cuil": cuil,
-                "comision_id": comision_id,
-                "fecha_inscripcion": datetime.now().strftime("%Y-%m-%d"),
                 "apellido": apellido,
                 "nombre": nombre,
-                "email": correo,
+                "correo": correo,
                 "tramo": tramo,
+                "id_comision_sai": comision,
+                "nombre_actividad": actividad,
+                "fecha_desde": to_sql(fecha_ini),
+                "fecha_hasta": to_sql(fecha_fin),
             }
 
             st.write("📦 DEBUG INSERT cursos_inscripciones:", nueva)
             res = supabase.table("cursos_inscripciones").insert(nueva).execute()
-            st.write("📬 DEBUG respuesta insert:", res)
+            st.write("📬 DEBUG respuesta insert:", {"data": res.data, "error": getattr(res, "error", None)})
 
-            if res.data:
+            if getattr(res, "error", None):
+                st.error(f"❌ Error al registrar la inscripción: {res.error}")
+            elif res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
                 # -------- Constancia PDF --------
@@ -230,5 +281,7 @@ if selected:
                     file_name="constancia_inscripcion.pdf",
                     mime="application/pdf"
                 )
+            else:
+                st.error("❌ Ocurrió un error al registrar la inscripción.")
 else:
     st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
