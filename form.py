@@ -111,11 +111,11 @@ def create_html_table(df):
     html = f"""
     <style>
         .courses-table {{
+            width: 90%;
+            margin: 20px auto 30px auto;
             border-collapse: collapse;
-            margin: 10px auto 30px auto;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-width: 900px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
@@ -156,6 +156,13 @@ def create_html_table(df):
             color: #bdc3c7;
             font-style: italic;
         }}
+        .mensaje-vacio {{
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 30px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }}
     </style>
 
     <div style="overflow-x: auto;">
@@ -174,9 +181,12 @@ def create_html_table(df):
 
     if df.empty:
         html += """
-            <tr><td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
-                No se encontraron cursos
-            </td></tr>
+            <tr>
+                <td colspan="5" class="mensaje-vacio">
+                    No se encontraron cursos con los filtros seleccionados.<br>
+                    Probá cambiar los filtros para ver otras actividades disponibles.
+                </td>
+            </tr>
         """
     else:
         for _, row in df.iterrows():
@@ -214,6 +224,7 @@ def create_html_table(df):
     </script>
     """
     return html
+
 
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
