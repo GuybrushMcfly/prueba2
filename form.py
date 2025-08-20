@@ -177,9 +177,9 @@ custom_css = {
 }
 
 
-# ===============================
+# =========================
 # DATOS SIMULADOS
-# ===============================
+# =========================
 df_simulada = pd.DataFrame([
     {
         "Actividad (Comisión)": "Curso de Python (CPY-001)",
@@ -199,64 +199,57 @@ df_simulada = pd.DataFrame([
     }
 ])
 
-# ===============================
-# CONFIGURACIÓN DE AGGRID (TABLA SIMULADA)
-# ===============================
-gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
-gb_sim.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
-gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
-gb_sim.configure_column("Actividad", hide=True)
-gb_sim.configure_column("Comisión", hide=True)
-gb_sim.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
-gb_sim.configure_column("Fecha inicio", flex=15)
-gb_sim.configure_column("Fecha fin", flex=15)
-gb_sim.configure_column("Créditos", flex=10)
-gb_sim.configure_pagination(paginationAutoPageSize=True)
+# =========================
+# CONFIGURACIÓN AG-GRID
+# =========================
+gb = GridOptionsBuilder.from_dataframe(df_simulada)
+gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
 
-# Opcional: Estilo visual (mismo que en app real)
-custom_css = {
-    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
-    ".ag-row": {"font-size": "14px !important"},
-    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
-    ".ag-cell": {
-        "white-space": "normal !important",
-        "line-height": "1.2 !important",
-        "vertical-align": "middle !important",
-        "display": "flex !important",
-        "align-items": "center !important",
-        "justify-content": "flex-start !important"
-    }
-}
+# Checkbox de selección única
+gb.configure_selection(selection_mode="single", use_checkbox=True)
 
-# ===============================
-# MOSTRAR TABLA Y CAPTURAR FILA
-# ===============================
+# Ocultar columnas internas
+gb.configure_column("Actividad", hide=True)
+gb.configure_column("Comisión", hide=True)
+
+# Columnas visibles
+gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
+gb.configure_column("Fecha inicio", flex=15)
+gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=10)
+
+# Paginación
+gb.configure_pagination(paginationAutoPageSize=True)
+
+# =========================
+# MOSTRAR TABLA Y CAPTURAR SELECCIÓN
+# =========================
 st.markdown("### 🧪 Tabla de prueba (simulada)")
 
-response_sim = AgGrid(
+response = AgGrid(
     df_simulada,
-    gridOptions=gb_sim.build(),
+    gridOptions=gb.build(),
     theme="balham",
     height=300,
-    custom_css=custom_css,
     allow_unsafe_jscode=True,
-    key="tabla_simulada"
+    key="tabla_simulada",
+    update_mode=GridUpdateMode.SELECTION_CHANGED  # ✅ como la versión vieja
 )
 
-selected_sim = response_sim.get("selected_rows", [])
+selected = response.get("selected_rows", [])
 
-# ===============================
-# MOSTRAR DATOS SELECCIONADOS
-# ===============================
-if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
-    fila = selected_sim[0]
-    st.success("✅ Fila seleccionada en tabla simulada:")
+# =========================
+# MOSTRAR SELECCIÓN
+# =========================
+if selected and isinstance(selected[0], dict) and selected[0].get("Comisión"):
+    fila = selected[0]
+    st.success("✅ Fila seleccionada:")
     st.write(f"**Actividad:** {fila['Actividad']}")
     st.write(f"**Comisión:** {fila['Comisión']}")
     st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
     st.write(f"**Créditos:** {fila['Créditos']}")
 else:
-    st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
+    st.info("Seleccioná una fila con el checkbox para continuar.")
 
 
 # === Mostrar tabla con selección ===
