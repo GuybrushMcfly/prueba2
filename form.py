@@ -126,7 +126,18 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_selection(selection_mode="single", use_checkbox=False)
+gb.configure_selection(selection_mode="single", use_checkbox=False, pre_selected_rows=[])
+
+# CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC
+gb.configure_grid_options(
+    enableCellTextSelection=True,
+    ensureDomOrder=True,
+    onRowClicked="""function(params) {
+        // Forzar la selección al hacer clic en cualquier parte de la fila
+        params.node.setSelected(true, false);
+    }"""
+)
+
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, tooltipField="Actividad (Comisión)", filter=False, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
@@ -137,8 +148,10 @@ gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHei
 
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
-    ".ag-row": {"font-size": "14px !important"},
+    ".ag-row": {"font-size": "14px !important", "cursor": "pointer"},  # Cursor pointer para indicar que es clickeable
+    ".ag-row:hover": {"background-color": "#e6f3ff !important"},  # Efecto hover visual
     ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+    ".ag-row-selected": {"background-color": "#d4edda !important"},  # Color para fila seleccionada
     ".ag-cell": {
         "white-space": "normal !important",
         "line-height": "1.2 !important",
@@ -153,10 +166,12 @@ response = AgGrid(
     df_comisiones,
     gridOptions=gb.build(),
     height=500,
-    allow_unsafe_jscode=True,
+    allow_unsafe_jscode=True,  # IMPORTANTE para permitir el JavaScript personalizado
     theme="balham",
     custom_css=custom_css,
-    use_container_width=True
+    use_container_width=True,
+    update_mode='SELECTION_CHANGED',  # Forzar actualización cuando cambia la selección
+    key='comisiones_grid'  # Key única para el componente
 )
 
 selected = response.get("selected_rows", [])
