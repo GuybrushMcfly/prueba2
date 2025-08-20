@@ -42,30 +42,18 @@ st.markdown("""
 # ========== OBTENER DATOS ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
-    resp = supabase.table("comisiones").select(
-        "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
+    resp = supabase.table("vista_comisiones_abiertas").select(
+        "id_comision, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta, organismo, modalidad_cursada, id_actividad, nombre_actividad"
     ).execute()
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
 
-actividades_unicas = {}
-for c in comisiones_raw:
-    if c["id_actividad"] and c["nombre_actividad"]:
-        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
-
+# Agrupar comisiones por actividad
 comisiones = defaultdict(list)
 for c in comisiones_raw:
     if c["id_actividad"]:
-        comisiones[c["id_actividad"]].append({
-            "id": c["id_comision"],
-            "nombre": c["nombre_actividad"],
-            "fecha_inicio": c["fecha_inicio"],
-            "fecha_fin": c["fecha_fin"],
-            "organismo": c["organismo"],
-            "creditos": c["creditos"],
-            "modalidad": c["modalidad"],
-        })
+        comisiones[c["id_actividad"]].append(c)
 
 def format_fecha(f):
     if f:
@@ -77,7 +65,7 @@ def format_fecha(f):
 
 # ========== FILTROS ==========
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
+modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c["modalidad_cursada"]})
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
@@ -90,18 +78,17 @@ with col2:
 
 # ========== ARMAR TABLA ==========
 filas = []
-for id_act, nombre_act in actividades_unicas.items():
-    coms = comisiones.get(id_act, [])
-    for c in coms:
+for id_act, lista in comisiones.items():
+    for c in lista:
         if (organismo_sel == "Todos" or c["organismo"] == organismo_sel) and \
-           (modalidad_sel == "Todos" or c["modalidad"] == modalidad_sel):
+           (modalidad_sel == "Todos" or c["modalidad_cursada"] == modalidad_sel):
             filas.append({
-                "Actividad (Comisión)": f"{nombre_act} ({c['id']})",
-                "Actividad": nombre_act,
-                "Comisión": c["id"],
-                "Fecha inicio": format_fecha(c["fecha_inicio"]),
-                "Fecha fin": format_fecha(c["fecha_fin"]),
-                "Créditos": c["creditos"]
+                "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision_sai']})",
+                "Actividad": c["nombre_actividad"],
+                "Comisión": c["id_comision_sai"],
+                "Fecha inicio": format_fecha(c["fecha_desde"]),
+                "Fecha fin": format_fecha(c["fecha_hasta"]),
+                "Estado": c["estado_inscripcion"]
             })
 
 df_comisiones = pd.DataFrame(filas)
@@ -116,7 +103,7 @@ gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
-gb.configure_column("Créditos", flex=10)
+gb.configure_column("Estado", flex=10)
 
 custom_css = {
     ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
@@ -182,6 +169,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     with col_cuil:
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
+
 
 
 
