@@ -176,6 +176,7 @@ custom_css = {
     },
 }
 
+# === Mostrar tabla con selección ===
 response = AgGrid(
     df_comisiones,
     gridOptions=gb.build(),
@@ -188,75 +189,30 @@ response = AgGrid(
     key='comisiones_grid'
 )
 
-# DEBUG COMPLETO - Ver toda la estructura de la respuesta
-st.write("🔍 Debug - Tipo de response:", type(response))
-st.write("🔍 Debug - Keys en response:", list(response.keys()) if isinstance(response, dict) else "No es dict")
+selected = response.get("selected_rows", [])
 
-# Verificar diferentes formas en que AgGrid podría devolver los datos
-selected = None
-
-# Método 1: El estándar
-if 'selected_rows' in response:
-    selected = response['selected_rows']
-    st.write("🔍 Método 1 - selected_rows encontrado:", selected)
-
-# Método 2: Algunas versiones usan 'data' como contenedor
-if selected is None and 'data' in response and isinstance(response['data'], dict):
-    if 'selected_rows' in response['data']:
-        selected = response['data']['selected_rows']
-        st.write("🔍 Método 2 - data.selected_rows:", selected)
-
-# Método 3: Buscar en otros lugares posibles
-if selected is None:
-    for key in response.keys():
-        if 'select' in key.lower() or 'row' in key.lower():
-            st.write(f"🔍 Key potencial: {key} = {response[key]}")
-            if isinstance(response[key], list):
-                selected = response[key]
-                st.write(f"🔍 Encontrado en key {key}:", selected)
-                break
-
-# Método 4: Si todo falla, usar get() con default
-if selected is None:
-    selected = response.get('selected_rows', [])
-    st.write("🔍 Método 4 - Usando get() default:", selected)
-
-# Asegurar que selected sea una lista
-if selected is None:
-    selected = []
-elif not isinstance(selected, list):
-    selected = [selected] if selected is not None else []
-
-st.write("🔍 Debug - selected final:", selected)
-st.write("🔍 Debug - longitud de selected:", len(selected))
-
-# ========== DEBUG VISUAL ==========
-if selected and len(selected) > 0:
-    st.subheader("🪪 Datos seleccionados (debug)")
-    st.json(selected[0])  # Mostramos el dict completo
-    # También mostrar información específica
+# === Si se seleccionó una fila válida ===
+if selected and isinstance(selected[0], dict):
     fila = selected[0]
-    st.write(f"🔍 Actividad: {fila.get('Actividad', 'No encontrada')}")
-    st.write(f"🔍 Comisión: {fila.get('Comisión', 'No encontrada')}")
-else:
-    st.warning("⚠️ No se detectaron filas seleccionadas")
-    # Mostrar más información de debug
-    st.write("🔍 Response completo para análisis:")
-    st.write(response)
+    actividad = fila.get("Actividad", "")
+    comision = fila.get("Comisión", "")
+    st.markdown(f"**Actividad seleccionada:** {actividad} ({comision})")
+    
+    # Guardar en session_state
+    st.session_state["actividad_nombre"] = actividad
+    st.session_state["comision_nombre"] = comision
+    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
+    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
 
-# ========== DEBUG VISUAL ==========
-if selected:
-    st.subheader("🪪 Datos seleccionados (debug)")
-    st.json(selected[0])  # Mostramos el dict completo
-
-if selected:
-    fila = selected[0]
-    st.markdown(f"**Actividad seleccionada:** {fila['Actividad']} ({fila['Comisión']})")
     cuil = st.text_input("Ingresá tu CUIL/CUIT")
     if st.button("Validar CUIL"):
         if validar_cuil(cuil):
+            st.session_state["cuil"] = cuil
+            st.session_state["cuil_valido"] = True
+            st.session_state["validado"] = True
             st.success("CUIL válido")
         else:
+            st.session_state["cuil_valido"] = False
             st.error("CUIL inválido. Debe tener 11 dígitos válidos.")
 else:
     st.info("Seleccioná una fila haciendo clic para continuar.")
