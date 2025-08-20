@@ -5,11 +5,6 @@ from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from supabase import create_client, Client
 from collections import defaultdict
 import os
-
-import webbrowser
-import streamlit as st
-import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder
 import streamlit.components.v1 as components
 
 import streamlit as st
@@ -18,13 +13,29 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 # ========== DATOS DE PRUEBA ==========
 data = pd.DataFrame([
-    {"Actividad": "Curso Python", "Enlace": "https://python.org"},
-    {"Actividad": "Curso Streamlit", "Enlace": "https://streamlit.io"},
-    {"Actividad": "Curso Pandas", "Enlace": "https://pandas.pydata.org"}
+    {
+        "ID": 1,
+        "Actividad": "Curso Python",
+        "URL": "https://python.org",
+        "Categoría": "Programación"
+    },
+    {
+        "ID": 2,
+        "Actividad": "Curso Streamlit", 
+        "URL": "https://streamlit.io",
+        "Categoría": "Web Apps"
+    },
+    {
+        "ID": 3,
+        "Actividad": "Curso Pandas",
+        "URL": "https://pandas.pydata.org",
+        "Categoría": "Data Science"
+    }
 ])
 
-# ========== CONFIGURAR AGGRID ==========
-st.subheader("🧪 Seleccioná cursos para abrir el link")
+# ========== SOLUCIÓN 2: AGGRID + BOTONES EXTERNOS ==========
+st.header("✅ SOLUCIÓN 2: AgGrid para seleccionar + Botones para abrir")
+
 st.info("👆 **Instrucciones:** Selecciona filas con los checkboxes, luego usa los botones de abajo")
 
 gb = GridOptionsBuilder.from_dataframe(data)
@@ -32,12 +43,11 @@ gb.configure_selection("multiple", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=True)
 gb.configure_default_column(resizable=True, wrapText=True)
 
-# Mostrar Enlace como texto (no clickeable, pero visible)
-gb.configure_column("Enlace", header_name="🌐 Link", width=300)
+# Mostrar URL como texto (no clickeable, pero visible)
+gb.configure_column("URL", header_name="🌐 Enlace", width=250)
 
 grid_options = gb.build()
 
-# ========== MOSTRAR AGGRID ==========
 response = AgGrid(
     data,
     gridOptions=grid_options,
@@ -46,7 +56,7 @@ response = AgGrid(
     use_container_width=True
 )
 
-# ========== BOTONES PARA FILAS SELECCIONADAS ==========
+# BOTONES PARA FILAS SELECCIONADAS
 selected_rows = response.get("selected_rows", [])
 
 if selected_rows:
@@ -61,7 +71,7 @@ if selected_rows:
             if st.button(f"🌐 {row['Actividad']}", key=f"open_btn_{i}"):
                 js_code = f'''
                 <script>
-                    window.open("{row['Enlace']}", "_blank");
+                    window.open("{row['URL']}", "_blank");
                 </script>
                 '''
                 st.components.v1.html(js_code, height=0)
@@ -72,7 +82,7 @@ if selected_rows:
         st.divider()
         if st.button("🚀 Abrir TODOS los seleccionados", type="primary"):
             for row in selected_rows:
-                js_code = f'<script>window.open("{row["Enlace"]}", "_blank");</script>'
+                js_code = f'<script>window.open("{row["URL"]}", "_blank");</script>'
                 st.components.v1.html(js_code, height=0)
             st.balloons()
             st.success(f"🎉 Abriendo {len(selected_rows)} enlaces!")
@@ -81,6 +91,46 @@ else:
     st.warning("⚠️ Selecciona una o más filas usando los checkboxes para ver los botones")
 
 st.divider()
+
+# ========== TU CÓDIGO ORIGINAL ADAPTADO ==========
+st.header("🔧 Tu código original con el fix")
+
+# Usar exactamente tus datos
+data_original = pd.DataFrame([
+    {"Actividad": "Curso Python", "Enlace": "https://python.org"},
+    {"Actividad": "Curso Streamlit", "Enlace": "https://streamlit.io"},
+    {"Actividad": "Curso Pandas", "Enlace": "https://pandas.pydata.org"}
+])
+
+# Tu configuración original + el fix
+gb2 = GridOptionsBuilder.from_dataframe(data_original)
+gb2.configure_selection("multiple", use_checkbox=True)
+gb2.configure_column("Enlace", header_name="🌐 Link", width=300)
+grid_options2 = gb2.build()
+
+# Tu AgGrid original
+st.subheader("🧪 Seleccioná cursos para abrir el link")
+response2 = AgGrid(data_original, gridOptions=grid_options2, theme="balham", height=300, use_container_width=True)
+
+# Tu lógica de botones CON EL FIX
+selected = response2.get("selected_rows", [])
+if selected:
+    st.success(f"Seleccionaste {len(selected)} curso(s)")
+    for i, row in enumerate(selected):
+        if st.button(f"🌐 Abrir {row['Actividad']}", key=f"boton_{i}"):
+            # EL FIX: st.components.v1.html en lugar de components.html
+            st.components.v1.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
+    if len(selected) > 1:
+        st.markdown("---")
+        if st.button("🚀 Abrir todos"):
+            for row in selected:
+                # EL FIX: st.components.v1.html en lugar de components.html
+                st.components.v1.html(f'<script>window.open("{row["Enlace"]}", "_blank")</script>', height=0)
+            st.balloons()
+else:
+    st.info("Seleccioná al menos un curso para ver los botones.")
+
+st.info("🔍 **¿Cuál es la diferencia?** Solo cambié `components.html()` por `st.components.v1.html()`")
 
 
 
