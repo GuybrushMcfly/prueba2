@@ -36,7 +36,7 @@ def obtener_comisiones_abiertas():
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
-# ========== DATOS ==========
+# ========== CARGA Y AGRUPAMIENTO ==========
 comisiones_raw = obtener_comisiones_abiertas()
 actividades_unicas = {}
 comisiones = defaultdict(list)
@@ -50,6 +50,7 @@ for c in comisiones_raw:
 st.set_page_config(layout="wide")
 st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
+# FILTROS
 organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
 modalidades = sorted({c["modalidad"] for c in comisiones_raw if c["modalidad"]})
 organismos.insert(0, "Todos")
@@ -59,7 +60,7 @@ col1, col2 = st.columns(2)
 organismo_sel = col1.selectbox("Organismo", organismos)
 modalidad_sel = col2.selectbox("Modalidad", modalidades)
 
-# TABLA
+# ARMADO DE TABLA
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     for c in comisiones[id_act]:
@@ -74,36 +75,36 @@ for id_act, nombre_act in actividades_unicas.items():
                 "Créditos": c.get("creditos", "")
             })
 
-df_comisiones = pd.DataFrame(filas)
-df_comisiones.reset_index(drop=True, inplace=True)
+df_comisiones = pd.DataFrame(filas).reset_index(drop=True)
+df_comisiones["__idx"] = df_comisiones.index  # columna de índice para estabilidad
 
+# CONFIGURAR AGGRID
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
 gb.configure_selection("single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
+
+# Columnas internas
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
+gb.configure_column("__idx", hide=True)
+
 grid_options = gb.build()
 
 st.markdown("#### 1. Seleccioná una comisión:")
 response = AgGrid(df_comisiones, gridOptions=grid_options, theme="balham", height=300)
 
-# DEBUG
-selected_raw = response["selected_rows"]
-if not selected_raw or not isinstance(selected_raw, list) or len(selected_raw) == 0:
-    selected = None
-else:
-    selected = selected_raw[0]
-
+# DEBUG: VER QUÉ DEVUELVE AGGRID
 st.markdown("### 🐞 DEBUG: Fila seleccionada")
-st.write("selected =", selected)
+st.write("selected =", response.get("selected_rows"))
 
-# FORMULARIO
+selected = response.get("selected_rows")
 if selected:
-    actividad = selected["Actividad"]
-    comision = selected["Comisión"]
-    fecha_ini = selected["Fecha inicio"]
-    fecha_fin = selected["Fecha fin"]
+    fila = selected[0]
+    actividad = fila["Actividad"]
+    comision = fila["Comisión"]
+    fecha_ini = fila["Fecha inicio"]
+    fecha_fin = fila["Fecha fin"]
 
     st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
     st.markdown(f"**{actividad}**  \n_Comisión {comision}_")
