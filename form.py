@@ -184,7 +184,6 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
 
 
-
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
 if (
     st.session_state.get("validado", False)
