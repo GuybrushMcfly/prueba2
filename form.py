@@ -50,11 +50,9 @@ def obtener_comisiones():
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
-st.write("🧪 DEBUG: Datos crudos desde vista_comisiones_abiertas", comisiones_raw)
 
 # ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
 df_temp = pd.DataFrame(comisiones_raw)
-st.write("🧪 DEBUG: DataFrame intermedio df_temp antes de limpiar", df_temp)
 
 required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
 df_temp = df_temp.dropna(subset=required_cols)
@@ -90,8 +88,6 @@ if organismo_sel != "Todos":
 if modalidad_sel != "Todos":
     df_temp = df_temp[df_temp["modalidad_cursada"] == modalidad_sel]
 
-st.write("🧪 DEBUG: DataFrame luego de filtros", df_temp)
-
 # ========== ARMAR DF FINAL CON COLUMNAS VISIBLES ==========
 df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos"
@@ -99,7 +95,6 @@ df_comisiones = df_temp[[
 
 # 🛠️ RESET INDEX por recomendación de foros
 df_comisiones = df_comisiones.reset_index(drop=True)
-st.write("🔁 DEBUG: df_comisiones con reset_index", df_comisiones)
 
 # ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
@@ -142,7 +137,7 @@ grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
-    update_mode="SELECTION_CHANGED",  # ✅ Clave para detectar selección
+    update_mode="SELECTION_CHANGED",
     height=500,
     allow_unsafe_jscode=True,
     theme="balham",
@@ -151,101 +146,20 @@ response = AgGrid(
     width=900
 )
 
-# ========== SELECCIÓN ==========
-selected = response["selected_rows"] or []
+# ========== NUEVO: DROPDOWN DE ACTIVIDADES ==========
+actividades_unicas = df_comisiones["Actividad"].unique().tolist()
+actividades_unicas.insert(0, "-Seleccioná actividad-")
 
-# 🐞 DEBUG extra: Mostrar objeto completo de response de AgGrid
-st.write("🐞 DEBUG AgGrid response completo:", response)
+actividad_dropdown = st.selectbox("🔽 Elegí una actividad", actividades_unicas)
 
-# 🐞 DEBUG extra: Confirmar tipo y contenido de selected
-st.write("🔍 DEBUG selección:", selected)
-st.write("🐞 DEBUG tipo de selected:", type(selected))
-if isinstance(selected, list) and selected:
-    st.write("🐞 DEBUG claves disponibles en fila seleccionada:", list(selected[0].keys()))
-
-comision_id = None
-if selected:
-    fila = selected[0]
-
-    # 🔍 Nuevo debug de fila completa
-    st.write("🧪 DEBUG: Fila seleccionada completa:", fila)
-
-    # Verificación de claves esenciales
-    st.write("🧪 DEBUG: Contenido clave - Actividad:", fila.get("Actividad"))
-    st.write("🧪 DEBUG: Contenido clave - Comisión:", fila.get("Comisión"))
-    st.write("🧪 DEBUG: Contenido clave - Fecha inicio:", fila.get("Fecha inicio"))
-    st.write("🧪 DEBUG: Contenido clave - Fecha fin:", fila.get("Fecha fin"))
-
-    if not fila.get("Actividad") or not fila.get("Comisión"):
-        st.warning("La comisión seleccionada no tiene datos completos.")
-        st.stop()
-
-    st.session_state["actividad_nombre"] = fila.get("Actividad", "")
-    st.session_state["comision_nombre"] = fila.get("Comisión", "")
-    st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
-    st.session_state["fecha_fin"] = fila.get("Fecha fin", "")
-    actividad_nombre = st.session_state["actividad_nombre"]
-    comision_nombre = st.session_state["comision_nombre"]
-    fecha_inicio = st.session_state["fecha_inicio"]
-    fecha_fin = st.session_state["fecha_fin"]
-
-    comision_id = f"{actividad_nombre}|{comision_nombre}|{fecha_inicio}|{fecha_fin}"
-    st.write("🆔 DEBUG: comision_id generado:", comision_id)
-
-    if st.session_state.get("last_comision_id") != comision_id:
-        st.session_state["validado"] = False
-        st.session_state["cuil_valido"] = False
-        st.session_state["inscripcion_exitosa"] = False
-        st.session_state["last_comision_id"] = comision_id
-
-        for k in ["cuil", "nombres", "apellidos", "nivel", "grado", "agrupamiento", "tramo"]:
-            st.session_state.pop(k, None)
-
+if actividad_dropdown != "-Seleccioná actividad-":
     st.markdown(
         f"""<h4>2. Validá tu CUIL para inscribirte en</h4>
         <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
-        {actividad_nombre} ({comision_nombre})
+        {actividad_dropdown}
         </span>""",
         unsafe_allow_html=True
     )
-
-    col_cuil, _ = st.columns([1, 1])
-    with col_cuil:
-        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
-        cuil = ''.join(filter(str.isdigit, raw))[:11]
-
-        if st.button("VALIDAR Y CONTINUAR", type="primary"):
-            if not validar_cuil(cuil):
-                st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
-                st.session_state["validado"] = False
-                st.session_state["cuil_valido"] = False
-            else:
-                resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-                if not resp.data:
-                    st.session_state["validado"] = False
-                    st.session_state["cuil_valido"] = False
-                    st.error("❌ No se encontró ese usuario en la base de datos.")
-                else:
-                    inscrip_existente = supabase.table("pruebainscripciones") \
-                        .select("id") \
-                        .eq("cuil_cuit", cuil) \
-                        .eq("comision", comision_nombre) \
-                        .limit(1).execute()
-
-                    if inscrip_existente.data:
-                        st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
-                        st.session_state["validado"] = False
-                        st.session_state["cuil_valido"] = False
-                    else:
-                        st.success("✅ Datos encontrados. Podés continuar.")
-                        st.session_state["validado"] = True
-                        st.session_state["cuil_valido"] = True
-                        st.session_state["cuil"] = cuil
-                        st.session_state["datos_agenteform"] = resp.data[0]
-
-elif selected and selected[0].get("Comisión") == "Sin comisiones":
-    st.warning("No hay comisiones disponibles para esta actividad.")
-
 
 
 
