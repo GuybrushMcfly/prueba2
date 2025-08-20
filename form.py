@@ -126,7 +126,7 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_selection(selection_mode="single", use_checkbox=False)  # SIN checkbox
+gb.configure_selection(selection_mode="single", use_checkbox=False)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, tooltipField="Actividad (Comisión)", filter=False, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
@@ -172,6 +172,7 @@ if selected:
             st.error("CUIL inválido. Debe tener 11 dígitos válidos.")
 else:
     st.info("Seleccioná una fila haciendo clic para continuar.")
+
 
 
 
