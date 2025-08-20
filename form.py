@@ -56,25 +56,27 @@ comisiones_raw = obtener_comisiones()
 # ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
 df_temp = pd.DataFrame(comisiones_raw)
 
-required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
-df_temp = df_temp.dropna(subset=required_cols)
-
-df_temp["Actividad"] = df_temp["nombre_actividad"]
-df_temp["Comisión"] = df_temp["id_comision_sai"]
-
+# Convertir fechas
 df_temp["fecha_desde"] = pd.to_datetime(df_temp["fecha_desde"], errors="coerce")
 df_temp["fecha_hasta"] = pd.to_datetime(df_temp["fecha_hasta"], errors="coerce")
 df_temp["fecha_cierre"] = pd.to_datetime(df_temp["fecha_cierre"], errors="coerce")
 
-df_temp = df_temp.dropna(subset=["fecha_desde", "fecha_hasta"])
+# Filtrar registros válidos
+required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
+df_temp = df_temp.dropna(subset=required_cols)
 
+# Crear campos nuevos
+df_temp["Actividad"] = df_temp["nombre_actividad"]
+df_temp["Comisión"] = df_temp["id_comision_sai"]
 df_temp["Fecha inicio"] = df_temp["fecha_desde"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha cierre"] = df_temp["fecha_cierre"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
-df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
 df_temp["Modalidad"] = df_temp["modalidad_cursada"]
+df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
+df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
+
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
