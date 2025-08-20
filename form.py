@@ -27,19 +27,7 @@ def validar_cuil(cuil: str) -> bool:
         verificador = 9
     return verificador == int(cuil[-1])
 
-# ========== CONFIGURACIÓN DE PÁGINA ==========
-st.set_page_config(layout="wide")
-st.markdown("""
-    <style>
-    .block-container {
-        max-width: 100vw !important;
-        padding-left: 2vw;
-        padding-right: 2vw;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# ========== DATOS DESDE SUPABASE ==========
+# ========== DATOS DESDE VISTA ==========
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
@@ -47,23 +35,23 @@ def obtener_comisiones():
 
 comisiones_raw = obtener_comisiones()
 
-# Agrupar por actividad
+# ========== ORGANIZACIÓN DE DATOS ==========
 actividades_unicas = {}
-for c in comisiones_raw:
-    if c["id_actividad"] and c["nombre_actividad"]:
-        actividades_unicas[c["id_actividad"]] = c["nombre_actividad"]
-
 comisiones = defaultdict(list)
+
 for c in comisiones_raw:
-    if c["id_actividad"]:
-        comisiones[c["id_actividad"]].append({
-            "id": c["id_comision_sai"],
-            "nombre": c["nombre_actividad"],
-            "fecha_inicio": c["fecha_desde"],
-            "fecha_fin": c["fecha_hasta"],
-            "organismo": c["organismo"],
-            "creditos": c["creditos"],
-            "modalidad": c["modalidad_cursada"]
+    act_id = c.get("id_actividad")
+    act_nombre = c.get("nombre_actividad")
+    if act_id and act_nombre:
+        actividades_unicas[act_id] = act_nombre
+        comisiones[act_id].append({
+            "id": c.get("id_comision_sai"),
+            "nombre": act_nombre,
+            "fecha_inicio": c.get("fecha_desde"),
+            "fecha_fin": c.get("fecha_hasta"),
+            "organismo": c.get("organismo"),
+            "creditos": c.get("creditos"),
+            "modalidad": c.get("modalidad_cursada")
         })
 
 def format_fecha(f):
@@ -75,8 +63,8 @@ def format_fecha(f):
     return ""
 
 # ========== FILTROS ==========
-organismos = sorted({c["organismo"] for c in comisiones_raw if c["organismo"]})
-modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c["modalidad_cursada"]})
+organismos = sorted({c["organismo"] for c in comisiones_raw if c.get("organismo")})
+modalidades = sorted({c["modalidad_cursada"] for c in comisiones_raw if c.get("modalidad_cursada")})
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
@@ -89,7 +77,7 @@ with col2:
 
 st.markdown("#### 1. Seleccioná una comisión en la tabla (usá el checkbox):")
 
-# ========== ARMAR TABLA ==========
+# ========== CONSTRUCCIÓN DE FILAS ==========
 filas = []
 for id_act, nombre_act in actividades_unicas.items():
     coms = comisiones.get(id_act, [])
@@ -117,49 +105,43 @@ for id_act, nombre_act in actividades_unicas.items():
 
 df_comisiones = pd.DataFrame(filas)
 
-# ========== AGGRID ==========
+# ========== AGGRID CONFIGURACIÓN ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-
-# Columnas visibles y ocultas
-gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
-                    tooltipField="Actividad (Comisión)", minWidth=600, maxWidth=600)
+gb.configure_column("Actividad (Comisión)", flex=50, minWidth=600, maxWidth=600, tooltipField="Actividad (Comisión)")
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
-gb.configure_column("Fecha inicio", flex=15, filter=False)
-gb.configure_column("Fecha fin", flex=15, filter=False)
-gb.configure_column("Créditos", flex=10, filter=False)
-
-# Estilo
-custom_css = {
-    ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
-    ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
-    ".ag-cell": {
-        "white-space": "normal !important",
-        "line-height": "1.2 !important",
-        "display": "flex !important",
-        "align-items": "center !important"
-    }
-}
+gb.configure_column("Fecha inicio", flex=15)
+gb.configure_column("Fecha fin", flex=15)
+gb.configure_column("Créditos", flex=13)
 
 response = AgGrid(
     df_comisiones,
     gridOptions=gb.build(),
     height=500,
     theme="balham",
+    custom_css={
+        ".ag-header": {"background-color": "#136ac1 !important", "color": "white !important", "font-weight": "bold !important"},
+        ".ag-row:nth-child(even)": {"background-color": "#f5f5f5 !important"},
+        ".ag-cell": {
+            "white-space": "normal !important",
+            "line-height": "1.2 !important",
+            "display": "flex !important",
+            "align-items": "center !important"
+        }
+    },
     allow_unsafe_jscode=True,
-    custom_css=custom_css,
     use_container_width=False,
     width=900
 )
 
-# ========== DETALLE SELECCIÓN ==========
 selected = response["selected_rows"]
 if isinstance(selected, pd.DataFrame):
     selected = selected.to_dict("records")
 
+# ========== MOSTRAR DETALLES DE SELECCIÓN ==========
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
@@ -185,7 +167,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
     st.markdown(
         f"""
-        <h4>2. Validá tu CUIL para inscribirte en</h4>
+        <h4>2. Validá tu CUIL para inscribirte en:</h4>
         <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
             {actividad_nombre} ({comision_nombre})
         </span>
@@ -197,6 +179,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
     with col_cuil:
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
+
 
 
 
