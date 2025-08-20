@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+from st_aggrid import GridUpdateMode, DataReturnMode  # <-- agregado
 from supabase import create_client, Client
 from collections import defaultdict
 from io import BytesIO
@@ -87,7 +88,7 @@ df_comisiones["__idx"] = df_comisiones.index.astype(str)
 # CONFIGURAR AGGRID
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True)
-gb.configure_selection("single", use_checkbox=True)
+gb.configure_selection("single", use_checkbox=True)  # selección única con checkbox
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
@@ -98,17 +99,30 @@ grid_options["getRowNodeId"] = JsCode("function(data) { return data.__idx; }")
 grid_options["rowSelection"] = "single"
 
 st.markdown("#### 1. Seleccioná una comisión:")
+
+# *** CLAVE DEL PROBLEMA ***
+# Agregamos update_mode=GridUpdateMode.SELECTION_CHANGED para que AgGrid dispare el evento
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
     theme="balham",
     height=300,
-    allow_unsafe_jscode=True
+    allow_unsafe_jscode=True,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,      # <-- agregado (antes no disparaba el cambio)
+    data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+    key="comisiones_grid"  # <-- clave estable para evitar resets de estado
 )
 
-selected = response.get("selected_rows", [])
+# DEBUG VISUAL AMPLIADO
+st.markdown("### 🐞 DEBUG: Respuesta AgGrid")
+try:
+    st.write("response keys:", list(response.keys()))
+except Exception as e:
+    st.write("response no iterable:", e)
+st.write("selected_rows (raw) =", response.get("selected_rows", None))
 
-# DEBUG VISUAL
+selected = response.get("selected_rows", []) or []  # defensivo: None -> []
+
 st.markdown("### 🐞 DEBUG: Fila seleccionada")
 st.write("selected =", selected)
 
@@ -132,6 +146,7 @@ if selected:
             st.stop()
 
         agente = supabase.table("agentes").select("*").eq("cuil", cuil).execute()
+        st.write("🔎 DEBUG agente:", agente.data)  # debug
         if not agente.data:
             st.error("No se encontró ese agente.")
             st.stop()
@@ -139,6 +154,7 @@ if selected:
         ya_inscripto = supabase.table("cursos_inscripciones") \
             .select("id") \
             .eq("cuil", cuil).eq("id_comision_sai", comision).limit(1).execute()
+        st.write("🔎 DEBUG ya_inscripto:", ya_inscripto.data)  # debug
         if ya_inscripto.data:
             st.warning("Ya estás inscripto en esta comisión.")
             st.stop()
@@ -153,6 +169,16 @@ if selected:
         tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
 
         if st.button("Confirmar inscripción"):
+            # OJO: si alguna fecha viniera vacía, strptime fallaría; dejamos try/except por seguridad
+            try:
+                fecha_desde_sql = datetime.strptime(fecha_ini, "%d/%m/%Y").strftime("%Y-%m-%d")
+            except Exception:
+                fecha_desde_sql = None
+            try:
+                fecha_hasta_sql = datetime.strptime(fecha_fin, "%d/%m/%Y").strftime("%Y-%m-%d")
+            except Exception:
+                fecha_hasta_sql = None
+
             nueva = {
                 "cuil": cuil,
                 "apellido": apellido,
@@ -161,15 +187,21 @@ if selected:
                 "tramo": tramo,
                 "id_comision_sai": comision,
                 "nombre_actividad": actividad,
-                "fecha_desde": datetime.strptime(fecha_ini, "%d/%m/%Y").strftime("%Y-%m-%d"),
-                "fecha_hasta": datetime.strptime(fecha_fin, "%d/%m/%Y").strftime("%Y-%m-%d"),
+                "fecha_desde": fecha_desde_sql,
+                "fecha_hasta": fecha_hasta_sql,
             }
+
+            st.write("📦 DEBUG a insertar en cursos_inscripciones:", nueva)
             res = supabase.table("cursos_inscripciones").insert(nueva).execute()
-            if res.data:
+            st.write("📬 DEBUG respuesta insert:", {"data": res.data, "error": getattr(res, "error", None)})
+
+            if getattr(res, "error", None):
+                st.error(f"❌ Error al registrar la inscripción: {res.error}")
+            elif res.data:
                 st.success("✅ Inscripción registrada correctamente")
 
                 # Constancia PDF
-                def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
+                def generar_constancia_pdf(nombre_completo, actividad, comision, fecha_inicio, fecha_fin):
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Helvetica", "B", 14)
@@ -179,7 +211,7 @@ if selected:
                     pdf.set_text_color(0, 0, 0)
                     pdf.ln(10)
                     pdf.multi_cell(0, 10,
-                        f"{nombre}, te preinscribiste exitosamente en:\n\n"
+                        f"{nombre_completo}, te preinscribiste exitosamente en:\n\n"
                         f"Actividad: {actividad}\n"
                         f"Comisión: {comision}\n"
                         f"Inicio: {fecha_inicio}\n"
@@ -199,3 +231,6 @@ if selected:
                 )
             else:
                 st.error("❌ Ocurrió un error al registrar la inscripción.")
+else:
+    # Para claridad UX
+    st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
