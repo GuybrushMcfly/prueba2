@@ -148,7 +148,15 @@ response = AgGrid(
 
 # ========== SELECCIÓN ==========
 selected = response["selected_rows"] or []
+
+# 🐞 DEBUG extra: Mostrar objeto completo de response de AgGrid
+st.write("🐞 DEBUG AgGrid response completo:", response)
+
+# 🐞 DEBUG extra: Confirmar tipo y contenido de selected
 st.write("🔍 DEBUG selección:", selected)
+st.write("🐞 DEBUG tipo de selected:", type(selected))
+if isinstance(selected, list) and selected:
+    st.write("🐞 DEBUG claves disponibles en fila seleccionada:", list(selected[0].keys()))
 
 comision_id = None
 if selected:
@@ -232,6 +240,7 @@ if selected:
 
 elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
+
 
 
 
