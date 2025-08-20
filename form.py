@@ -47,7 +47,7 @@ def validar_cuil(cuil: str) -> bool:
 @st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, creditos, modalidad_cursada, link_externo"
+        "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, fecha_cierre, creditos, modalidad_cursada, link_externo, apto_tramo"
     ).execute()
     return resp.data if resp.data else []
 
@@ -64,29 +64,25 @@ df_temp["Comisión"] = df_temp["id_comision_sai"]
 
 df_temp["fecha_desde"] = pd.to_datetime(df_temp["fecha_desde"], errors="coerce")
 df_temp["fecha_hasta"] = pd.to_datetime(df_temp["fecha_hasta"], errors="coerce")
+df_temp["fecha_cierre"] = pd.to_datetime(df_temp["fecha_cierre"], errors="coerce")
+
 df_temp = df_temp.dropna(subset=["fecha_desde", "fecha_hasta"])
 
 df_temp["Fecha inicio"] = df_temp["fecha_desde"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
+df_temp["Fecha cierre"] = df_temp["fecha_cierre"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
-
-# ========== CONVERTIR link_externo en HTML ==========
-df_temp["Ver más"] = df_temp["link_externo"]  # solo la URL
+df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
+df_temp["Modalidad"] = df_temp["modalidad_cursada"]
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
-modalidades = sorted(df_temp["modalidad_cursada"].dropna().unique().tolist())
+modalidades = sorted(df_temp["Modalidad"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 
 st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
-# ========== FILTROS ==========
-
-organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
-modalidades = sorted(df_temp["modalidad_cursada"].dropna().unique().tolist())
-organismos.insert(0, "Todos")
-modalidades.insert(0, "Todos")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -98,12 +94,11 @@ df_filtrado = df_temp.copy()
 if organismo_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["organismo"] == organismo_sel]
 if modalidad_sel != "Todos":
-    df_filtrado = df_filtrado[df_filtrado["modalidad_cursada"] == modalidad_sel]
+    df_filtrado = df_filtrado[df_filtrado["Modalidad"] == modalidad_sel]
 
 # ========== TABLA HTML ==========
-
 df_comisiones = df_filtrado[[
-    "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos", "Ver más"
+    "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre", "Créditos", "Modalidad", "Apto tramo", "Ver más"
 ]].reset_index(drop=True)
 
 def create_html_table(df):
@@ -112,7 +107,7 @@ def create_html_table(df):
     <style>
         .courses-table {{
             width: 90%;
-            margin: 20px auto 30px auto;
+            margin: 20px auto;
             border-collapse: collapse;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -156,82 +151,71 @@ def create_html_table(df):
             color: #bdc3c7;
             font-style: italic;
         }}
-        .mensaje-vacio {{
-            color: #7f8c8d;
-            font-style: italic;
-            padding: 30px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }}
     </style>
 
     <div style="overflow-x: auto;">
         <table class="courses-table" id="{table_id}">
             <thead>
                 <tr>
-                    <th style="width: 45%;">Actividad (Comisión)</th>
-                    <th style="width: 15%;">Fecha Inicio</th>
-                    <th style="width: 15%;">Fecha Fin</th>
-                    <th style="width: 10%;">Créditos</th>
-                    <th style="width: 15%;">Acceso</th>
+                    <th>Actividad (Comisión)</th>
+                    <th>F. Inicio</th>
+                    <th>F. Fin</th>
+                    <th>Cierre Inscrip.</th>
+                    <th>Créditos</th>
+                    <th>Modalidad</th>
+                    <th>Apto Tramo</th>
+                    <th>Acceso</th>
                 </tr>
             </thead>
             <tbody>
     """
 
     if df.empty:
-        html += """
-            <tr>
-                <td colspan="5" class="mensaje-vacio">
-                    No se encontraron cursos con los filtros seleccionados.<br>
-                    Probá cambiar los filtros para ver otras actividades disponibles.
-                </td>
-            </tr>
-        """
-    else:
-        for _, row in df.iterrows():
-            onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-            html += f'<tr onclick="{onclick_code}">'
-            html += f'<td>{row["Actividad (Comisión)"]}</td>'
-            html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
-            html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
-            html += f'<td class="creditos-col">{row["Créditos"]}</td>'
-            if pd.notna(row["Ver más"]) and row["Ver más"]:
-                html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
-            else:
-                html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
-            html += '</tr>'
+        st.warning("No se encontraron cursos con los filtros seleccionados.")
+        return ""
 
-    html += f"""
+    for _, row in df.iterrows():
+        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
+        html += f'<tr onclick="{onclick_code}">'
+        html += f'<td>{row["Actividad (Comisión)"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
+        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
+        html += f'<td>{row["Modalidad"]}</td>'
+        html += f'<td>{row["Apto tramo"]}</td>'
+        if pd.notna(row["Ver más"]) and row["Ver más"]:
+            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+        else:
+            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
+        html += '</tr>'
+
+    html += """
             </tbody>
         </table>
     </div>
 
     <script>
         let selectedRow = null;
-        function selectActivity(activityName, row) {{
-            if (selectedRow) {{
-                selectedRow.classList.remove('selected');
-            }}
+        function selectActivity(activityName, row) {
+            if (selectedRow) selectedRow.classList.remove('selected');
             selectedRow = row;
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
-            window.parent.postMessage({{
+            window.parent.postMessage({
                 type: 'setQueryParams',
-                data: {{ "selected_activity": activityName }}
-            }}, '*');
-        }}
+                data: { "selected_activity": activityName }
+            }, '*');
+        }
     </script>
     """
     return html
-
 
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 # ========== DETALLES DE LA ACTIVIDAD SELECCIONADA ==========
 selected_activity = st.query_params.get("selected_activity", None)
-
 if selected_activity and selected_activity in df_temp["Actividad (Comisión)"].values:
     seleccion = df_temp[df_temp["Actividad (Comisión)"] == selected_activity].iloc[0]
     st.markdown(f"""
@@ -239,9 +223,13 @@ if selected_activity and selected_activity in df_temp["Actividad (Comisión)"].v
             <strong>📘 Actividad:</strong> {seleccion["Actividad"]}<br>
             <strong>🆔 Comisión:</strong> {seleccion["Comisión"]}<br>
             <strong>📅 Fechas:</strong> {seleccion["Fecha inicio"]} al {seleccion["Fecha fin"]}<br>
-            <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}
+            <strong>📅 Cierre Inscripción:</strong> {seleccion["Fecha cierre"]}<br>
+            <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}<br>
+            <strong>🎓 Modalidad:</strong> {seleccion["Modalidad"]}<br>
+            <strong>🎯 Apto tramo:</strong> {seleccion["Apto tramo"]}
         </div>
     """, unsafe_allow_html=True)
+
 
 
 
