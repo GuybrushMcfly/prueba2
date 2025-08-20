@@ -268,11 +268,11 @@ def create_html_table(df, df_original):
             selectedRow = row;
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
-            window.parent.postMessage({{
-                type: 'streamlit:setQueryParam',
-                selected_activity: activityName
-            }}, '*');
-        }}
+            window.parent.postMessage({
+                type: 'setQueryParams',
+                data: { selected_activity: activityName }
+            }, '*');
+
     </script>
     """
     return html
