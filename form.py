@@ -8,21 +8,64 @@ import os
 
 from st_aggrid.shared import JsCode
 
-link_renderer = JsCode("""
-class UrlCellRenderer {
-  init(params) {
-    this.eGui = document.createElement('a');
-    this.eGui.innerText = "LINK";
-    this.eGui.href = params.value;
-    this.eGui.target = "_blank";
-    this.eGui.style.textDecoration = "none";
-  }
-  getGui() {
-    return this.eGui;
-  }
-}
-""")
-gb.configure_column("Ver más", header_name="Acceso", cellRenderer=link_renderer, flex=10, resizable=False)
+# ========== DATOS DE PRUEBA ==========
+data = pd.DataFrame([
+    {
+        "Actividad": "Curso A",
+        "Link sin texto": '<a href="https://example.com/a" target="_blank">https://example.com/a</a>',
+        "Anchor básico": "https://example.com/a",
+        "Texto amigable": "https://example.com/a",  # Solo la URL, luego lo transformamos en link
+    },
+    {
+        "Actividad": "Curso B",
+        "Link sin texto": '<a href="https://example.com/b" target="_blank">https://example.com/b</a>',
+        "Anchor básico": "https://example.com/b",
+        "Texto amigable": "https://example.com/b",
+    }
+])
+
+# ========== CONFIGURACIÓN AGGRID ==========
+gb = GridOptionsBuilder.from_dataframe(data)
+gb.configure_pagination()
+gb.configure_default_column(resizable=True, wrapText=True, autoHeight=True)
+
+# 1️⃣ Link ya formateado como HTML completo (a veces no se renderiza en Linux)
+gb.configure_column("Link sin texto", header_name="HTML directo", cellRenderer="'' + params.value + ''")
+
+# 2️⃣ Link como string, renderizado con JsCode y anchor text básico ("LINK")
+gb.configure_column(
+    "Anchor básico",
+    header_name="Anchor con JsCode",
+    cellRenderer="""
+    (params) => {
+        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
+    }
+    """
+)
+
+# 3️⃣ Link como string, pero texto personalizado como "Ver actividad"
+gb.configure_column(
+    "Texto amigable",
+    header_name="Ver más",
+    cellRenderer="""
+    (params) => {
+        return params.value ? `<a href="${params.value}" target="_blank">🌐 Ver actividad</a>` : "";
+    }
+    """
+)
+
+grid_options = gb.build()
+
+# ========== MOSTRAR AGGRID ==========
+st.subheader("🧪 Prueba de anchor text (links clickeables)")
+AgGrid(
+    data,
+    gridOptions=grid_options,
+    allow_unsafe_jscode=True,
+    theme="balham",
+    height=300,
+    use_container_width=True
+)
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
