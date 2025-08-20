@@ -54,13 +54,17 @@ comisiones_raw = obtener_comisiones()
 # ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
 df_temp = pd.DataFrame(comisiones_raw)
 
-# Columnas necesarias con nombres compatibles
-df_temp["Actividad"] = df_temp["nombre_actividad"]
-df_temp["Comisión"] = df_temp["id_comision_sai"]
-df_temp["Fecha inicio"] = pd.to_datetime(df_temp["fecha_desde"]).dt.strftime("%d/%m/%Y")
-df_temp["Fecha fin"] = pd.to_datetime(df_temp["fecha_hasta"]).dt.strftime("%d/%m/%Y")
-df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
-df_temp.rename(columns={"creditos": "Créditos"}, inplace=True)
+# Verificar que estén las columnas esperadas y transformar
+if not df_temp.empty and "nombre_actividad" in df_temp.columns and "id_comision_sai" in df_temp.columns:
+    df_temp["Actividad"] = df_temp["nombre_actividad"]
+    df_temp["Comisión"] = df_temp["id_comision_sai"]
+    df_temp["Fecha inicio"] = pd.to_datetime(df_temp["fecha_desde"]).dt.strftime("%d/%m/%Y")
+    df_temp["Fecha fin"] = pd.to_datetime(df_temp["fecha_hasta"]).dt.strftime("%d/%m/%Y")
+    df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
+    df_temp.rename(columns={"creditos": "Créditos"}, inplace=True)
+else:
+    st.error("❌ No se encontraron los campos necesarios en la vista.")
+    st.stop()
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -86,38 +90,21 @@ df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión",
     "Fecha inicio", "Fecha fin", "Créditos"
 ]]
+
 # ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_default_column(
-    sortable=True,
-    wrapText=True,
-    autoHeight=False,
-    filter=False,
-    resizable=False
-)
-
+gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
 # Paginación
-gb.configure_pagination(
-    paginationAutoPageSize=False,
-    paginationPageSize=15
-)
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
 # Visual principal
-gb.configure_column(
-    "Actividad (Comisión)",
-    flex=50,
-    wrapText=True,
-    autoHeight=True,
-    tooltipField="Actividad (Comisión)",
-    filter=False,
-    resizable=False,
-    minWidth=600,
-    maxWidth=600
-)
+gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
+                    tooltipField="Actividad (Comisión)", filter=False, resizable=False,
+                    minWidth=600, maxWidth=600)
 
-# Internas ocultas (pero accesibles en la selección)
+# Internas ocultas
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 
@@ -125,13 +112,6 @@ gb.configure_column("Comisión", hide=True)
 gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
-
-# Opciones generales de la grilla
-gb.configure_grid_options(
-    suppressSizeToFit=False,
-    suppressColumnVirtualisation=False,
-    domLayout='normal'
-)
 
 # Estilo personalizado
 custom_css = {
@@ -156,7 +136,6 @@ custom_css = {
     }
 }
 
-# Construir opciones
 grid_options = gb.build()
 
 # Render AgGrid
@@ -174,8 +153,6 @@ response = AgGrid(
 # ========== SELECCIÓN ==========
 selected = response["selected_rows"] or []
 st.write("🔍 DEBUG selección:", selected)
-
-
 
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
@@ -214,7 +191,6 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
         raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
         cuil = ''.join(filter(str.isdigit, raw))[:11]
 
-
     if st.button("VALIDAR Y CONTINUAR", type="primary"):
         if not validar_cuil(cuil):
             st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
@@ -245,6 +221,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
 elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
+
 
 
 
