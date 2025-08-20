@@ -126,7 +126,30 @@ for id_act, nombre_act in actividades_unicas.items():
 df_comisiones = pd.DataFrame(filas)
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
-gb.configure_selection(selection_mode="single", use_checkbox=False, pre_selected_rows=[])
+gb.configure_selection(
+    selection_mode="single", 
+    use_checkbox=False, 
+    pre_selected_rows=[],
+    suppressRowClickSelection=False,  # IMPORTANTE: Permitir selección por clic
+    rowMultiSelectWithClick=False     # IMPORTANTE: No permitir multi-selección con clic
+)
+
+# CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC
+gb.configure_grid_options(
+    enableCellTextSelection=True,
+    ensureDomOrder=True,
+    suppressRowClickSelection=False,  # Asegurar que los clics seleccionen
+    onRowClicked="""function(params) {
+        // Forzar la selección al hacer clic en cualquier parte de la fila
+        params.node.setSelected(true, false);
+        // Disparar evento de cambio de selección
+        params.api.dispatchEvent({type: 'selectionChanged'});
+    }""",
+    onSelectionChanged="""function(params) {
+        // Este evento asegura que Streamlit detecte el cambio
+        console.log('Selection changed');
+    }"""
+)
 
 # CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC
 gb.configure_grid_options(
@@ -178,10 +201,14 @@ response = AgGrid(
 st.write("🔍 Debug - Respuesta completa de AgGrid:")
 st.write(response)
 
-selected = response.get("selected_rows", [])
+# CORRECCIÓN: Manejar el caso cuando selected_rows es None
+selected = response.get("selected_rows")
+if selected is None:
+    selected = []
+else:
+    selected = selected if isinstance(selected, list) else []
 
-# DEBUG - Ver qué hay en selected
-st.write("🔍 Debug - selected rows:", selected)
+st.write("🔍 Debug - selected rows después de corrección:", selected)
 
 # ========== DEBUG VISUAL ==========
 if selected:
