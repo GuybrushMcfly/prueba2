@@ -14,6 +14,6 @@ plotly
 extra-streamlit-components
 streamlit-option-menu
 bcrypt
-streamlit-aggrid==0.3.3
+streamlit-aggrid
 fpdf==1.7.2
 mailjet-rest
