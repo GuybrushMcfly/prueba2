@@ -201,10 +201,13 @@ df_simulada = pd.DataFrame([
     }
 ])
 
+# Configurar la tabla con checkbox
 gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
 gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
+gb_sim.configure_grid_options(rowSelection='single')  # 🔧 Clave para que funcione con checkbox
 gb_sim.configure_pagination(paginationAutoPageSize=True)
 
+# Mostrar la tabla
 response_sim = AgGrid(
     df_simulada,
     gridOptions=gb_sim.build(),
@@ -212,12 +215,13 @@ response_sim = AgGrid(
     allow_unsafe_jscode=True,
     theme="balham",
     key="tabla_simulada",
-    update_mode=GridUpdateMode.SELECTION_CHANGED  # ✅ esto es clave
+    update_mode=GridUpdateMode.SELECTION_CHANGED
 )
 
-# =========== VALIDACIÓN DE SELECCIÓN ============
+# Obtener la selección
 selected_sim = response_sim.get("selected_rows") or []
 
+# Botón para mostrar la fila seleccionada
 if st.button("📥 Ver selección de tabla simulada"):
     st.write("🔍 Datos crudos seleccionados:", selected_sim)
     if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
@@ -229,8 +233,6 @@ if st.button("📥 Ver selección de tabla simulada"):
         st.write(f"**Créditos:** {fila['Créditos']}")
     else:
         st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
-
-
 
 
 # === Mostrar tabla con selección ===
