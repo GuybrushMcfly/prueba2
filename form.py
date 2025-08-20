@@ -37,11 +37,11 @@ def format_fecha(f):
 
 @st.cache_data(ttl=86400)
 def obtener_comisiones_abiertas():
-    # ⚠️ Usamos la VIEW
+    # Usamos la VIEW
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
-# ========== PAGE/UI ==========
+# ========== UI ==========
 st.set_page_config(layout="wide")
 st.title("FORMULARIO DE INSCRIPCIÓN A CAPACITACIONES")
 
@@ -87,13 +87,14 @@ if df_comisiones.empty:
     st.warning("No hay comisiones disponibles con los filtros seleccionados.")
     st.stop()
 
-# ========== AGGRID CONFIGURACIÓN ==========
+# ========== AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filter=False, resizable=False)
-gb.configure_selection(selection_mode="single", use_checkbox=True)  # igual que en tu versión que funcionaba
+# Pre-seleccionamos 1ª fila para romper el estado 'None' inicial
+pre_sel = [0] if len(df_comisiones) > 0 else []
+gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-# visibles y ocultas
 gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
@@ -101,11 +102,11 @@ gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
 gb.configure_column("Créditos", flex=10)
 
-# Opciones suaves (sin getRowNodeId para no interferir con la selección)
 grid_options = gb.build()
 grid_options["rowSelection"] = "single"
 grid_options["suppressRowClickSelection"] = False
 grid_options["rowDeselection"] = True
+# NO usamos getRowNodeId para no interferir
 
 st.markdown("#### 1. Seleccioná una comisión (checkbox):")
 response = AgGrid(
@@ -114,16 +115,25 @@ response = AgGrid(
     height=420,
     theme="balham",
     allow_unsafe_jscode=True,
-    # Forzamos que dispare rerun en cambios de selección y de modelo
     update_mode=GridUpdateMode.SELECTION_CHANGED | GridUpdateMode.MODEL_CHANGED,
     data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
     key="grid_comisiones_view"
 )
 
-# ======== EXTRACTOR ROBUSTO DE SELECCIÓN ========
+# ======== DEBUG COMPLETO ========
+st.markdown("### 🐞 DEBUG AgGrid")
+st.write("keys:", list(response.keys()))
+st.write("selected_rows:", response.get("selected_rows"))
+st.write("selected_data:", response.get("selected_data"))
+st.write("event_data:", response.get("event_data"))
+st.write("grid_state:", response.get("grid_state"))
+st.write("grid_response:", response.get("grid_response"))
+
+# ======== EXTRACTOR ROBUSTO ========
 def extraer_seleccion(resp) -> list:
     if not isinstance(resp, dict):
         return []
+    # 1) Lugares típicos
     cand = (
         resp.get("selected_rows")
         or resp.get("selected_data")
@@ -131,26 +141,43 @@ def extraer_seleccion(resp) -> list:
         or (resp.get("grid_response") or {}).get("selected_data")
         or []
     )
-    return cand or []
-
-# Debug útil
-st.markdown("### 🐞 DEBUG AgGrid")
-st.write("keys:", list(response.keys()))
-st.write("selected_rows:", response.get("selected_rows"))
-st.write("selected_data:", response.get("selected_data"))
-st.write("event_data:", response.get("event_data"))
+    if cand:
+        return cand
+    # 2) Algunos builds guardan la selección en grid_state
+    gs = resp.get("grid_state") or {}
+    # intentamos distintos nombres posibles
+    for key in ("selected", "selected_rows", "selection", "rowSelection"):
+        val = gs.get(key)
+        if val:
+            try:
+                # puede venir como dict/obj; intentamos normalizar a list[dict]
+                if isinstance(val, dict):
+                    val = [val]
+                return val
+            except Exception:
+                pass
+    return []
 
 selected = extraer_seleccion(response)
 
-# Persistimos la selección para no perderla en reruns
+# Persistimos / recuperamos última selección
 if selected:
     st.session_state["fila_sel"] = selected[0]
 elif "fila_sel" in st.session_state:
-    # Si no hay selección nueva, usamos la última válida (mejora UX)
     selected = [st.session_state["fila_sel"]]
 
 st.markdown("### 🐞 DEBUG: Fila seleccionada (final)")
 st.write(selected)
+
+# ======== FALLBACK MANUAL (si la grilla no devuelve nada) ========
+if not selected:
+    st.info("No se detectó la selección desde la grilla (issue de st_aggrid). Usá este selector alternativo.")
+    opciones = [f"{r['Actividad (Comisión)']}" for _, r in df_comisiones.iterrows()]
+    idx = st.selectbox("Elegí una comisión:", range(len(opciones)), format_func=lambda i: opciones[i])
+    if idx is not None:
+        selected = [df_comisiones.iloc[int(idx)].to_dict()]
+        st.session_state["fila_sel"] = selected[0]
+        st.success("Selección aplicada desde el selector alternativo.")
 
 # ========== SI HAY SELECCIÓN ==========
 if selected:
@@ -189,7 +216,7 @@ if selected:
 
         datos = agente.data[0]
         st.success("CUIL válido. Completá tus datos para confirmar inscripción.")
-        st.session_state["cuil"] = cuil  # persiste
+        st.session_state["cuil"] = cuil
 
         col1, col2 = st.columns(2)
         apellido = col1.text_input("Apellido", value=datos.get("apellido", ""))
@@ -198,7 +225,6 @@ if selected:
         tramo = st.text_input("Tramo", value=datos.get("tramo", ""))
 
         if st.button("Confirmar inscripción"):
-            # Parseo seguro de fechas (pueden venir vacías)
             def to_sql(dmy):
                 try:
                     return datetime.strptime(dmy, "%d/%m/%Y").strftime("%Y-%m-%d") if dmy else None
@@ -258,4 +284,4 @@ if selected:
             else:
                 st.error("❌ Ocurrió un error al registrar la inscripción.")
 else:
-    st.info
+    st.info("☝️ Seleccioná una comisión de la tabla para continuar.")
