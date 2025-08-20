@@ -180,6 +180,28 @@ custom_css = {
 # ======================================
 # 🧪 1. TABLA SIMULADA
 # ======================================
+
+# ===============================
+# DATOS SIMULADOS (deben ir antes de gb_sim)
+# ===============================
+df_simulada = pd.DataFrame([
+    {
+        "Actividad (Comisión)": "Curso de Python (CPY-001)",
+        "Actividad": "Curso de Python",
+        "Comisión": "CPY-001",
+        "Fecha inicio": "01/09/2025",
+        "Fecha fin": "15/09/2025",
+        "Créditos": 10
+    },
+    {
+        "Actividad (Comisión)": "Curso de SQL (CSQ-002)",
+        "Actividad": "Curso de SQL",
+        "Comisión": "CSQ-002",
+        "Fecha inicio": "10/09/2025",
+        "Fecha fin": "20/09/2025",
+        "Créditos": 8
+    }
+])
 # ===============================
 # CONFIGURACIÓN DE AGGRID (TABLA SIMULADA)
 # ===============================
