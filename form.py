@@ -181,70 +181,35 @@ custom_css = {
 # 🧪 1. TABLA SIMULADA
 # ======================================
 # ===============================
-# DATOS SIMULADOS
+# CONFIGURACIÓN DE AGGRID (TABLA SIMULADA)
 # ===============================
-df_simulada = pd.DataFrame([
-    {
-        "Actividad (Comisión)": "Curso de Python (CPY-001)",
-        "Actividad": "Curso de Python",
-        "Comisión": "CPY-001",
-        "Fecha inicio": "01/09/2025",
-        "Fecha fin": "15/09/2025",
-        "Créditos": 10
-    },
-    {
-        "Actividad (Comisión)": "Curso de SQL (CSQ-002)",
-        "Actividad": "Curso de SQL",
-        "Comisión": "CSQ-002",
-        "Fecha inicio": "10/09/2025",
-        "Fecha fin": "20/09/2025",
-        "Créditos": 8
-    }
-])
-
-# ===============================
-# CONFIGURACIÓN DE AGGRID
-# ===============================
-gb = GridOptionsBuilder.from_dataframe(df_simulada)
-gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
+gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
+gb_sim.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
 
 # Checkbox para selección única
-gb.configure_selection(selection_mode="single", use_checkbox=True)
+gb_sim.configure_selection(selection_mode="single", use_checkbox=True)
 
 # Ocultar campos internos
-gb.configure_column("Actividad", hide=True)
-gb.configure_column("Comisión", hide=True)
+gb_sim.configure_column("Actividad", hide=True)
+gb_sim.configure_column("Comisión", hide=True)
 
 # Columnas visibles
-gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
-gb.configure_column("Fecha inicio", flex=15)
-gb.configure_column("Fecha fin", flex=15)
-gb.configure_column("Créditos", flex=10)
+gb_sim.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
+gb_sim.configure_column("Fecha inicio", flex=15)
+gb_sim.configure_column("Fecha fin", flex=15)
+gb_sim.configure_column("Créditos", flex=10)
 
 # Paginación
-gb.configure_pagination(paginationAutoPageSize=True)
-
-# CSS personalizado
-custom_css = {
-    ".ag-header": {
-        "background-color": "#136ac1 !important",
-        "color": "white !important",
-        "font-weight": "bold !important"
-    },
-    ".ag-cell": {
-        "white-space": "normal !important",
-        "line-height": "1.3 !important"
-    }
-}
+gb_sim.configure_pagination(paginationAutoPageSize=True)
 
 # ===============================
 # MOSTRAR TABLA Y CAPTURAR FILA
 # ===============================
 st.markdown("### 🧪 Tabla de prueba (simulada)")
 
-response = AgGrid(
+response_sim = AgGrid(
     df_simulada,
-    gridOptions=gb.build(),
+    gridOptions=gb_sim.build(),  # <-- ✅ Usás gb_sim, no gb
     theme="balham",
     height=300,
     custom_css=custom_css,
@@ -252,13 +217,13 @@ response = AgGrid(
     key="tabla_simulada"
 )
 
-selected = response.get("selected_rows", [])
+selected_sim = response_sim.get("selected_rows", [])
 
 # ===============================
 # MOSTRAR DATOS SELECCIONADOS
 # ===============================
-if selected and isinstance(selected[0], dict) and selected[0].get("Comisión"):
-    fila = selected[0]
+if selected_sim and isinstance(selected_sim[0], dict) and selected_sim[0].get("Comisión"):
+    fila = selected_sim[0]
     st.success("✅ Fila seleccionada en tabla simulada:")
     st.write(f"**Actividad:** {fila['Actividad']}")
     st.write(f"**Comisión:** {fila['Comisión']}")
