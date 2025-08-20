@@ -135,6 +135,13 @@ if isinstance(selected, pd.DataFrame):
 comision_id = None
 if selected and selected[0].get("Comisión") != "Sin comisiones":
     fila = selected[0]
+    st.markdown("#### ✅ Comisión seleccionada:")
+    st.write(f"**Actividad:** {fila['Actividad']}")
+    st.write(f"**Comisión:** {fila['Comisión']}")
+    st.write(f"**Fecha inicio:** {fila['Fecha inicio']}")
+    st.write(f"**Fecha fin:** {fila['Fecha fin']}")
+    st.write(f"**Créditos:** {fila['Créditos']}")
+
     st.session_state["actividad_nombre"] = fila.get("Actividad", "")
     st.session_state["comision_nombre"] = fila.get("Comisión", "")
     st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
