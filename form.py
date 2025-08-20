@@ -54,17 +54,23 @@ comisiones_raw = obtener_comisiones()
 # ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
 df_temp = pd.DataFrame(comisiones_raw)
 
-# Verificar que estén las columnas esperadas y transformar
-if not df_temp.empty and "nombre_actividad" in df_temp.columns and "id_comision_sai" in df_temp.columns:
-    df_temp["Actividad"] = df_temp["nombre_actividad"]
-    df_temp["Comisión"] = df_temp["id_comision_sai"]
-    df_temp["Fecha inicio"] = pd.to_datetime(df_temp["fecha_desde"]).dt.strftime("%d/%m/%Y")
-    df_temp["Fecha fin"] = pd.to_datetime(df_temp["fecha_hasta"]).dt.strftime("%d/%m/%Y")
-    df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
-    df_temp.rename(columns={"creditos": "Créditos"}, inplace=True)
-else:
-    st.error("❌ No se encontraron los campos necesarios en la vista.")
-    st.stop()
+# Validación y limpieza de datos críticos
+required_cols = ["id_comision_sai", "nombre_actividad", "fecha_desde", "fecha_hasta"]
+df_temp = df_temp.dropna(subset=required_cols)
+
+# Formateo y transformación para imitar la lógica del sistema anterior
+df_temp["Actividad"] = df_temp["nombre_actividad"]
+df_temp["Comisión"] = df_temp["id_comision_sai"]
+
+# Manejo seguro de fechas
+df_temp["fecha_desde"] = pd.to_datetime(df_temp["fecha_desde"], errors="coerce")
+df_temp["fecha_hasta"] = pd.to_datetime(df_temp["fecha_hasta"], errors="coerce")
+df_temp = df_temp.dropna(subset=["fecha_desde", "fecha_hasta"])
+
+df_temp["Fecha inicio"] = df_temp["fecha_desde"].dt.strftime("%d/%m/%Y")
+df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
+df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
+df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -79,7 +85,6 @@ with col1:
 with col2:
     modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
 
-# Aplicar filtros al DataFrame
 if organismo_sel != "Todos":
     df_temp = df_temp[df_temp["organismo"] == organismo_sel]
 if modalidad_sel != "Todos":
@@ -95,25 +100,18 @@ df_comisiones = df_temp[[
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
-
-# Paginación
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 
-# Visual principal
-gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True,
-                    tooltipField="Actividad (Comisión)", filter=False, resizable=False,
-                    minWidth=600, maxWidth=600)
-
-# Internas ocultas
+# Columnas visibles y ocultas
+gb.configure_column("Actividad (Comisión)", flex=50, tooltipField="Actividad (Comisión)",
+                    wrapText=True, autoHeight=True, resizable=False, minWidth=600, maxWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
+gb.configure_column("Fecha inicio", flex=15, resizable=False, autoHeight=True)
+gb.configure_column("Fecha fin", flex=15, resizable=False, autoHeight=True)
+gb.configure_column("Créditos", flex=13, resizable=False, autoHeight=True)
 
-# Fechas y créditos
-gb.configure_column("Fecha inicio", flex=15, filter=False, resizable=False, autoHeight=True)
-gb.configure_column("Fecha fin", flex=15, filter=False, resizable=False, autoHeight=True)
-gb.configure_column("Créditos", flex=13, filter=False, resizable=False, autoHeight=True)
-
-# Estilo personalizado
+# Estilo visual
 custom_css = {
     ".ag-header": {
         "background-color": "#136ac1 !important",
@@ -138,7 +136,7 @@ custom_css = {
 
 grid_options = gb.build()
 
-# Render AgGrid
+# ========== MOSTRAR TABLA ==========
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
@@ -155,8 +153,14 @@ selected = response["selected_rows"] or []
 st.write("🔍 DEBUG selección:", selected)
 
 comision_id = None
-if selected and selected[0].get("Comisión") != "Sin comisiones":
+if selected:
     fila = selected[0]
+
+    # Seguridad: verificar que los datos clave no estén vacíos
+    if not fila.get("Actividad") or not fila.get("Comisión"):
+        st.warning("La comisión seleccionada no tiene datos completos.")
+        st.stop()
+
     st.session_state["actividad_nombre"] = fila.get("Actividad", "")
     st.session_state["comision_nombre"] = fila.get("Comisión", "")
     st.session_state["fecha_inicio"] = fila.get("Fecha inicio", "")
@@ -198,7 +202,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
             st.session_state["cuil_valido"] = False
         else:
             resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
-            if resp.data and len(resp.data) == 0:
+            if not resp.data:
                 st.session_state["validado"] = False
                 st.session_state["cuil_valido"] = False
                 st.error("❌ No se encontró ese usuario en la base de datos.")
@@ -221,6 +225,7 @@ if selected and selected[0].get("Comisión") != "Sin comisiones":
 
 elif selected and selected[0].get("Comisión") == "Sin comisiones":
     st.warning("No hay comisiones disponibles para esta actividad.")
+
 
 
 
