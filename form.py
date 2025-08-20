@@ -215,21 +215,56 @@ def create_html_table(df):
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
-# ========== DETALLES DE LA ACTIVIDAD SELECCIONADA ==========
-selected_activity = st.query_params.get("selected_activity", None)
-if selected_activity and selected_activity in df_temp["Actividad (Comisión)"].values:
-    seleccion = df_temp[df_temp["Actividad (Comisión)"] == selected_activity].iloc[0]
-    st.markdown(f"""
-        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
-            <strong>📘 Actividad:</strong> {seleccion["Actividad"]}<br>
-            <strong>🆔 Comisión:</strong> {seleccion["Comisión"]}<br>
-            <strong>📅 Fechas:</strong> {seleccion["Fecha inicio"]} al {seleccion["Fecha fin"]}<br>
-            <strong>📅 Cierre Inscripción:</strong> {seleccion["Fecha cierre"]}<br>
-            <strong>⭐ Créditos:</strong> {seleccion["Créditos"]}<br>
-            <strong>🎓 Modalidad:</strong> {seleccion["Modalidad"]}<br>
-            <strong>🎯 Apto tramo:</strong> {seleccion["Apto tramo"]}
-        </div>
-    """, unsafe_allow_html=True)
+# ========== DROPDOWN DE ACTIVIDAD ==========
+st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
+
+# Formato: ACTIVIDAD (COMISIÓN) - FECHA INICIO
+df_temp["Actividad dropdown"] = (
+    df_temp["nombre_actividad"]
+    + " (" + df_temp["id_comision_sai"] + ")"
+    + " - " + df_temp["Fecha inicio"]
+)
+
+dropdown_list = df_temp["Actividad dropdown"].tolist()
+actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
+
+# Obtener fila seleccionada
+fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
+
+# Guardar info en session_state
+st.session_state["actividad_nombre"] = fila["Actividad"]
+st.session_state["comision_nombre"] = fila["Comisión"]
+st.session_state["fecha_inicio"] = fila["Fecha inicio"]
+st.session_state["fecha_fin"] = fila["Fecha fin"]
+
+# Mostrar detalles de la comisión
+st.markdown(f"""
+    <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
+        <strong>📘 Actividad:</strong> {fila["Actividad"]}<br>
+        <strong>🆔 Comisión:</strong> {fila["Comisión"]}<br>
+        <strong>📅 Fechas:</strong> {fila["Fecha inicio"]} al {fila["Fecha fin"]}<br>
+        <strong>📅 Cierre Inscripción:</strong> {fila["Fecha cierre"]}<br>
+        <strong>⭐ Créditos:</strong> {fila["Créditos"]}<br>
+        <strong>🎓 Modalidad:</strong> {fila["Modalidad"]}<br>
+        <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
+    </div>
+""", unsafe_allow_html=True)
+
+# CAMPO DE CUIL LUEGO DE SELECCIÓN
+st.markdown("### 🆔 Ingresá tu CUIL para continuar")
+cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
+
+if st.button("Validar CUIL"):
+    if validar_cuil(cuil_input):
+        st.session_state["cuil"] = cuil_input
+        st.session_state["cuil_valido"] = True
+        st.session_state["validado"] = True
+        st.success("CUIL válido. Podés continuar con el formulario.")
+    else:
+        st.session_state["cuil_valido"] = False
+        st.session_state["validado"] = True
+        st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
+
 
 
 
