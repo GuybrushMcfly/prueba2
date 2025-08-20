@@ -37,7 +37,6 @@ def format_fecha(f):
 
 @st.cache_data(ttl=86400)
 def obtener_comisiones_abiertas():
-    # Usamos la VIEW
     resp = supabase.table("vista_comisiones_abiertas").select("*").execute()
     return resp.data if resp.data else []
 
@@ -93,7 +92,6 @@ gb.configure_default_column(sortable=True, wrapText=True, autoHeight=True, filte
 pre_sel = [0] if len(df_comisiones) > 0 else []
 gb.configure_selection(selection_mode="single", use_checkbox=True, pre_selected_rows=pre_sel)
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
-
 gb.configure_column("Actividad (Comisión)", flex=60, tooltipField="Actividad (Comisión)", minWidth=600)
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
@@ -116,14 +114,16 @@ response = AgGrid(
 )
 
 selected = response.get("selected_rows") or []
+
+# ========== SI HAY SELECCIÓN ==========
 if selected:
     fila = selected[0]
     actividad = fila["Actividad"]
-    comision_sai = fila["Comisión"]  # código SAI, ej: "EX-MINT-23001"
+    comision_sai = fila["Comisión"]  # código visible al usuario
     fecha_ini = fila["Fecha inicio"]
     fecha_fin = fila["Fecha fin"]
 
-    # === Paso clave: buscar UUID real en cursos_comisiones ===
+    # Paso clave: buscar UUID real en cursos_comisiones
     comision_row = supabase.table("cursos_comisiones") \
         .select("id") \
         .eq("id_comision_sai", comision_sai) \
@@ -138,8 +138,10 @@ if selected:
     st.markdown(f"#### 2. Ingresá tu CUIL para inscribirte en:")
     st.markdown(f"**{actividad}**  \n_Comisión {comision_sai}_")
 
-    raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""))
+    # 🔹 input siempre persistente
+    raw = st.text_input("CUIL/CUIT *", key="input_cuil")
     cuil = ''.join(filter(str.isdigit, raw))[:11]
+    st.write("🐞 DEBUG CUIL capturado:", cuil)
 
     if st.button("Validar CUIL", type="primary"):
         if not validar_cuil(cuil):
@@ -175,11 +177,10 @@ if selected:
         if st.button("Confirmar inscripción"):
             nueva = {
                 "cuil": cuil,
-                "comision_id": comision_uuid,  # usamos el UUID real
+                "comision_id": comision_uuid,  # usamos UUID real
                 "fecha_inscripcion": datetime.today().strftime("%Y-%m-%d"),
                 "email": correo,
                 "tramo": tramo,
-                # podés sumar más campos opcionales después
             }
 
             st.write("📦 DEBUG INSERT cursos_inscripciones:", nueva)
