@@ -270,7 +270,7 @@ def create_html_table(df, df_original):
             sessionStorage.setItem('selected_activity', activityName);
             window.parent.postMessage({
                 type: 'setQueryParams',
-                data: { selected_activity: activityName }
+                data: {{ "selected_activity": activityName }}
             }, '*');
 
     </script>
