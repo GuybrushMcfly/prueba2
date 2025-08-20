@@ -97,6 +97,10 @@ df_comisiones = df_temp[[
     "Actividad (Comisión)", "Actividad", "Comisión", "Fecha inicio", "Fecha fin", "Créditos"
 ]]
 
+# 🛠️ RESET INDEX por recomendación de foros
+df_comisiones = df_comisiones.reset_index(drop=True)
+st.write("🔁 DEBUG: df_comisiones con reset_index", df_comisiones)
+
 # ========== CONFIGURACIÓN AGGRID ==========
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_default_column(sortable=True, wrapText=True, autoHeight=False, filter=False, resizable=False)
@@ -138,6 +142,7 @@ grid_options = gb.build()
 response = AgGrid(
     df_comisiones,
     gridOptions=grid_options,
+    update_mode="SELECTION_CHANGED",  # ✅ Clave para detectar selección
     height=500,
     allow_unsafe_jscode=True,
     theme="balham",
