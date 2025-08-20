@@ -300,11 +300,11 @@ def create_html_table(df, df_original):
     # Generar filas con funcionalidad de selección
     if len(df) == 0:
         html += """
-                <tr>
+               <tr>
                     <td colspan="5" style="text-align: center; color: #7f8c8d; font-style: italic; padding: 30px;">
                         No se encontraron cursos con los filtros seleccionados
                     </td>
-                </tr>
+               </tr>
         """
     else:
         for idx, row in df.iterrows():
