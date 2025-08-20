@@ -212,17 +212,13 @@ def create_html_table(df):
     """
     return html
 
+# Renderizado de la tabla
+st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 # ========== DETALLES DE LA ACTIVIDAD SELECCIONADA ==========
 selected_activity = st.query_params.get("selected_activity", None)
-
-# ========== DROPDOWN DE SELECCIÓN ========== 
-actividad_list = df_temp["Actividad (Comisión)"].tolist()
-default_index = actividad_list.index(selected_activity) if selected_activity in actividad_list else 0
-actividad_elegida = st.selectbox("🎯 Seleccioná una actividad para inscribirte", actividad_list, index=default_index)
-
-if actividad_elegida and actividad_elegida in df_temp["Actividad (Comisión)"].values:
-    seleccion = df_temp[df_temp["Actividad (Comisión)"] == actividad_elegida].iloc[0]
+if selected_activity and selected_activity in df_temp["Actividad (Comisión)"].values:
+    seleccion = df_temp[df_temp["Actividad (Comisión)"] == selected_activity].iloc[0]
     st.markdown(f"""
         <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
             <strong>📘 Actividad:</strong> {seleccion["Actividad"]}<br>
@@ -235,22 +231,6 @@ if actividad_elegida and actividad_elegida in df_temp["Actividad (Comisión)"].v
         </div>
     """, unsafe_allow_html=True)
 
-    # Guardar en session para la inscripción posterior
-    st.session_state["actividad_nombre"] = seleccion["Actividad"]
-    st.session_state["comision_nombre"] = seleccion["Comisión"]
-    st.session_state["fecha_inicio"] = seleccion["Fecha inicio"]
-    st.session_state["fecha_fin"] = seleccion["Fecha fin"]
-
-    # Campo de CUIL
-    cuil = st.text_input("Ingresá tu CUIL para validar inscripción")
-    if cuil:
-        if validar_cuil(cuil):
-            st.session_state["cuil_valido"] = True
-            st.session_state["cuil"] = cuil
-            st.success("CUIL válido")
-        else:
-            st.session_state["cuil_valido"] = False
-            st.error("CUIL inválido")
 
 
 
