@@ -270,15 +270,25 @@ st.markdown("### 🆔 Ingresá tu CUIL para continuar")
 cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
 
 if st.button("Validar CUIL"):
-    if validar_cuil(cuil_input):
-        st.session_state["cuil"] = cuil_input
-        st.session_state["cuil_valido"] = True
-        st.session_state["validado"] = True
-        st.success("CUIL válido. Podés continuar con el formulario.")
-    else:
+    if not validar_cuil(cuil_input):
         st.session_state["cuil_valido"] = False
         st.session_state["validado"] = True
         st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
+
+    else:
+        # 1️⃣ Formato válido → ahora verificamos en la base de datos
+        existe = verificar_formulario_cuil(supabase, cuil_input)
+
+        if existe:
+            st.session_state["cuil"] = cuil_input
+            st.session_state["cuil_valido"] = True
+            st.session_state["validado"] = True
+            st.success("✅ CUIL válido. Podés continuar con el formulario.")
+        else:
+            st.session_state["cuil_valido"] = False
+            st.session_state["validado"] = True
+            st.error("⚠️ El CUIL no corresponde a un agente activo.")
+
 
 
 
