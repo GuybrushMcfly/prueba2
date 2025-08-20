@@ -181,7 +181,7 @@ custom_css = {
 # 🧪 1. TABLA SIMULADA
 # ======================================
 # ===============================
-# DATOS DE PRUEBA
+# DATOS SIMULADOS
 # ===============================
 df_simulada = pd.DataFrame([
     {
@@ -202,31 +202,29 @@ df_simulada = pd.DataFrame([
     }
 ])
 
-st.markdown("### 🧪 Tabla de prueba (simulada)")
-
 # ===============================
 # CONFIGURACIÓN DE AGGRID
 # ===============================
 gb = GridOptionsBuilder.from_dataframe(df_simulada)
 gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
 
-# Checkbox de selección única
+# Checkbox para selección única
 gb.configure_selection(selection_mode="single", use_checkbox=True)
 
-# Ocultar columnas internas
+# Ocultar campos internos
 gb.configure_column("Actividad", hide=True)
 gb.configure_column("Comisión", hide=True)
 
-# Formato de columnas visibles
+# Columnas visibles
 gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
 gb.configure_column("Créditos", flex=10)
 
-# Configurar paginación
+# Paginación
 gb.configure_pagination(paginationAutoPageSize=True)
 
-# Estilos visuales
+# CSS personalizado
 custom_css = {
     ".ag-header": {
         "background-color": "#136ac1 !important",
@@ -240,8 +238,10 @@ custom_css = {
 }
 
 # ===============================
-# MOSTRAR TABLA
+# MOSTRAR TABLA Y CAPTURAR FILA
 # ===============================
+st.markdown("### 🧪 Tabla de prueba (simulada)")
+
 response = AgGrid(
     df_simulada,
     gridOptions=gb.build(),
@@ -255,19 +255,17 @@ response = AgGrid(
 selected = response.get("selected_rows", [])
 
 # ===============================
-# BOTÓN PARA MOSTRAR SELECCIÓN
+# MOSTRAR DATOS SELECCIONADOS
 # ===============================
-if st.button("📥 Ver selección de tabla simulada"):
-    st.write("🔍 Datos crudos seleccionados:", selected)
-    if selected and isinstance(selected[0], dict) and selected[0].get("Comisión"):
-        fila = selected[0]
-        st.success("✅ Fila seleccionada en tabla simulada:")
-        st.write(f"**Actividad:** {fila['Actividad']}")
-        st.write(f"**Comisión:** {fila['Comisión']}")
-        st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
-        st.write(f"**Créditos:** {fila['Créditos']}")
-    else:
-        st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
+if selected and isinstance(selected[0], dict) and selected[0].get("Comisión"):
+    fila = selected[0]
+    st.success("✅ Fila seleccionada en tabla simulada:")
+    st.write(f"**Actividad:** {fila['Actividad']}")
+    st.write(f"**Comisión:** {fila['Comisión']}")
+    st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
+    st.write(f"**Créditos:** {fila['Créditos']}")
+else:
+    st.warning("⚠️ No seleccionaste ninguna fila en la tabla simulada.")
 
 
 # === Mostrar tabla con selección ===
