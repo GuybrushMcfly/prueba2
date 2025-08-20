@@ -48,45 +48,43 @@ st.markdown("""
 @st.cache_data(ttl=86400)  # 1 día
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision, organismo, id_actividad, nombre_actividad, fecha_inicio, fecha_fin, creditos, modalidad"
+        "id_comision, id_comision_sai, estado_inscripcion, fecha_desde, fecha_hasta"
     ).execute()
     return resp.data if resp.data else []
 
 # --- OBTENER DATOS ---
 comisiones_raw = obtener_comisiones()
 
-# --- FORMATEAR PARA PANDAS ---
+# --- ARMAR DATAFRAME ---
 filas = []
 for c in comisiones_raw:
     filas.append({
-        "Actividad (Comisión)": f"{c['nombre_actividad']} ({c['id_comision']})",
-        "Actividad": c["nombre_actividad"],
-        "Comisión": c["id_comision"],
-        "Fecha inicio": pd.to_datetime(c["fecha_inicio"]).strftime("%d/%m/%Y") if c["fecha_inicio"] else "",
-        "Fecha fin": pd.to_datetime(c["fecha_fin"]).strftime("%d/%m/%Y") if c["fecha_fin"] else "",
-        "Créditos": c["creditos"],
-        "Organismo": c["organismo"],
-        "Modalidad": c["modalidad"],
+        "Actividad (Comisión)": f"{c['id_comision_sai']} ({c['id_comision']})",  # visual
+        "Comisión SAI": c["id_comision_sai"],
+        "ID Comisión": c["id_comision"],
+        "Estado inscripción": c["estado_inscripcion"],
+        "Fecha inicio": pd.to_datetime(c["fecha_desde"]).strftime("%d/%m/%Y") if c["fecha_desde"] else "",
+        "Fecha fin": pd.to_datetime(c["fecha_hasta"]).strftime("%d/%m/%Y") if c["fecha_hasta"] else "",
     })
 
 df_comisiones = pd.DataFrame(filas)
 
 # ========== TABLA AGGRID ==========
-st.markdown("### 📋 Seleccioná una comisión para inscribirte")
+st.markdown("### 📋 Seleccioná una comisión (vista_comisiones_abiertas)")
 
 gb = GridOptionsBuilder.from_dataframe(df_comisiones)
 gb.configure_selection(selection_mode="single", use_checkbox=True)  # ✅ Checkbox
-gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)
 
-# Mostrar solo columnas relevantes
-gb.configure_column("Actividad", hide=True)
-gb.configure_column("Comisión", hide=True)
+# Ocultar ID técnico
+gb.configure_column("ID Comisión", hide=True)
 
-# Actividad visible
-gb.configure_column("Actividad (Comisión)", flex=50, minWidth=500, tooltipField="Actividad (Comisión)")
+# Ajustar columnas visibles
+gb.configure_column("Actividad (Comisión)", flex=40, minWidth=400)
+gb.configure_column("Comisión SAI", flex=20)
+gb.configure_column("Estado inscripción", flex=15)
 gb.configure_column("Fecha inicio", flex=15)
 gb.configure_column("Fecha fin", flex=15)
-gb.configure_column("Créditos", flex=10)
 
 grid_options = gb.build()
 
@@ -105,9 +103,8 @@ selected = response.get("selected_rows", [])
 if selected and isinstance(selected[0], dict):
     fila = selected[0]
     st.success("✅ Comisión seleccionada:")
-    st.write(f"**Actividad:** {fila['Actividad']}")
-    st.write(f"**Comisión:** {fila['Comisión']}")
+    st.write(f"**Comisión SAI:** {fila['Comisión SAI']}")
+    st.write(f"**Estado:** {fila['Estado inscripción']}")
     st.write(f"**Fechas:** {fila['Fecha inicio']} → {fila['Fecha fin']}")
-    st.write(f"**Créditos:** {fila['Créditos']}")
 else:
     st.info("⚠️ Seleccioná una comisión para continuar.")
