@@ -6,13 +6,19 @@ from supabase import create_client, Client
 from collections import defaultdict
 import os
 
-df = pd.DataFrame({"link": ["https://example.com"]})
-gb = GridOptionsBuilder.from_dataframe(df)
-gb.configure_column(
-    "link",
-    cellRenderer=JsCode('''function(params) { return `<a href="${params.value}" target="_blank">LINK</a>`; }''')
-)
-grid = AgGrid(df, gridOptions=gb.build(), allow_unsafe_jscode=True)
+class UrlCellRenderer {
+  init(params) {
+    this.eGui = document.createElement('a');
+    this.eGui.innerText = "LINK";
+    this.eGui.href = params.value;
+    this.eGui.target = "_blank";
+    this.eGui.style.textDecoration = "none";
+  }
+  getGui() {
+    return this.eGui;
+  }
+}
+
 
 # ========== CONEXIÓN A SUPABASE ==========
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
