@@ -51,7 +51,7 @@ gb.configure_selection(selection_mode="single", use_checkbox=True)
 gb.configure_column("ID Comisión", hide=True)
 
 # Ajustar columnas visibles
-gb.configure_column("Actividad (Comisión)", flex=40, minWidth=400)
+gb.configure_column("Actividad (Comisión)", flex=40, minWidth=600)
 gb.configure_column("Comisión SAI", flex=20)
 gb.configure_column("Estado inscripción", flex=20)
 gb.configure_column("Fecha inicio", flex=15)
