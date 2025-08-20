@@ -176,6 +176,62 @@ custom_css = {
     },
 }
 
+
+st.markdown("### 🧪 Tabla de prueba (simulada)")
+
+# --- DataFrame de ejemplo ---
+df_simulada = pd.DataFrame([
+    {
+        "Actividad (Comisión)": "Curso de Python (CPY-001)",
+        "Actividad": "Curso de Python",
+        "Comisión": "CPY-001",
+        "Fecha inicio": "01/09/2025",
+        "Fecha fin": "15/09/2025",
+        "Créditos": 10
+    },
+    {
+        "Actividad (Comisión)": "Curso de SQL (CSQ-002)",
+        "Actividad": "Curso de SQL",
+        "Comisión": "CSQ-002",
+        "Fecha inicio": "10/09/2025",
+        "Fecha fin": "20/09/2025",
+        "Créditos": 8
+    }
+])
+
+# --- Configurar tabla ---
+gb_sim = GridOptionsBuilder.from_dataframe(df_simulada)
+gb_sim.configure_selection(
+    selection_mode="single", 
+    use_checkbox=False,
+    suppressRowClickSelection=False
+)
+gb_sim.configure_pagination(paginationAutoPageSize=True)
+
+# --- Mostrar tabla simulada ---
+response_sim = AgGrid(
+    df_simulada,
+    gridOptions=gb_sim.build(),
+    height=300,
+    allow_unsafe_jscode=True,
+    theme="balham",
+    key="tabla_simulada"
+)
+
+selected_sim = response_sim.get("selected_rows", [])
+
+# --- Mostrar selección debajo ---
+if selected_sim:
+    fila_sim = selected_sim[0]
+    st.success("✅ Selección actual:")
+    st.write(f"**Actividad:** {fila_sim['Actividad']}")
+    st.write(f"**Comisión:** {fila_sim['Comisión']}")
+    st.write(f"**Fechas:** {fila_sim['Fecha inicio']} → {fila_sim['Fecha fin']}")
+    st.write(f"**Créditos:** {fila_sim['Créditos']}")
+else:
+    st.info("Seleccioná una fila en la tabla de prueba para ver los datos.")
+
+
 # === Mostrar tabla con selección ===
 response = AgGrid(
     df_comisiones,
