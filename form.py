@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import date, datetime
@@ -43,7 +44,7 @@ def validar_cuil(cuil: str) -> bool:
     return verificador == int(cuil[-1])
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
-@st.cache_data(ttl=86400)
+#@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
         "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, creditos, modalidad_cursada, link_externo"
