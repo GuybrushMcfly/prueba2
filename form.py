@@ -117,7 +117,7 @@ gb.configure_column(
     "Ver más",
     header_name="Acceso",
     cellRenderer='''(params) => {
-        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
+        return params.value ? `<a href="${params.value}" target="_blank">🌐 Acceder</a>` : "";
     }''',
     flex=10,
     resizable=False
