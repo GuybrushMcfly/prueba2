@@ -153,19 +153,55 @@ actividades_unicas.insert(0, "-Seleccioná actividad-")
 actividad_dropdown = st.selectbox("🔽 Elegí una actividad", actividades_unicas)
 
 if actividad_dropdown != "-Seleccioná actividad-":
+    # Buscar una comisión asociada a esa actividad
+    fila = df_comisiones[df_comisiones["Actividad"] == actividad_dropdown].iloc[0]
+
+    st.session_state["actividad_nombre"] = fila["Actividad"]
+    st.session_state["comision_nombre"] = fila["Comisión"]
+    st.session_state["fecha_inicio"] = fila["Fecha inicio"]
+    st.session_state["fecha_fin"] = fila["Fecha fin"]
+
     st.markdown(
         f"""<h4>2. Validá tu CUIL para inscribirte en</h4>
         <span style="color:#b72877;font-weight:bold; font-size:1.15em;">
-        {actividad_dropdown}
+        {actividad_dropdown} ({fila["Comisión"]})
         </span>""",
         unsafe_allow_html=True
     )
 
+    col_cuil, _ = st.columns([1, 1])
+    with col_cuil:
+        raw = st.text_input("CUIL/CUIT *", value=st.session_state.get("cuil", ""), max_chars=11)
+        cuil = ''.join(filter(str.isdigit, raw))[:11]
 
+        if st.button("VALIDAR Y CONTINUAR", type="primary"):
+            if not validar_cuil(cuil):
+                st.error("El CUIL/CUIT debe tener 11 dígitos válidos.")
+                st.session_state["validado"] = False
+                st.session_state["cuil_valido"] = False
+            else:
+                resp = supabase.table("agentesform").select("*").eq("cuil_cuit", cuil).execute()
+                if not resp.data:
+                    st.session_state["validado"] = False
+                    st.session_state["cuil_valido"] = False
+                    st.error("❌ No se encontró ese usuario en la base de datos.")
+                else:
+                    inscrip_existente = supabase.table("pruebainscripciones") \
+                        .select("id") \
+                        .eq("cuil_cuit", cuil) \
+                        .eq("comision", fila["Comisión"]) \
+                        .limit(1).execute()
 
-
-
-
+                    if inscrip_existente.data:
+                        st.warning("⚠️ Ya realizaste la preinscripción en esa comisión.")
+                        st.session_state["validado"] = False
+                        st.session_state["cuil_valido"] = False
+                    else:
+                        st.success("✅ Datos encontrados. Podés continuar.")
+                        st.session_state["validado"] = True
+                        st.session_state["cuil_valido"] = True
+                        st.session_state["cuil"] = cuil
+                        st.session_state["datos_agenteform"] = resp.data[0]
 
 
 
