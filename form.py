@@ -71,9 +71,8 @@ df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
 
 # ========== CONVERTIR link_externo en HTML ==========
 
-df_temp["Ver más"] = df_temp["link_externo"].apply(
-    lambda x: f'<a href="{x}" target="_blank">LINK</a>' if pd.notnull(x) and x.strip() != "" else ""
-)
+df_temp["Ver más"] = df_temp["link_externo"]  # solo la URL
+
 
 # ========== APLICAR FILTROS ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -114,7 +113,15 @@ gb.configure_column("Comisión", hide=True)
 gb.configure_column("Fecha inicio", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Fecha fin", flex=15, resizable=False, autoHeight=True)
 gb.configure_column("Créditos", flex=13, resizable=False, autoHeight=True)
-gb.configure_column("Ver más", header_name="Acceso", cellRenderer="agRichTextCellRenderer", flex=10, resizable=False)
+gb.configure_column(
+    "Ver más",
+    header_name="Acceso",
+    cellRenderer='''(params) => {
+        return params.value ? `<a href="${params.value}" target="_blank">LINK</a>` : "";
+    }''',
+    flex=10,
+    resizable=False
+)
 
 custom_css = {
     ".ag-header": {
