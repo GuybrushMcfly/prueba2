@@ -134,7 +134,7 @@ gb.configure_selection(
     rowMultiSelectWithClick=False     # IMPORTANTE: No permitir multi-selección con clic
 )
 
-# CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC
+# CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC - SOLO UNA VEZ
 gb.configure_grid_options(
     enableCellTextSelection=True,
     ensureDomOrder=True,
@@ -151,15 +151,6 @@ gb.configure_grid_options(
     }"""
 )
 
-# CONFIGURACIÓN CRUCIAL PARA SELECCIÓN POR CLIC
-gb.configure_grid_options(
-    enableCellTextSelection=True,
-    ensureDomOrder=True,
-    onRowClicked="""function(params) {
-        // Forzar la selección al hacer clic en cualquier parte de la fila
-        params.node.setSelected(true, false);
-    }"""
-)
 
 gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)
 gb.configure_column("Actividad (Comisión)", flex=50, wrapText=True, autoHeight=True, tooltipField="Actividad (Comisión)", filter=False, resizable=False, minWidth=600, maxWidth=600)
@@ -197,18 +188,61 @@ response = AgGrid(
     key='comisiones_grid'
 )
 
-# DEBUG ADICIONAL - Ver toda la respuesta de AgGrid
-st.write("🔍 Debug - Respuesta completa de AgGrid:")
-st.write(response)
+# DEBUG COMPLETO - Ver toda la estructura de la respuesta
+st.write("🔍 Debug - Tipo de response:", type(response))
+st.write("🔍 Debug - Keys en response:", list(response.keys()) if isinstance(response, dict) else "No es dict")
 
-# CORRECCIÓN: Manejar el caso cuando selected_rows es None
-selected = response.get("selected_rows")
+# Verificar diferentes formas en que AgGrid podría devolver los datos
+selected = None
+
+# Método 1: El estándar
+if 'selected_rows' in response:
+    selected = response['selected_rows']
+    st.write("🔍 Método 1 - selected_rows encontrado:", selected)
+
+# Método 2: Algunas versiones usan 'data' como contenedor
+if selected is None and 'data' in response and isinstance(response['data'], dict):
+    if 'selected_rows' in response['data']:
+        selected = response['data']['selected_rows']
+        st.write("🔍 Método 2 - data.selected_rows:", selected)
+
+# Método 3: Buscar en otros lugares posibles
+if selected is None:
+    for key in response.keys():
+        if 'select' in key.lower() or 'row' in key.lower():
+            st.write(f"🔍 Key potencial: {key} = {response[key]}")
+            if isinstance(response[key], list):
+                selected = response[key]
+                st.write(f"🔍 Encontrado en key {key}:", selected)
+                break
+
+# Método 4: Si todo falla, usar get() con default
+if selected is None:
+    selected = response.get('selected_rows', [])
+    st.write("🔍 Método 4 - Usando get() default:", selected)
+
+# Asegurar que selected sea una lista
 if selected is None:
     selected = []
-else:
-    selected = selected if isinstance(selected, list) else []
+elif not isinstance(selected, list):
+    selected = [selected] if selected is not None else []
 
-st.write("🔍 Debug - selected rows después de corrección:", selected)
+st.write("🔍 Debug - selected final:", selected)
+st.write("🔍 Debug - longitud de selected:", len(selected))
+
+# ========== DEBUG VISUAL ==========
+if selected and len(selected) > 0:
+    st.subheader("🪪 Datos seleccionados (debug)")
+    st.json(selected[0])  # Mostramos el dict completo
+    # También mostrar información específica
+    fila = selected[0]
+    st.write(f"🔍 Actividad: {fila.get('Actividad', 'No encontrada')}")
+    st.write(f"🔍 Comisión: {fila.get('Comisión', 'No encontrada')}")
+else:
+    st.warning("⚠️ No se detectaron filas seleccionadas")
+    # Mostrar más información de debug
+    st.write("🔍 Response completo para análisis:")
+    st.write(response)
 
 # ========== DEBUG VISUAL ==========
 if selected:
