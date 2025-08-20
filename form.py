@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import date, datetime
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from supabase import create_client, Client
 from collections import defaultdict
 import time
@@ -57,6 +57,7 @@ def obtener_comisiones():
     return resp.data if resp.data else []
 
 comisiones_raw = obtener_comisiones()
+# st.write("DEBUG vista:", comisiones_raw)  # 👈 podés descomentar para verificar qué campos trae
 
 # ====================
 # ARMADO DE ESTRUCTURA
@@ -128,12 +129,10 @@ response = AgGrid(
     height=400,
     theme="balham",
     allow_unsafe_jscode=True,
-    update_mode="SELECTION_CHANGED"
+    update_mode=GridUpdateMode.SELECTION_CHANGED
 )
 
-selected = response["selected_rows"]
-if isinstance(selected, pd.DataFrame):
-    selected = selected.to_dict("records")
+selected = response.get("selected_rows", [])
 
 # =======================
 # CONTROL DE SELECCIÓN
@@ -181,16 +180,8 @@ if selected:
                     st.session_state["cuil_valido"] = True
                     st.session_state["datos_agenteform"] = resp.data[0]
 
-# (👇 el resto de tu formulario de inscripción, completado con datos de agenteform y guardando en pruebainscripciones, queda idéntico. Solo cambiamos la parte inicial que arma la tabla y selecciona la comisión.)
-
-    
-    # Atención: estos bloques NO deben estar indentados dentro del if anterior,
-    # van alineados al if st.button(...) (fuera del else y fuera del botón):
-    
-    elif selected and selected[0].get("Comisión") == "Sin comisiones":
-        st.warning("No hay comisiones disponibles para esta actividad.")
-    else:
-        st.info("Seleccioná una comisión para continuar.")
+else:
+    st.info("Seleccioná una comisión para continuar.")
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
