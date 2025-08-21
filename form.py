@@ -536,7 +536,8 @@ with st.container():
                         st.session_state["motivo_bloqueo"] = "ya_aprobo"
                         st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA.")
                     else:
-                        comision_id = st.session_state.get("comision_nombre", "")
+                        #comision_id = st.session_state.get("comision_nombre", "")
+                        comision_id = st.session_state.get("comision_id", "")  # ✅ Esto es el UUID correcto
                         ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
 
                         if ya_inscripto:
