@@ -156,11 +156,6 @@ if modalidad_sel != "Todos":
 
 
 
-# ========== TABLA HTML ==========
-df_comisiones = df_filtrado[[
-    "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre", "Créditos", "Modalidad", "Apto tramo", "Ver más"
-]].reset_index(drop=True)
-
 def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
@@ -253,6 +248,50 @@ def create_html_table(df):
 
     <input type="text" id="searchInput" placeholder="🔍 Buscar actividad...">
 
+    <div style="overflow-x: auto;">
+        <table class="courses-table" id="{table_id}">
+            <thead>
+                <tr>
+                    <th>Actividad (Comisión)</th>
+                    <th>F. Inicio</th>
+                    <th>F. Fin</th>
+                    <th>Cierre Inscrip.</th>
+                    <th>Créditos</th>
+                    <th>Modalidad</th>
+                    <th>Apto Tramo</th>
+                    <th>Acceso</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for _, row in df.iterrows():
+        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
+        html += f'<tr onclick="{onclick_code}">'
+        html += f'<td>{row["Actividad (Comisión)"]}</td>'
+        html += f'<td>{row["Fecha inicio"]}</td>'
+        html += f'<td>{row["Fecha fin"]}</td>'
+        html += f'<td>{row["Fecha cierre"]}</td>'
+        html += f'<td>{row["Créditos"]}</td>'
+        html += f'<td>{row["Modalidad"]}</td>'
+        html += f'<td>{row["Apto tramo"]}</td>'
+        if pd.notna(row["Ver más"]) and row["Ver más"]:
+            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+        else:
+            html += '<td><span class="no-link">Sin enlace</span></td>'
+        html += '</tr>'
+
+    html += f"""
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
+            <span id="pageIndicator"></span>
+            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
+        </div>
+    </div>
+
     <script>
         let currentPage = 1;
         let rowsPerPage = 10;
@@ -303,52 +342,10 @@ def create_html_table(df):
             updateTable();
         }});
     </script>
-
-    <div style="overflow-x: auto;">
-        <table class="courses-table" id="{table_id}">
-            <thead>
-                <tr>
-                    <th>Actividad (Comisión)</th>
-                    <th>F. Inicio</th>
-                    <th>F. Fin</th>
-                    <th>Cierre Inscrip.</th>
-                    <th>Créditos</th>
-                    <th>Modalidad</th>
-                    <th>Apto Tramo</th>
-                    <th>Acceso</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-
-    for _, row in df.iterrows():
-        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-        html += f'<tr onclick="{onclick_code}">'
-        html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td>{row["Fecha inicio"]}</td>'
-        html += f'<td>{row["Fecha fin"]}</td>'
-        html += f'<td>{row["Fecha cierre"]}</td>'
-        html += f'<td>{row["Créditos"]}</td>'
-        html += f'<td>{row["Modalidad"]}</td>'
-        html += f'<td>{row["Apto tramo"]}</td>'
-        if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
-        else:
-            html += '<td><span class="no-link">Sin enlace</span></td>'
-        html += '</tr>'
-
-    html += f"""
-            </tbody>
-        </table>
-        <div class="pagination">
-            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
-            <span id="pageIndicator"></span>
-            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
-        </div>
-    </div>
     """
 
     return html
+
 
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
