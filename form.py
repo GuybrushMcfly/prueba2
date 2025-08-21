@@ -76,9 +76,9 @@ def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: st
         if isinstance(response.data, list) and response.data:
             return response.data[0].get("existe", False)
         return False
-    except Exception as e:
-        st.error("Error al verificar el historial del agente.")
-        return False
+   # except Exception as e:
+       # st.error("Error al verificar el historial del agente.")
+       # return False
 
 def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str) -> bool:
     try:
@@ -90,9 +90,9 @@ def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str)
         if isinstance(response.data, list) and response.data:
             return response.data[0].get("existe", False)
         return False
-    except Exception as e:
-        st.error("Error al verificar si ya está inscripto en la comisión.")
-        return False
+    #except Exception as e:
+        #st.error("Error al verificar si ya está inscripto en la comisión.")
+        #return False
 
 
 def obtener_datos_agente(supabase: Client, cuil: str) -> dict:
@@ -448,7 +448,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
             st.session_state["cuil_valido"] = False
             st.session_state["validado"] = True
             st.session_state["motivo_bloqueo"] = "cuil_invalido"
-            st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
+            st.error("CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
         else:
             existe = verificar_formulario_cuil(supabase, cuil_input)
             if not existe:
@@ -478,7 +478,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                         st.session_state["cuil_valido"] = True
                         st.session_state["validado"] = True
                         st.session_state["motivo_bloqueo"] = ""
-                        st.success("✅ CUIL válido. Podés continuar con el formulario.")
+                        st.success("✅ CUIL/CUILT válido. Podés continuar con la preinscripción.")
 
 # ================= PASO 4: Título SOLO si corresponde mostrar el formulario =================
 if (
