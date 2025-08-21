@@ -178,14 +178,6 @@ with col3:
     duracion_sel = st.selectbox("Duración", duraciones, index=0)
 
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    organismo_sel = st.selectbox("Organismo", organismos, index=0)
-with col2:
-    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
-with col3:
-    duracion_sel = st.selectbox("Duración", duraciones, index=0)
-
 # Aplicar filtros
 df_filtrado = df_temp.copy()
 if organismo_sel != "Todos":
