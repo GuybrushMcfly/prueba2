@@ -622,65 +622,46 @@ with st.container():
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- Tabla de inscripciones solo tras inscribir exitosamente ---
-with st.container():
-    st.markdown('<div class="paso-container">', unsafe_allow_html=True)
-    if st.session_state.get("inscripcion_exitosa", False):
-        st.markdown("### Últimas inscripciones")
-        inscripciones = supabase.table("pruebainscripciones") \
-            .select("apellido_nombre, actividad, comision, fecha_inicio, fecha_fin") \
-            .eq("cuil_cuit", st.session_state.get("cuil", "")) \
-            .order("fecha_inscripcion", desc=True) \
-            .limit(10).execute()
-        df_insc = pd.DataFrame(inscripciones.data)
-        if not df_insc.empty:
-            st.table(df_insc)
-        else:
-            st.info("No se encontraron inscripciones para este usuario.")
-
-    elif st.session_state.get("validado", False):
-        if not st.session_state.get("cuil_valido", True):
-            motivo = st.session_state.get("motivo_bloqueo", "")
-            if motivo == "ya_aprobo":
-                st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
-            elif motivo == "ya_inscripto":
-                st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
-            elif motivo == "no_encontrado":
-                st.error("❌ No se encontró a la persona en la base de datos. Revisá tu CUIL/CUIT e intentá nuevamente. Si el problema persiste, comunicate a capacitacion@indec.gob.ar.")
-            elif motivo == "cuil_invalido":
-                st.error("❌ CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
-            else:
-                st.info("ℹ️ No podés continuar con la inscripción.")
-
-
-    #else:
-    #    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
 # ========== MODAL DE ÉXITO ==========
 if st.session_state.get("mostrar_modal_exito", False):
-    st.markdown("""
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-                background-color: rgba(0, 0, 0, 0.5); display: flex; 
-                justify-content: center; align-items: center; z-index: 9999;">
-        <div style="background-color: white; padding: 30px; border-radius: 10px; 
-                    max-width: 500px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    actividad = st.session_state.get("nombre_actividad_exito", "-")
+    modal_html = f"""
+    <div id="modal_exito" style="
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5); display: flex;
+        justify-content: center; align-items: center; z-index: 9999;
+    ">
+        <div style="
+            background-color: white; padding: 30px; border-radius: 10px;
+            max-width: 500px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        ">
             <h3 style="color: #136ac1;">✅ ¡Preinscripción exitosa!</h3>
             <p>Te preinscribiste correctamente en la actividad:</p>
-            <p style="font-weight: bold; font-size: 16px;">📘 {}</p>
-    """.format(st.session_state.get("nombre_actividad_exito", "-")), unsafe_allow_html=True)
+            <p style="font-weight: bold; font-size: 16px;">📘 {actividad}</p>
+            <button onclick="cerrarModal()" style="
+                background-color: #136ac1; color: white; border: none;
+                padding: 10px 20px; border-radius: 5px; font-size: 14px;
+                margin-top: 20px; cursor: pointer;
+            ">Cerrar</button>
+        </div>
+    </div>
 
-    if st.button("Cerrar"):
-        # Limpiar estados
-        for clave in list(st.session_state.keys()):
-            if clave.startswith("actividad_") or clave in [
-                "cuil", "cuil_valido", "validado", "motivo_bloqueo",
-                "inscripcion_exitosa", "mostrar_modal_exito", "datos_agenteform"
-            ]:
-                del st.session_state[clave]
-        # Refrescar
-        st.experimental_rerun()
+    <script>
+    function cerrarModal() {{
+        parent.postMessage({{ type: 'cerrar_modal_exito' }}, '*');
+    }}
+    </script>
+    """
+    components.html(modal_html, height=300)
 
-    st.markdown("</div></div>", unsafe_allow_html=True)
+# ========== LISTENER PARA CERRAR Y RECARGAR ==========
+components.html("""
+<script>
+window.addEventListener("message", function(event) {
+    if (event.data.type === "cerrar_modal_exito") {
+        window.location.reload();
+    }
+});
+</script>
+""", height=0)
 
