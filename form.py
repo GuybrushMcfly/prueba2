@@ -65,12 +65,14 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Limpiar completamente el session_state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        # Forzar recarga completa
-        st.query_params.clear()
-        st.rerun()
+        # La solución más efectiva: redireccionar a la misma URL
+        js = """
+        <script>
+        window.location.href = window.location.href.split('?')[0];
+        </script>
+        """
+        components.html(js, height=0, width=0)
+        st.stop()
 
 # ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
