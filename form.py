@@ -610,10 +610,10 @@ with st.container():
                 # 🧾 Intentar insertar en Supabase
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
                 if result.data:
-                    st.success("✅ ¡Inscripción registrada correctamente!")
                     st.session_state["inscripcion_exitosa"] = True
-                    st.balloons()
-                    # A partir de acá podrías llamar a la función PDF como ya lo hacías
+                    st.session_state["mostrar_modal_exito"] = True
+                    st.session_state["nombre_actividad_exito"] = fila["Actividad"]
+
         
                 else:
                     st.error("❌ Ocurrió un error al guardar la inscripción.")
@@ -656,3 +656,31 @@ with st.container():
     #else:
     #    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ========== MODAL DE ÉXITO ==========
+if st.session_state.get("mostrar_modal_exito", False):
+    st.markdown("""
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+                background-color: rgba(0, 0, 0, 0.5); display: flex; 
+                justify-content: center; align-items: center; z-index: 9999;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; 
+                    max-width: 500px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            <h3 style="color: #136ac1;">✅ ¡Preinscripción exitosa!</h3>
+            <p>Te preinscribiste correctamente en la actividad:</p>
+            <p style="font-weight: bold; font-size: 16px;">📘 {}</p>
+    """.format(st.session_state.get("nombre_actividad_exito", "-")), unsafe_allow_html=True)
+
+    if st.button("Cerrar"):
+        # Limpiar estados
+        for clave in list(st.session_state.keys()):
+            if clave.startswith("actividad_") or clave in [
+                "cuil", "cuil_valido", "validado", "motivo_bloqueo",
+                "inscripcion_exitosa", "mostrar_modal_exito", "datos_agenteform"
+            ]:
+                del st.session_state[clave]
+        # Refrescar
+        st.experimental_rerun()
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
