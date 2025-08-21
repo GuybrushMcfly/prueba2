@@ -65,14 +65,28 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # La solución más efectiva: redireccionar a la misma URL
+        # Usar JavaScript para recargar completamente la página
         js = """
         <script>
-        window.location.href = window.location.href.split('?')[0];
+        function deleteAllCookies() {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i];
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+            }
+        }
+        
+        deleteAllCookies();
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Recargar forzando fetch desde servidor (no cache)
+        window.location.href = window.location.origin + window.location.pathname;
         </script>
         """
         components.html(js, height=0, width=0)
-        st.stop()
 
 # ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
