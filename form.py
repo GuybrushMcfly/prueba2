@@ -439,7 +439,7 @@ html_tarjetas += '</div>'
 st.markdown(html_tarjetas, unsafe_allow_html=True)
 
 
-# ========== TARJETAS INTERACTIVAS (con botones reales) ==========
+# ========== TARJETAS INTERACTIVAS (con botones reales y animación) ==========
 
 st.markdown("---")
 st.subheader("📝 Actividades destacadas (modo interactivo)")
@@ -450,46 +450,90 @@ if "actividad_seleccionada" not in st.session_state:
 
 tarjetas = df_comisiones.head(6).to_dict(orient="records")
 
+# CSS para animación y botones alineados
+st.markdown("""
+<style>
+.card {
+    background-color:#f9f9f9;
+    padding:20px;
+    border-left:5px solid #136ac1;
+    border-radius:10px;
+    box-shadow:1px 1px 5px rgba(0,0,0,0.05);
+    margin-bottom:15px;
+    min-height:220px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+}
+.card h4 {
+    color:#136ac1;
+    font-size:16px;
+    margin:0 0 8px 0;
+}
+.card p {
+    margin:4px 0;
+}
+.card-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+.card-buttons a, .card-buttons button {
+    flex: 1;
+    text-align: center;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-acceder {
+    background-color:#136ac1;
+    color:white;
+    border:none;
+    text-decoration:none;
+}
+.btn-acceder:hover {
+    background-color:#0e4f91;
+}
+.btn-anotarse {
+    background-color:white;
+    border:2px solid #136ac1;
+    color:#136ac1;
+}
+.btn-anotarse:hover {
+    background-color:#136ac1;
+    color:white;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Grid de 3 tarjetas por fila
 cols = st.columns(3)
 
 for i, item in enumerate(tarjetas):
     with cols[i % 3]:
-        # Caja con estilo
+        # Caja con estilo + botones alineados
         st.markdown(f"""
-        <div style="
-            background-color:#f9f9f9;
-            padding:20px;
-            border-left:5px solid #136ac1;
-            border-radius:10px;
-            box-shadow:1px 1px 5px rgba(0,0,0,0.05);
-            margin-bottom:15px;
-            min-height:220px;">
-            <h4 style="color:#136ac1; font-size:16px; margin:0 0 8px 0;">{item['Actividad (Comisión)']}</h4>
-            <p style="margin:4px 0;"><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
-            <p style="margin:4px 0;"><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
-            <p style="margin:4px 0;"><b>⭐ Créditos:</b> {item['Créditos']}</p>
+        <div class="card">
+            <h4>{item['Actividad (Comisión)']}</h4>
+            <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
+            <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
+            <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
+            <div class="card-buttons">
+                {"<a href='" + item['Ver más'] + "' target='_blank' class='btn-acceder'>🌐 Acceder</a>" if item["Ver más"] else "<span class='no-link'>Sin enlace</span>"}
+                <button onclick="window.parent.postMessage({{type: 'streamlit:setSessionState', key: 'actividad_seleccionada', value: '{item['Actividad (Comisión)']}' }}, '*');" class="btn-anotarse">📝 Anotarse</button>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-
-        # Botón Acceder
-        if item["Ver más"]:
-            st.markdown(
-                f'<a href="{item["Ver más"]}" target="_blank">'
-                f'<button style="background-color:#136ac1;color:white;'
-                f'border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">🌐 Acceder</button></a>',
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown('<span style="color:#bdc3c7;font-style:italic;">Sin enlace</span>', unsafe_allow_html=True)
-
-        # Botón Anotarse (este llena el campo vacío)
-        if st.button("📝 Anotarse", key=f"anotarse_{i}"):
-            st.session_state.actividad_seleccionada = item['Actividad (Comisión)']
 
 # Campo vacío debajo que se llena al hacer clic en "Anotarse"
 st.markdown("### 🏷️ Actividad seleccionada")
 st.text_input("Nombre de la actividad", st.session_state.actividad_seleccionada, key="campo_actividad")
+
 
 
 
