@@ -550,8 +550,8 @@ st.markdown("""
 <style>
 .flip-card {
   background-color: transparent;
-  width: 280px;
-  height: 180px;
+  width: 380px;
+  height: 200px;
   perspective: 1000px;
   margin: 10px auto;
 }
