@@ -122,7 +122,7 @@ def obtener_comisiones():
 
 comisiones_raw = obtener_comisiones()
 
-# ========== CREAR DATAFRAME COMPATIBLE CON LA LÓGICA ANTIGUA ==========
+# ========== CREAR DATAFRAME ==========
 df_temp = pd.DataFrame(comisiones_raw)
 
 # Convertir fechas
@@ -155,6 +155,14 @@ df_temp["Modalidad"] = df_temp["modalidad_cursada"]
 df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
 df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
+
+
+# ========== PASO 1 ==========
+st.markdown("""
+    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
+""", unsafe_allow_html=True)
+
+components.html(html_code, height=700, scrolling=True)
 
 # ========== FILTROS VISUALES ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -363,12 +371,6 @@ html_code += """
 </script>
 """
 
-# ========== PASO 1 ==========
-st.markdown("""
-    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
-""", unsafe_allow_html=True)
-
-components.html(html_code, height=700, scrolling=True)
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
 st.markdown("""
