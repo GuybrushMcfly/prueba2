@@ -455,7 +455,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                 st.session_state["cuil_valido"] = False
                 st.session_state["validado"] = True
                 st.session_state["motivo_bloqueo"] = "no_encontrado"
-                st.error("⚠️ El CUIL no corresponde a un agente activo.")
+                st.error("⚠️ El CUIL/CUIT no corresponde a un agente activo.")
             else:
                 actividad_id = fila["id_actividad"]
         
@@ -464,7 +464,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                     st.session_state["cuil_valido"] = False
                     st.session_state["validado"] = True
                     st.session_state["motivo_bloqueo"] = "ya_aprobo"
-                    st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
+                    st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA.")
                 else:
                     comision_id = fila["Comisión"]
                     ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
@@ -472,7 +472,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                         st.session_state["cuil_valido"] = False
                         st.session_state["validado"] = True
                         st.session_state["motivo_bloqueo"] = "ya_inscripto"
-                        st.warning("⚠️ Ya estás inscripto en esta comisión. No podés volver a inscribirte.")
+                        st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
                     else:
                         st.session_state["cuil"] = cuil_input
                         st.session_state["cuil_valido"] = True
@@ -662,11 +662,11 @@ if st.session_state.get("inscripcion_exitosa", False):
 elif st.session_state.get("validado", False):
     if not st.session_state.get("cuil_valido", True):
         motivo = st.session_state.get("motivo_bloqueo", "")
-        if motivo == "ya_aprobo":
-            st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
-        elif motivo == "ya_inscripto":
-            st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
-        elif motivo == "no_encontrado":
+    #    if motivo == "ya_aprobo":
+    #        st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
+    #    elif motivo == "ya_inscripto":
+    #        st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
+        if motivo == "no_encontrado":
             st.error("❌ No se encontró a la persona en la base de datos. Revisá tu CUIL/CUIT e intentá nuevamente. Si el problema persiste, comunicate a capacitacion@indec.gob.ar.")
         elif motivo == "cuil_invalido":
             st.error("❌ CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
