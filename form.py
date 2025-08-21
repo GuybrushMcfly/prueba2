@@ -362,63 +362,80 @@ with st.container():
     altura_dinamica = min(600, 100 + (len(df_comisiones) * 50))
     components.html(html_code, height=altura_dinamica, scrolling=True)
 
-    # ========== TARJETAS DESTACADAS ==========
-    st.markdown("---")
-    st.subheader("🌟 Actividades destacadas")
+# ========== TARJETAS DESTACADAS ==========
+st.markdown("---")
+st.subheader("🌟 Actividades destacadas")
 
-    tarjetas = df_comisiones.head(6).to_dict(orient="records")
+tarjetas = df_comisiones.head(6).to_dict(orient="records")
 
-    st.markdown("""
-    <style>
-    .card-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 25px;
-        margin-top: 20px;
-    }
-    .card {
-        background-color: #f9f9f9;
-        padding: 20px;
-        border-left: 5px solid #136ac1;
-        border-radius: 10px;
-        box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        height: 220px;
-    }
-    .card:hover {
-        transform: scale(1.03);
-        box-shadow: 0 8px 18px rgba(0,0,0,0.15);
-    }
-    .card h4 {
-        margin-top: 0;
-        font-size: 16px;
-        color: #136ac1;
-    }
-    .card p {
-        margin: 6px 0;
-        font-size: 14px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# CSS para tarjetas
+st.markdown("""
+<style>
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin-top: 20px;
+}
 
+.card {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-left: 5px solid #136ac1;
+    border-radius: 10px;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 220px;
+}
 
-    html_tarjetas = '<div class="card-grid">'
-    
-    for item in tarjetas:
-        html_tarjetas += f"""
-        <div class="card">
-            <h4>{item['Actividad (Comisión)']}</h4>
-            <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
-            <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
-            <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
-        </div>
-        """
-    
-    html_tarjetas += '</div>'
-    st.markdown(html_tarjetas, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+.card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+}
 
-    
+.card h4 {
+    margin-top: 0;
+    font-size: 16px;
+    color: #136ac1;
+}
+
+.card p {
+    margin: 6px 0;
+    font-size: 14px;
+}
+
+/* Responsivo */
+@media (max-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
+
+# HTML de las tarjetas
+html_tarjetas = '<div class="card-grid">'
+
+for item in tarjetas:
+    html_tarjetas += f"""
+    <div class="card">
+        <h4>{item['Actividad (Comisión)']}</h4>
+        <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
+        <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
+        <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
+    </div>
+    """
+
+html_tarjetas += '</div>'
+
+# Mostrar tarjetas
+st.markdown(html_tarjetas, unsafe_allow_html=True)
+
 
 
 
