@@ -320,55 +320,10 @@ html_code += """
 </script>
 """
 
-html_code += """
-<script>
-    window.addEventListener("message", (event) => {
-        const { type, data } = event.data || {};
-        if (type === "setQueryParams") {
-            const query = new URLSearchParams(window.location.search);
-            Object.keys(data).forEach(key => {
-                query.set(key, data[key]);
-            });
-            const newUrl = `${window.location.pathname}?${query.toString()}`;
-            window.history.replaceState(null, '', newUrl);
-            window.location.reload();
-        }
-    });
-</script>
-"""
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
 components.html(html_code, height=700, scrolling=True)
 
-# ================== Mostrar detalles al hacer clic en una fila ==================
-
-# 1️⃣ Obtener el valor enviado desde la tabla (por postMessage desde JS)
-selected_activity = st.query_params.get("selected_activity", [None])[0]
-
-# 2️⃣ Mostrar valor recibido (solo para debug)
-st.markdown(f"`selected_activity`: `{selected_activity}`")
-
-# 3️⃣ Si se seleccionó una actividad, buscar y mostrar detalles
-if selected_activity:
-    seleccion = df_comisiones[df_comisiones["Actividad (Comisión)"] == selected_activity]
-
-    if not seleccion.empty:
-        fila = seleccion.iloc[0]
-
-        st.markdown(f"""
-            <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
-                <strong>📘 Actividad:</strong> {fila["Actividad (Comisión)"]}<br>
-                <strong>📅 Fechas:</strong> {fila["Fecha inicio"]} al {fila["Fecha fin"]}<br>
-                <strong>📅 Cierre Inscripción:</strong> {fila["Fecha cierre"]}<br>
-                <strong>⭐ Créditos:</strong> {fila["Créditos"]}<br>
-                <strong>🎓 Modalidad:</strong> {fila["Modalidad"]}<br>
-                <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
-            </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.info("⚠️ No se encontró la actividad seleccionada.")
-else:
-    st.info("👉 Hacé clic en una fila de la tabla para ver los detalles acá.")
 
 
 # ========== DROPDOWN DE ACTIVIDAD ==========
