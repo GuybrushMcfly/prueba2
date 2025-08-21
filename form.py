@@ -47,9 +47,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
-
-
 # ========== TÍTULO GENERAL ==========
 st.markdown("""
     <h1 style="color: #136ac1; text-align: center; font-size: 28px; margin-bottom: 0px;">
@@ -60,8 +57,6 @@ st.markdown("""
     </h4>
 """, unsafe_allow_html=True)
 
-
-
 @st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
 def dialogo_exito():
     actividad = st.session_state.get("nombre_actividad_exito", "-")
@@ -69,19 +64,15 @@ def dialogo_exito():
     st.markdown("Te preinscribiste correctamente en la actividad:")
     st.markdown(f"📘 **{actividad}**")
 
-    if st.button("Cerrar"):
-        # Borrar todo el session state
-        for clave in list(st.session_state.keys()):
-            del st.session_state[clave]
-        # Forzar recarga sin diálogo
+    if st.button("Cerrar", key="cerrar_dialogo_exito"):
+        # Limpiar completamente el session_state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        # Forzar recarga completa
+        st.query_params.clear()
         st.rerun()
 
-
-
-# ========== FUNCIIONES ==========
-
-
-# ========== VALIDACIÓN DE CUIL ==========
+# ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
     if not cuil.isdigit() or len(cuil) != 11:
         return False
@@ -113,8 +104,7 @@ def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: st
             return response.data[0].get("existe", False)
         return False
     except Exception as e:
-       # st.error("Error al verificar el historial del agente.")
-       return False
+        return False
 
 def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str) -> bool:
     try:
@@ -127,9 +117,7 @@ def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str)
             return response.data[0].get("existe", False)
         return False
     except Exception as e:
-        #st.error("Error al verificar si ya está inscripto en la comisión.")
         return False
-
 
 def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
     try:
@@ -145,10 +133,7 @@ def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
         st.error(f"Error al obtener los datos del formulario: {e}")
         return {}
 
-
-
 # ========== CARGA DE DATOS DESDE VISTA ==========
-#@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
         "id, id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, fecha_cierre, creditos, modalidad_cursada, link_externo, apto_tramo"
@@ -181,6 +166,7 @@ df_temp["Actividad dropdown"] = (
 )
 df_temp["Actividad (Comisión)"] = df_temp["Actividad dropdown"]
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
+
 def clasificar_duracion(creditos):
     if 1 <= creditos < 10:
         return "BREVE (hasta 10 hs)"
@@ -189,6 +175,7 @@ def clasificar_duracion(creditos):
     elif creditos >= 20:
         return "PROLONGADA (más de 20 hs)"
     return "SIN CLASIFICAR"
+
 df_temp["Duración"] = df_temp["Créditos"].apply(clasificar_duracion)
 df_temp["Modalidad"] = df_temp["modalidad_cursada"]
 df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
@@ -271,7 +258,6 @@ with st.container():
                 transition: all 0.3s ease;
                 cursor: pointer;
             }}
-
 
            .courses-table tbody tr:hover {{
                 background-color: #e3f2fd;
@@ -357,23 +343,16 @@ with st.container():
                 row.classList.add('selected');
                 sessionStorage.setItem('selected_activity', activityName);
                 window.parent.postMessage({
-                    type: 'setQueryParams',
-                    data: { "selected_activity": activityName }
+                    type: 'streamlit:setQueryParams',
+                    queryParams: { "selected_activity": activityName }
                 }, '*');
             }
         </script>
         """
         return html
 
-    # Renderizado de la tabla
-    #st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
-    #components.html(create_html_table(df_comisiones), height=600, scrolling=True)
-
-
-    # ========== RENDER CON FUNCIONALIDADES ADICIONALES ==========
-    html_code = create_html_table(df_comisiones)
-
     # Agregamos scripts de DataTables
+    html_code = create_html_table(df_comisiones)
     html_code += """
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -415,15 +394,11 @@ with st.container():
     </script>
     """
 
-    # ================== Mostrar tabla con búsqueda + paginación ==================
-
-    # Calcular altura dinámica: 60px por fila aprox + espacio extra para header, márgenes, paginación, etc.
+    # Calcular altura dinámica
     num_filas = len(df_comisiones)
-    altura_dinamica = min(600, 100 + (num_filas * 60))  # Altura mínima 100, máxima 600
+    altura_dinamica = min(600, 100 + (num_filas * 60))
 
     components.html(html_code, height=altura_dinamica, scrolling=True)
-
-#    components.html(html_code, height=500, scrolling=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -436,15 +411,26 @@ df_temp["Actividad dropdown"] = (
 # Usar el mismo campo para la tabla
 df_temp["Actividad (Comisión)"] = df_temp["Actividad dropdown"]
 
-
 # ================= PASO 2: Selección de actividad =================
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
     st.markdown("#### 2) Seleccioná la actividad en la cual querés preinscribirte.")
+    
+    # Manejar parámetros de consulta para selección inicial
+    selected_from_query = st.query_params.get("selected_activity", None)
+    initial_index = 0
+    
     dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
-    actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
+    
+    if selected_from_query:
+        try:
+            initial_index = dropdown_list.index(selected_from_query)
+        except ValueError:
+            initial_index = 0
+    
+    actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
 
-    # Detectar cambio en selección (guardamos la última selección previa)
+    # Detectar cambio en selección
     if "actividad_anterior" not in st.session_state:
         st.session_state["actividad_anterior"] = ""
 
@@ -465,8 +451,6 @@ with st.container():
         st.session_state["fecha_inicio"] = fila["Fecha inicio"]
         st.session_state["fecha_fin"] = fila["Fecha fin"]
         st.session_state["comision_id"] = fila["id"]
- 
-
 
         # Mostrar detalles de la comisión
         st.markdown(f"""
@@ -487,14 +471,14 @@ with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
     if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
         st.markdown("#### 3) Ingresá tu número de CUIL y validalo con el botón.")
-        cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
+        cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11, key="cuil_input")
 
-        if st.button("Validar CUIL"):
+        if st.button("Validar CUIL", key="validar_cuil_btn"):
             if not validar_cuil(cuil_input):
                 st.session_state["cuil_valido"] = False
                 st.session_state["validado"] = True
                 st.session_state["motivo_bloqueo"] = "cuil_invalido"
-              #  st.error("CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
+                st.error("CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
             else:
                 existe = verificar_formulario_cuil(supabase, cuil_input)
                 if not existe:
@@ -538,8 +522,7 @@ with st.container():
                                     st.markdown(f"**{campo.replace('_', ' ').capitalize()}:** {valor if valor else '-'}")
                                 st.markdown("---")
 
-
-# ================= PASO 4: Título SOLO si corresponde mostrar el formulario =================
+# ================= PASO 4: Formulario de inscripción =================
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
 
@@ -580,7 +563,7 @@ with st.container():
             st.warning("📧 El correo alternativo no tiene un formato válido.")
 
         # --- BOTÓN DE ENVÍO
-        if st.button("ENVIAR INSCRIPCIÓN"):
+        if st.button("ENVIAR INSCRIPCIÓN", key="enviar_inscripcion"):
             if email_alternativo and "@" not in email_alternativo:
                 st.error("⚠️ El correo alternativo no es válido.")
             else:
@@ -618,26 +601,12 @@ with st.container():
                     "id_dependencia_general": datos_agente.get("id_dependencia_general")
                 }
         
-                # 🔍 DEBUG: Mostrar datos que se van a insertar
-                st.write("📦 Datos que se van a insertar:")
-                st.json(datos_inscripcion)
-                st.write("🧩 ID de comisión:", st.session_state.get("comision_id"))
-        
-                # 🧾 Intentar insertar en Supabase
+                # Intentar insertar en Supabase
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
-                if result.data and not st.session_state.get("modal_mostrado", False):
-                    st.session_state["modal_mostrado"] = True
+                if result.data:
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
                     dialogo_exito()
-
-
-
-
-
-
-        
                 else:
                     st.error("❌ Ocurrió un error al guardar la inscripción.")
-
 
     st.markdown('</div>', unsafe_allow_html=True)
