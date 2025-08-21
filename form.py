@@ -154,6 +154,9 @@ if organismo_sel != "Todos":
 if modalidad_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Modalidad"] == modalidad_sel]
 
+
+render_datatable_selector(df_comisiones_dt)
+
 # ========== TABLA HTML ==========
 df_comisiones = df_filtrado[[
     "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre", "Créditos", "Modalidad", "Apto tramo", "Ver más"
@@ -364,7 +367,6 @@ def render_datatable_selector(df):
 render_datatable_selector(df_comisiones)
 
 
-render_datatable_selector(df_comisiones_dt)
 
 st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
 
