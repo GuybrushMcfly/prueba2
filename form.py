@@ -369,11 +369,20 @@ render_datatable_selector(df_comisiones)
 
 
 
+# ================== TABLA 3 (con paginación + HTML links) ==================
+# 🧩 Agregá este bloque antes del render
+df_comisiones_dt = df_comisiones.copy()
+
+def formatear_link_html(url):
+    if pd.isna(url) or url == "None":
+        return '<span style="color: #bdc3c7; font-style: italic;">Sin enlace</span>'
+    return f'<a href="{url}" target="_blank" style="color: #136ac1; text-decoration: none; font-weight: bold; border: 2px solid #136ac1; border-radius: 5px; padding: 6px 12px; display: inline-block;">🌐 Acceder</a>'
+
+df_comisiones_dt["Ver más"] = df_comisiones_dt["Ver más"].apply(formatear_link_html)
+
 st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
 render_datatable_selector(df_comisiones_dt)
 
-
-from streamlit.components.v1 import html
 
 def render_custom_html_table(df):
     table_id = "tablaHTMLConEstilo"
