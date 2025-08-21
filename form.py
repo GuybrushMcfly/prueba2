@@ -236,28 +236,40 @@ with st.container():
                 width: 90%;
                 margin: 0 auto;
                 border-collapse: collapse;
-                font-size: 12px;
+                font-size: 14px;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 border-radius: 8px;
                 overflow: hidden;
                 background-color: white;
-            }}
+                /* NUEVAS PROPIEDADES PARA HEADER FIJO */
+                display: block;
+                max-height: 500px; /* Altura máxima para el scroll */
+                overflow-y: auto;
+            }
+            .courses-table thead {
+                /* HEADER FIJO */
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+            }
             .courses-table thead tr {{
                 background-color: #136ac1;
                 color: #ffffff;
                 text-align: left;
                 font-weight: bold;
-            }}
-            .courses-table th, .courses-table td {{
-                padding: 10px 18px;
-                border-bottom: 1px solid #e0e0e0;
-            }}
-            .courses-table tbody tr {{
-                background-color: #ffffff;
-                transition: all 0.3s ease;
-                cursor: pointer;
-            }}
+            }
+            .courses-table tbody {{
+                /* CUERPO CON SCROLL */
+                display: block;
+                overflow-y: auto;
+            }
+            .courses-table tr {{
+                /* FILAS EN DISPLAY TABLA */
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
 
            .courses-table tbody tr:hover {{
                 background-color: #e3f2fd;
