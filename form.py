@@ -280,7 +280,8 @@ with st.container():
                 color: #136ac1;
                 text-decoration: none;
                 font-weight: bold;
-                padding: 6px 12px;
+                padding: 4px 8px;
+                font-size: 12px;
                 border: 2px solid #136ac1;
                 border-radius: 5px;
                 transition: all 0.3s ease;
