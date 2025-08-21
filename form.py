@@ -384,38 +384,43 @@ df_temp["Actividad dropdown"] = (
     + " - " + df_temp["Fecha inicio"]
 )
 
-dropdown_list = df_temp["Actividad dropdown"].tolist()
-
 st.markdown("#### 2) Seleccioná la actividad en la cual querés preinscribirte.")
-
+dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
 actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
 
-# Obtener fila seleccionada
-fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
+if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
+    fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
 
-# Guardar info en session_state
-st.session_state["actividad_nombre"] = fila["Actividad"]
-st.session_state["comision_nombre"] = fila["Comisión"]
-st.session_state["fecha_inicio"] = fila["Fecha inicio"]
-st.session_state["fecha_fin"] = fila["Fecha fin"]
+    # Guardar info en session_state
+    st.session_state["actividad_nombre"] = fila["Actividad"]
+    st.session_state["comision_nombre"] = fila["Comisión"]
+    st.session_state["fecha_inicio"] = fila["Fecha inicio"]
+    st.session_state["fecha_fin"] = fila["Fecha fin"]
 
-# Mostrar detalles de la comisión
-st.markdown(f"""
-    <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
-        <strong>📘 Actividad:</strong> {fila["Actividad"]}<br>
-        <strong>🆔 Comisión:</strong> {fila["Comisión"]}<br>
-        <strong>📅 Fechas:</strong> {fila["Fecha inicio"]} al {fila["Fecha fin"]}<br>
-        <strong>📅 Cierre Inscripción:</strong> {fila["Fecha cierre"]}<br>
-        <strong>⭐ Créditos:</strong> {fila["Créditos"]}<br>
-        <strong>🎓 Modalidad:</strong> {fila["Modalidad"]}<br>
-        <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
-    </div>
-""", unsafe_allow_html=True)
+    # Mostrar detalles de la comisión
+    st.markdown(f"""
+        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
+            <strong>📘 Actividad:</strong> {fila["Actividad"]}<br>
+            <strong>🆔 Comisión:</strong> {fila["Comisión"]}<br>
+            <strong>📅 Fechas:</strong> {fila["Fecha inicio"]} al {fila["Fecha fin"]}<br>
+            <strong>📅 Cierre Inscripción:</strong> {fila["Fecha cierre"]}<br>
+            <strong>⭐ Créditos:</strong> {fila["Créditos"]}<br>
+            <strong>🎓 Modalidad:</strong> {fila["Modalidad"]}<br>
+            <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
+        </div>
+    """, unsafe_allow_html=True)
+
+    # PASO 3: SOLO SI SE ELIGIÓ ACTIVIDAD
+    st.markdown("#### 3) Ingresá tu número de CUIL y validalo con el botón.")
+    st.markdown("### 🆔 Ingresá tu CUIL para continuar")
+    cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
+
+
+
 
 
 st.markdown("#### 3) Ingresá tu número de CUIL y validalo con el botón.")
 # CAMPO DE CUIL LUEGO DE SELECCIÓN
-st.markdown("### 🆔 Ingresá tu CUIL para continuar")
 cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
 
 if st.button("Validar CUIL"):
