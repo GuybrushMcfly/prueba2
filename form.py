@@ -422,16 +422,17 @@ with st.container():
         # Mostrar
         st.markdown(f"""
         <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px;">
-          <b>🟦 Actividad:</b> {seleccion['nombre_actividad']}<br>
-          <b>🆔 Comisión:</b> {seleccion['id_comision_sai']}<br>
-          <b>🧬 UUID Comisión:</b> <code>{seleccion['id']}</code><br>
-          <b>📅 Fechas:</b> {seleccion['fecha_desde']} al {seleccion['fecha_hasta']}<br>
-          <b>📌 Cierre Inscripción:</b> {seleccion['fecha_cierre']}<br>
-          <b>⭐ Créditos:</b> {seleccion['creditos']}<br>
-          <b>🎓 Modalidad:</b> {seleccion['modalidad_cursada']}<br>
-          <b>❓ Apto tramo:</b> {seleccion['apto_tramo']}<br>
+          <b>🟦 Actividad:</b> {fila['nombre_actividad']}<br>
+          <b>🆔 Comisión:</b> {fila['id_comision_sai']}<br>
+          <b>🧬 UUID Comisión:</b> <code>{fila['id']}</code><br>
+          <b>📅 Fechas:</b> {fila['fecha_desde']} al {fila['fecha_hasta']}<br>
+          <b>📌 Cierre Inscripción:</b> {fila['fecha_cierre']}<br>
+          <b>⭐ Créditos:</b> {fila['creditos']}<br>
+          <b>🎓 Modalidad:</b> {fila['modalidad_cursada']}<br>
+          <b>❓ Apto tramo:</b> {fila['apto_tramo']}<br>
         </div>
         """, unsafe_allow_html=True)
+
 
 
     st.markdown('</div>', unsafe_allow_html=True)
