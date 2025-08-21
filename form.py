@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import random
 from datetime import date, datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from supabase import create_client, Client
@@ -78,9 +79,7 @@ def dialogo_exito():
         st.session_state["__reset_placeholder"] = True
         st.session_state.clear()
         st.query_params.clear()
-    
-        # ⏱️ Agregamos pequeña pausa para que el frontend termine de "soltar" el valor anterior
-        time.sleep(3)
+
         st.rerun()
 
 
@@ -472,15 +471,22 @@ with st.container():
     
    # actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
 
-    # Clave dinámica para evitar que Streamlit recuerde selección anterior
-    clave_selectbox = f"actividad_key_{st.session_state.get('__reset_placeholder', False)}"
+    # 🔑 Clave y label dinámicos para forzar recreación completa del selectbox tras reset
+    if st.session_state.get("__reset_placeholder", False):
+        clave_selectbox = f"actividad_key_reset_{random.randint(0, 999999)}"
+        label_selectbox = f"Actividad disponible (reset)"
+    else:
+        clave_selectbox = "actividad_key_default"
+        label_selectbox = "Actividad disponible"
+
     
     actividad_seleccionada = st.selectbox(
-        "Actividad disponible",
+        label_selectbox,
         dropdown_list,
         index=initial_index,
         key=clave_selectbox
     )
+
 
     # 🔒 Seguridad: si por alguna razón el valor no está en la lista, reseteamos
     if actividad_seleccionada not in dropdown_list:
