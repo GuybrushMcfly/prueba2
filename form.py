@@ -523,169 +523,94 @@ with st.container():
 # ================= PASO 4: Título SOLO si corresponde mostrar el formulario =================
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
+
     if (
         st.session_state.get("validado", False)
         and st.session_state.get("cuil_valido", False)
         and not st.session_state.get("inscripcion_exitosa", False)
     ):
-        st.markdown("#### 4) Completá los datos requeridos y finalizá con el botón de preinscripción.")
-
         datos_agente = st.session_state.get("datos_agenteform", {})
+        nombre_agente = f"{datos_agente.get('nombre', '')} {datos_agente.get('apellido', '')}".strip()
 
-        niveles_educativos = ["", "PRIMARIO", "SECUNDARIO", "TERCIARIO", "UNIVERSITARIO", "POSGRADO"]
-        situaciones_revista = [
-            "", "PLANTA PERMANENTE", "PLANTA TRANSITORIA",
-            "CONTRATOS DEC. 1109/17", "CONTRATOS DEC. 1421/02 (48)"
-        ]
-        agrupamientos = ["", "PROF", "GRAL"]
-        niveles = ["", "A", "B", "C"]
-        tramos = ["", "INICIAL", "INTERMEDIO", "AVANZADO"]
-        sexos = ["", "F", "M", "X"]
+        st.markdown(f"### 👤 {nombre_agente}")
+        st.markdown("Necesitamos que completes los siguientes campos para continuar con tu preinscripción.")
 
-        if datos_agente.get("fecha_nacimiento"):
-            try:
-                fecha_nac_valor = pd.to_datetime(datos_agente["fecha_nacimiento"]).date()
-            except:
-                fecha_nac_valor = date(1980, 1, 1)
-        else:
-            fecha_nac_valor = date(1980, 1, 1)
+        # --- CAMPOS: Nivel educativo + Título
+        col1, col2 = st.columns(2)
 
-        col_ap, col_nom = st.columns(2)
-        with col_ap:
-            apellido = st.text_input("Apellido *", value=datos_agente.get("apellido", ""), key="apellido")
-        with col_nom:
-            nombre = st.text_input("Nombre *", value=datos_agente.get("nombre", ""), key="nombre")
+        niveles_educativos = ["-Seleccioná último nivel completo-", "PRIMARIO", "SECUNDARIO", "TERCIARIO", "UNIVERSITARIO", "POSGRADO"]
+        valor_nivel = datos_agente.get("nivel_educativo", "")
+        indice_nivel = niveles_educativos.index(valor_nivel) if valor_nivel in niveles_educativos else 0
 
-        col_fec, col_sex = st.columns(2)
-        with col_fec:
-            fecha_nacimiento = st.date_input("Fecha de nacimiento *", value=fecha_nac_valor, key="fecha_nacimiento")
-        with col_sex:
-            sexo = st.selectbox("Sexo", sexos, index=sexos.index(datos_agente.get("sexo", "")) if datos_agente.get("sexo", "") in sexos else 0, key="sexo")
+        with col1:
+            nivel_educativo = st.selectbox("Nivel educativo", niveles_educativos, index=indice_nivel, key="nivel_educativo")
 
-        col_niv_edu, col_tit = st.columns(2)
-        with col_niv_edu:
-            nivel_educativo = st.selectbox("Nivel educativo", niveles_educativos, index=niveles_educativos.index(datos_agente.get("nivel_educativo", "")) if datos_agente.get("nivel_educativo", "") in niveles_educativos else 0, key="nivel_educativo")
-        with col_tit:
-            titulo = st.text_input("Título", value=datos_agente.get("titulo", ""), key="titulo")
+        with col2:
+            titulo_valor = datos_agente.get("titulo", "").upper() if datos_agente.get("titulo") else ""
+            titulo = st.text_input("Título", value=titulo_valor, key="titulo").upper()
 
-        col_sit, col_vacia = st.columns(2)
-        with col_sit:
-            situacion_revista = st.selectbox("Situación de revista", situaciones_revista, index=situaciones_revista.index(datos_agente.get("situacion_revista", "")) if datos_agente.get("situacion_revista", "") in situaciones_revista else 0, key="situacion_revista")
+        # --- TAREAS
+        tareas = st.text_area("Tareas desarrolladas", height=100, key="tareas_desarrolladas").lower()
 
-        col_nivel, col_grado = st.columns(2)
-        with col_nivel:
-            nivel = st.selectbox("Nivel", niveles, index=niveles.index(datos_agente.get("nivel", "")) if datos_agente.get("nivel", "") in niveles else 0, key="nivel")
-        with col_grado:
-            grado = st.text_input("Grado", value=datos_agente.get("grado", ""), key="grado")
+        # --- MAIL ALTERNATIVO
+        correo_oficial = datos_agente.get("email", "")
+        st.markdown(f"Te vamos a enviar cualquier notificación al correo: **{correo_oficial}**")
 
-        col_agrup, col_tramo = st.columns(2)
-        with col_agrup:
-            agrupamiento = st.selectbox("Agrupamiento", agrupamientos, index=agrupamientos.index(datos_agente.get("agrupamiento", "")) if datos_agente.get("agrupamiento", "") in agrupamientos else 0, key="agrupamiento")
-        with col_tramo:
-            tramo = st.selectbox("Tramo", tramos, index=tramos.index(datos_agente.get("tramo", "")) if datos_agente.get("tramo", "") in tramos else 0, key="tramo")
+        email_alternativo = st.text_input("Correo alternativo (opcional)", key="email_alternativo")
+        if email_alternativo and "@" not in email_alternativo:
+            st.warning("📧 El correo alternativo no tiene un formato válido.")
 
-        dependencia_simple = st.text_input("Dependencia simple", value=datos_agente.get("dependencia_simple", ""), key="dependencia_simple")
-        correo = st.text_input("Correo", value=datos_agente.get("correo", ""), key="correo")
-
-        # --- Enviar inscripción ---
+        # --- BOTÓN DE ENVÍO
         if st.button("ENVIAR INSCRIPCIÓN"):
-            apellido_nombre = f"{apellido}, {nombre}"
-            datos_inscripcion = {
-                "cuil_cuit": st.session_state.get("cuil", ""),
-                "apellido": apellido,
-                "nombre": nombre,
-                "apellido_nombre": apellido_nombre,
-                "fecha_nacimiento": fecha_nacimiento.strftime("%Y-%m-%d"),
-                "nivel_educativo": nivel_educativo,
-                "titulo": titulo,
-                "situacion_revista": situacion_revista,
-                "agrupamiento": agrupamiento,
-                "nivel": nivel,
-                "grado": grado,
-                "tramo": tramo,
-                "dependencia_simple": dependencia_simple,
-                "correo": correo,
-                "sexo": sexo,
-                "actividad": st.session_state.get("actividad_nombre", ""),
-                "comision": st.session_state.get("comision_nombre", ""),
-                "fecha_inicio": st.session_state.get("fecha_inicio", ""),
-                "fecha_fin": st.session_state.get("fecha_fin", "")
-            }
-            result = supabase.table("pruebainscripciones").insert(datos_inscripcion).execute()
-            if result.data:
-                st.success("¡Inscripción guardada correctamente en pruebainscripciones!")
-                st.balloons()
-                st.session_state["inscripcion_exitosa"] = True
-            
-                # Limpiar selección de comisión
-                st.session_state["last_comision_id"] = None
-                st.session_state["comision_nombre"] = ""
-                st.session_state["actividad_nombre"] = ""
-                st.session_state["fecha_inicio"] = ""
-                st.session_state["fecha_fin"] = ""
-
-                # --- Generar constancia PDF ---
-
-                def generar_constancia_pdf(nombre, actividad, comision, fecha_inicio, fecha_fin):
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_auto_page_break(auto=True, margin=15)
-                
-                    # ===== Estilo del encabezado =====
-                    pdf.set_font("Helvetica", style='B', size=14)
-                    pdf.set_text_color(19, 106, 193)  # Azul institucional
-                    pdf.cell(0, 10, txt="Constancia de preinscripcion", ln=True, align="C")
-                    pdf.ln(10)
-                
-                    # ===== Restaurar fuente y color normales =====
-                    pdf.set_font("Helvetica", size=11)
-                    pdf.set_text_color(0, 0, 0)
-                
-                    # ===== Limpiar caracteres problemáticos =====
-                    nombre_limpio = ''.join(c for c in str(nombre) if ord(c) < 256)
-                    actividad_limpia = ''.join(c for c in str(actividad) if ord(c) < 256)
-                    comision_limpia = ''.join(c for c in str(comision) if ord(c) < 256)
-                    fecha_inicio_limpia = ''.join(c for c in str(fecha_inicio) if ord(c) < 256)
-                    fecha_fin_limpia = ''.join(c for c in str(fecha_fin) if ord(c) < 256)
-                
-                    # ===== Contenido =====
-                    contenido = (
-                        f"{nombre_limpio}, te registraste exitosamente en la actividad detallada a continuacion:\n\n"
-                        f"Actividad: {actividad_limpia}\n"
-                        f"Comision: {comision_limpia}\n"
-                        f"Fecha de inicio: {fecha_inicio_limpia}\n"
-                        f"Fecha de fin: {fecha_fin_limpia}\n\n"
-                        f"IMPORTANTE: Esta inscripcion NO implica asignacion automatica de vacante. "
-                        f"Antes del inicio, en caso de ser otorgada, recibiras un correo con la confirmacion.\n\n"
-                        f"Fecha de registro: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-                    )
-                
-                    pdf.multi_cell(0, 8, txt=contenido)
-                    
-                    return BytesIO(pdf.output(dest='S').encode('latin1'))
-
-                constancia = generar_constancia_pdf(
-                    nombre=f"{st.session_state.get('nombre', '')} {st.session_state.get('apellido', '')}",
-                    actividad=st.session_state.get("actividad_nombre", ""),
-                    comision=st.session_state.get("comision_nombre", ""),
-                    fecha_inicio=st.session_state.get("fecha_inicio", ""),
-                    fecha_fin=st.session_state.get("fecha_fin", "")
-                )
-
-                st.download_button(
-                    label="📄 Descargar constancia de inscripción",
-                    data=constancia,
-                    file_name="constancia_inscripcion.pdf",
-                    mime="application/pdf"
-                )
-
-                # Esperar un poco para que pueda descargar
-                time.sleep(6)
-                st.rerun()
-
+            if email_alternativo and "@" not in email_alternativo:
+                st.error("⚠️ El correo alternativo no es válido.")
             else:
-                st.error("Ocurrió un error al guardar la inscripción.")
+                # Cálculo de edad
+                fecha_nacimiento = datos_agente.get("fecha_nacimiento")
+                edad = None
+                if fecha_nacimiento:
+                    try:
+                        fecha_nac = pd.to_datetime(fecha_nacimiento)
+                        hoy = pd.Timestamp.today()
+                        edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
+                    except:
+                        edad = None
+
+                datos_inscripcion = {
+                    "comision_id": st.session_state.get("comision_id"),
+                    "cuil": st.session_state.get("cuil", ""),
+                    "fecha_inscripcion": date.today().isoformat(),
+                    "estado_inscripcion": "Nueva",
+                    "vacante": False,
+                    "nivel_educativo": nivel_educativo if nivel_educativo != "-Seleccioná último nivel completo-" else None,
+                    "titulo": titulo,
+                    "tareas_desarrolladas": tareas,
+                    "email": correo_oficial,
+                    "email_alternativo": email_alternativo,
+                    "fecha_nacimiento": fecha_nacimiento,
+                    "edad_inscripcion": edad,
+                    "sexo": datos_agente.get("sexo"),
+                    "situacion_revista": datos_agente.get("situacion_revista"),
+                    "nivel": datos_agente.get("nivel"),
+                    "grado": datos_agente.get("grado"),
+                    "agrupamiento": datos_agente.get("agrupamiento"),
+                    "tramo": datos_agente.get("tramo"),
+                    "id_dependencia_simple": datos_agente.get("id_dependencia_simple"),
+                    "id_dependencia_general": datos_agente.get("id_dependencia_general")
+                }
+
+                result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
+                if result.data:
+                    st.success("✅ ¡Inscripción registrada correctamente!")
+                    st.session_state["inscripcion_exitosa"] = True
+                    st.balloons()
+                    # A partir de acá podrías llamar a la función PDF como ya lo hacías
+
+                else:
+                    st.error("❌ Ocurrió un error al guardar la inscripción.")
+
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # --- Tabla de inscripciones solo tras inscribir exitosamente ---
 with st.container():
