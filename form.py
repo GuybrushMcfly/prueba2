@@ -308,7 +308,7 @@ with st.container():
                         <th>Créditos</th>
                         <th>Modalidad</th>
                         <th>Apto Tramo</th>
-                        <th>Acceso</th>
+                        <th>INAP</th>
                     </tr>
                 </thead>
                 <tbody>
