@@ -370,7 +370,7 @@ html_code += """
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
 st.markdown("""
-<div style="margin-bottom: -30px;">
+<div style="margin-bottom: 0px;">
 """, unsafe_allow_html=True)
 
 components.html(html_code, height=600, scrolling=True)
