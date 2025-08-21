@@ -292,7 +292,6 @@ st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 # ================== TABLA 2 (DataTables) ==================
 st.markdown("## 🧪 Tabla 2: DataTables interactiva")
 
-render_datatable_selector(df_comisiones_dt)
 
 
 def render_datatable_selector(df):
@@ -371,6 +370,8 @@ render_datatable_selector(df_comisiones)
 
 
 st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
+render_datatable_selector(df_comisiones_dt)
+
 
 from streamlit.components.v1 import html
 
