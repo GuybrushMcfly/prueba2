@@ -360,19 +360,31 @@ with st.container():
     altura_dinamica = min(600, 100 + (len(df_comisiones) * 50))
     components.html(html_code, height=altura_dinamica, scrolling=True)
 
+    # ========== TARJETAS DESTACADAS ==========
+    st.markdown("---")
+    st.subheader("🎯 Actividades destacadas")
+    
+    tarjetas = df_comisiones.head(6)  # Mostramos solo las primeras 6 por ejemplo
+    cols = st.columns(3)
+    
+    for i, (_, row) in enumerate(tarjetas.iterrows()):
+        with cols[i % 3]:
+            st.markdown(f"""
+            <div style="border: 1px solid #ccc; border-left: 5px solid #136ac1;
+                        border-radius: 6px; padding: 16px; margin-bottom: 15px;
+                        background-color: #fefefe; box-shadow: 1px 1px 6px rgba(0,0,0,0.05);">
+                <h4 style="margin-bottom: 5px;">{row['Actividad (Comisión)']}</h4>
+                <p style="margin: 0;"><b>📅 Fechas:</b> {row['Fecha inicio']} al {row['Fecha fin']}</p>
+                <p style="margin: 0;"><b>🎓 Modalidad:</b> {row['Modalidad']}</p>
+                <p style="margin: 0;"><b>⭐ Créditos:</b> {row['Créditos']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # ========== DEBUG / MOSTRAR SELECCIÓN DESDE LA TABLA ==========
-    st.markdown("### 🧪 Debug de selección de tabla")
-    
-    # Recuperar lo que guardó el script JS en query_params
-    actividad_seleccionada = st.query_params.get("selected_activity", [None])[0]
-    
-    if st.button("📋 Mostrar selección de la tabla"):
-        if actividad_seleccionada:
-            st.success(f"Fila seleccionada: **{actividad_seleccionada}**")
-        else:
-            st.warning("⚠️ Todavía no seleccionaste ninguna actividad en la tabla.")
+
 
 
 
