@@ -68,8 +68,12 @@ def dialogo_exito():
     if st.session_state.get("_closing_dialog", False):
         return
 
-    if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        hard_reset()
+    if st.button("Cerrar"):
+        for clave in list(st.session_state.keys()):
+            del st.session_state[clave]
+        st.rerun()  # <- Limpia y vuelve a empezar
+
+
 
 
 # ========== FUNCIONES ==========
