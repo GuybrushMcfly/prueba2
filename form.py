@@ -323,7 +323,7 @@ with st.container():
             html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
             html += f'<td class="creditos-col">{row["Créditos"]}</td>'
             html += f'<td>{row["Modalidad"]}</td>'
-            html += f'<td>{row["Apto tramo"]}</td>'
+           # html += f'<td>{row["Apto tramo"]}</td>'
             if pd.notna(row["Ver más"]) and row["Ver más"]:
                 #html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
                 html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">Acceder</a></td>'
