@@ -396,7 +396,7 @@ with st.container():
     """
 
     # ================== Mostrar tabla con búsqueda + paginación ==================
-    components.html(html_code, height=600, scrolling=True)
+    components.html(html_code, height=400, scrolling=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
