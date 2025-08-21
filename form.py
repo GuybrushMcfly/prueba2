@@ -55,19 +55,16 @@ def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
 
 def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: str) -> bool:
     try:
-        payload = {"cuil_input": cuil, "id_actividad_input": id_actividad}
-        st.info(f"🔍 Enviando a Supabase: {payload}")
-        response = supabase.rpc("verificar_formulario_historial", payload).execute()
-        st.write("📨 Respuesta Supabase:", response.data)
+        response = supabase.rpc("verificar_formulario_historial", {
+            "cuil_input": cuil,
+            "id_actividad_input": id_actividad
+        }).execute()
 
-        # ✅ CORRECCIÓN: detectar si la respuesta es lista o booleano directo
         if isinstance(response.data, list) and response.data:
-            return list(response.data[0].values())[0] is True
-        elif isinstance(response.data, bool):
-            return response.data
+            return response.data[0].get("existe", False)
         return False
     except Exception as e:
-        st.error(f"Error al verificar el historial del agente: {e}")
+        st.error("Error al verificar el historial del agente.")
         return False
 
 
