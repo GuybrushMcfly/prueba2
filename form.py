@@ -371,21 +371,24 @@ render_datatable_selector(df_comisiones)
 
 
 
-# ========== DROPDOWN DE ACTIVIDAD ==========
-st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
+# ========== DETECCIÓN DE SELECCIÓN DESDE SESSIONSTORAGE (tabla DataTables) ==========
+selected_activity = st.experimental_get_query_params().get("selected_activity", [None])[0]
 
-# Formato: ACTIVIDAD (COMISIÓN) - FECHA INICIO
-df_temp["Actividad dropdown"] = (
-    df_temp["nombre_actividad"]
-    + " (" + df_temp["id_comision_sai"] + ")"
-    + " - " + df_temp["Fecha inicio"]
+# Usamos la tabla antigua si no se seleccionó por DataTables
+actividad_dropdown_col = (
+    df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ") - " + df_temp["Fecha inicio"]
 )
+df_temp["Actividad dropdown"] = actividad_dropdown_col
 
+# Mostrar el dropdown como opción alternativa
 dropdown_list = df_temp["Actividad dropdown"].tolist()
-actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
+default_index = dropdown_list.index(selected_activity) if selected_activity in dropdown_list else 0
+
+actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=default_index)
 
 # Obtener fila seleccionada
 fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
+
 
 # Guardar info en session_state
 st.session_state["actividad_nombre"] = fila["Actividad"]
