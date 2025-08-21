@@ -135,7 +135,7 @@ def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
 #@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
-        "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, fecha_cierre, creditos, modalidad_cursada, link_externo, apto_tramo"
+        "id, id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, fecha_cierre, creditos, modalidad_cursada, link_externo, apto_tramo"
     ).execute()
     return resp.data if resp.data else []
 
@@ -448,7 +448,8 @@ with st.container():
         st.session_state["comision_nombre"] = fila["Comisión"]
         st.session_state["fecha_inicio"] = fila["Fecha inicio"]
         st.session_state["fecha_fin"] = fila["Fecha fin"]
-        st.session_state["id_comision_sai"] = fila["id"]  
+        st.session_state["comision_id"] = fila["id"]
+ 
 
 
         # Mostrar detalles de la comisión
