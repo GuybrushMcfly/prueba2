@@ -364,31 +364,145 @@ def render_datatable_selector(df):
 render_datatable_selector(df_comisiones)
 
 
+render_datatable_selector(df_comisiones_dt)
+
+st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
+
+from streamlit.components.v1 import html
+
+def render_custom_html_table(df):
+    table_id = "tablaHTMLConEstilo"
+
+    # Estilo y Script de paginación JS básico (puede mejorarse luego)
+    html_code = f"""
+    <style>
+        .custom-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            margin-top: 10px;
+            background-color: white;
+        }}
+        .custom-table th {{
+            background-color: #136ac1;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }}
+        .custom-table td {{
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }}
+        .custom-table tbody tr:hover {{
+            background-color: #e3f2fd;
+        }}
+        .pagination {{
+            margin-top: 10px;
+            text-align: center;
+        }}
+        .pagination button {{
+            background-color: #136ac1;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+        }}
+        .pagination button:disabled {{
+            background-color: #ccc;
+            cursor: not-allowed;
+        }}
+    </style>
+
+    <script>
+        let currentPage = 1;
+        let rowsPerPage = 10;
+
+        function changePage(direction) {{
+            const totalRows = document.querySelectorAll("#{table_id} tbody tr").length;
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+            if (direction === 'prev' && currentPage > 1) {{
+                currentPage--;
+            }} else if (direction === 'next' && currentPage < totalPages) {{
+                currentPage++;
+            }}
+
+            updateTable();
+        }}
+
+        function updateTable() {{
+            const rows = document.querySelectorAll("#{table_id} tbody tr");
+            const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            rows.forEach((row, index) => {{
+                row.style.display = (index >= (currentPage - 1) * rowsPerPage && index < currentPage * rowsPerPage) ? "" : "none";
+            }});
+
+            document.getElementById("pageIndicator").innerText = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById("prevBtn").disabled = currentPage === 1;
+            document.getElementById("nextBtn").disabled = currentPage === totalPages;
+        }}
+
+        window.onload = function() {{
+            updateTable();
+        }};
+    </script>
+
+    <table class="custom-table" id="{table_id}">
+        <thead>
+            <tr>
+                {''.join(f'<th>{col}</th>' for col in df.columns)}
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    for _, row in df.iterrows():
+        html_code += "<tr>"
+        for col in df.columns:
+            val = row[col]
+            if col == "Ver más" and pd.notna(val) and val != "None":
+                html_code += f'<td><a href="{val}" target="_blank" style="color:#136ac1; font-weight:bold;">🌐 Acceder</a></td>'
+            elif col == "Ver más":
+                html_code += '<td><span style="color: #bdc3c7; font-style: italic;">Sin enlace</span></td>'
+            else:
+                html_code += f"<td>{val}</td>"
+        html_code += "</tr>"
+
+    html_code += f"""
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
+        <span id="pageIndicator"></span>
+        <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
+    </div>
+    """
+
+    html(html_code, height=600, scrolling=True)
 
 
 
 
+# ========== DROPDOWN DE ACTIVIDAD ==========
+st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
 
-
-
-# ========== DETECCIÓN DE SELECCIÓN DESDE SESSIONSTORAGE (tabla DataTables) ==========
-selected_activity = st.query_params.get("selected_activity", None)
-
-# Usamos la tabla antigua si no se seleccionó por DataTables
-actividad_dropdown_col = (
-    df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ") - " + df_temp["Fecha inicio"]
+# Formato: ACTIVIDAD (COMISIÓN) - FECHA INICIO
+df_temp["Actividad dropdown"] = (
+    df_temp["nombre_actividad"]
+    + " (" + df_temp["id_comision_sai"] + ")"
+    + " - " + df_temp["Fecha inicio"]
 )
-df_temp["Actividad dropdown"] = actividad_dropdown_col
 
-# Mostrar el dropdown como opción alternativa
 dropdown_list = df_temp["Actividad dropdown"].tolist()
-default_index = dropdown_list.index(selected_activity) if selected_activity in dropdown_list else 0
-
-actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=default_index)
+actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
 
 # Obtener fila seleccionada
 fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
-
 
 # Guardar info en session_state
 st.session_state["actividad_nombre"] = fila["Actividad"]
@@ -408,6 +522,8 @@ st.markdown(f"""
         <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
     </div>
 """, unsafe_allow_html=True)
+
+
 
 # CAMPO DE CUIL LUEGO DE SELECCIÓN
 st.markdown("### 🆔 Ingresá tu CUIL para continuar")
