@@ -250,7 +250,7 @@ with st.container():
                 font-weight: bold;
             }}
             .courses-table th, .courses-table td {{
-                padding: 14px 12px;
+                padding: 10px 18px;
                 border-bottom: 1px solid #e0e0e0;
             }}
             .courses-table tbody tr {{
