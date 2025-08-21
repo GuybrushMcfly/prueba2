@@ -318,7 +318,8 @@ def create_html_table(df):
 
         function updateTable() {{
             const rows = Array.from(document.querySelectorAll("#{table_id} tbody tr"));
-            const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+            const searchInput = document.getElementById("searchInput");
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
             filteredRows = rows.filter(row =>
                 row.innerText.toLowerCase().includes(searchTerm)
             );
@@ -332,7 +333,7 @@ def create_html_table(df):
             const end = start + rowsPerPage;
             filteredRows.slice(start, end).forEach(row => row.style.display = "");
 
-            document.getElementById("pageIndicator").innerText = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById("pageIndicator").innerText = 'Página ' + currentPage + ' de ' + totalPages;
             document.getElementById("prevBtn").disabled = currentPage === 1;
             document.getElementById("nextBtn").disabled = currentPage === totalPages;
         }}
