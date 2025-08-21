@@ -305,18 +305,19 @@ if st.button("Validar CUIL"):
         st.session_state["validado"] = True
         st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
     else:
-        # 1️⃣ Formato válido → ahora verificamos en la base de datos
+        # 1️⃣ Verificar si el CUIL existe y está activo
         existe = verificar_formulario_cuil(supabase, cuil_input)
+        st.markdown(f"🔍 **Resultado verificación CUIL en base:** `{existe}`")
 
         if not existe:
             st.session_state["cuil_valido"] = False
             st.session_state["validado"] = True
             st.error("⚠️ El CUIL no corresponde a un agente activo.")
         else:
-            # 2️⃣ Verificamos historial si pasó la primera validación
-            actividad_id = fila["id_actividad"]  # ya cargaste fila desde el dropdown
-
+            # 2️⃣ Verificar si ya hizo la actividad y fue APROBADO
+            actividad_id = fila["id_actividad"]
             ya_aprobo = verificar_formulario_historial(supabase, cuil_input, actividad_id)
+            st.markdown(f"📚 **Resultado verificación historial de actividad:** `{ya_aprobo}`")
 
             if ya_aprobo:
                 st.session_state["cuil_valido"] = False
@@ -327,6 +328,7 @@ if st.button("Validar CUIL"):
                 st.session_state["cuil_valido"] = True
                 st.session_state["validado"] = True
                 st.success("✅ CUIL válido. Podés continuar con el formulario.")
+
 
 
 
