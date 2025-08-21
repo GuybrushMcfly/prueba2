@@ -538,6 +538,84 @@ st.text_input("Nombre de la actividad", st.session_state.actividad_seleccionada,
 
 
 
+# ========== TARJETAS FLIP (efecto volteo) ==========
+
+st.markdown("---")
+st.subheader("🎴 Actividades destacadas (efecto flip)")
+
+tarjetas = df_comisiones.head(6).to_dict(orient="records")
+
+# CSS del flip
+st.markdown("""
+<style>
+.flip-card {
+  background-color: transparent;
+  width: 280px;
+  height: 180px;
+  perspective: 1000px;
+  margin: 10px auto;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+}
+.flip-card:hover .flip-card-inner {
+  transform: rotateY(180deg);
+}
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+}
+.flip-card-front {
+  background-color: #136ac1;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+.flip-card-back {
+  background-color: #f9f9f9;
+  color: #333;
+  transform: rotateY(180deg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Grid de 3 tarjetas
+cols = st.columns(3)
+
+for i, item in enumerate(tarjetas):
+    with cols[i % 3]:
+        st.markdown(f"""
+        <div class="flip-card">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              {item['Actividad (Comisión)']}
+            </div>
+            <div class="flip-card-back">
+              <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
+              <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
+              <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 
 # ========== PASO 2: Selección de actividad ==========
 with st.container():
