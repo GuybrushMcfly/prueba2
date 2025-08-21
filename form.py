@@ -320,6 +320,23 @@ html_code += """
 </script>
 """
 
+html_code += """
+<script>
+    window.addEventListener("message", (event) => {
+        const { type, data } = event.data || {};
+        if (type === "setQueryParams") {
+            const query = new URLSearchParams(window.location.search);
+            Object.keys(data).forEach(key => {
+                query.set(key, data[key]);
+            });
+            const newUrl = `${window.location.pathname}?${query.toString()}`;
+            window.history.replaceState(null, '', newUrl);
+            window.location.reload();
+        }
+    });
+</script>
+"""
+
 # ================== Mostrar tabla con búsqueda + paginación ==================
 components.html(html_code, height=700, scrolling=True)
 
