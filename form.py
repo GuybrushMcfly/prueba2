@@ -64,61 +64,15 @@ def dialogo_exito():
     st.markdown("Te preinscribiste correctamente en la actividad:")
     st.markdown(f"📘 **{actividad}**")
 
-    # Si por algún motivo entrás acá justo después de un reset, no reabrir
-    if st.session_state.get("_closing_dialog", False):
-        return
-
-    if st.button("Cerrar"):
-        for clave in list(st.session_state.keys()):
-            del st.session_state[clave]
-        st.rerun()  # <- Limpia y vuelve a empezar
-
-
-
+    if st.button("Cerrar", key="cerrar_dialogo_exito"):
+        # Limpiar completamente el session_state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        # Forzar recarga completa
+        st.query_params.clear()
+        st.rerun()
 
 # ========== FUNCIONES ==========
-def hard_reset():
-    """Borra TODO el estado de Streamlit, limpia caches, query params y storage del browser, 
-    y fuerza un rerun dejando la app como recién cargada."""
-    # 0) Bandera para que el diálogo no se reabra en el mismo ciclo
-    st.session_state["_closing_dialog"] = True
-
-    # 1) Limpiar session_state (menos la bandera temporal)
-    for k in list(st.session_state.keys()):
-        if k != "_closing_dialog":
-            del st.session_state[k]
-
-    # 2) Limpiar caches (si las usás en otras partes)
-    try:
-        st.cache_data.clear()
-    except Exception:
-        pass
-    try:
-        st.cache_resource.clear()
-    except Exception:
-        pass
-
-    # 3) Limpiar query params de selección
-    st.query_params.clear()
-
-    # 4) Limpiar storage del browser que usás para la tabla
-    components.html(
-        """
-        <script>
-          try {
-            sessionStorage.clear();
-            localStorage.removeItem("selected_activity"); // por si lo hubieras guardado también ahí
-          } catch(e) {}
-        </script>
-        """,
-        height=0,
-    )
-
-    # 5) Forzar rerun
-    st.rerun()
-
-
-
 def validar_cuil(cuil: str) -> bool:
     if not cuil.isdigit() or len(cuil) != 11:
         return False
@@ -481,20 +435,12 @@ with st.container():
         st.session_state["actividad_anterior"] = ""
 
     # Si se seleccionó una nueva actividad distinta a la anterior
-    if actividad_seleccionada != st.session_state.get("actividad_anterior", ""):
+    if actividad_seleccionada != st.session_state["actividad_anterior"]:
         st.session_state["actividad_anterior"] = actividad_seleccionada
-    
-        # 🔽 Asegurá que los widgets arranquen limpios
-        for k in ("cuil_input", "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"):
-            if k in st.session_state:
-                del st.session_state[k]
-    
         st.session_state["cuil_valido"] = False
         st.session_state["validado"] = False
         st.session_state["cuil"] = ""
         st.session_state["datos_agenteform"] = {}
-        st.session_state["motivo_bloqueo"] = ""
-
 
     if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
         fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
