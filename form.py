@@ -611,8 +611,27 @@ with st.container():
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
                 if result.data:
                     st.session_state["inscripcion_exitosa"] = True
-                    st.session_state["mostrar_modal_exito"] = True
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
+                
+                    # Abrir el diálogo
+                    with st.dialog("✅ ¡Preinscripción exitosa!"):
+                        actividad = st.session_state.get("nombre_actividad_exito", "-")
+                        st.markdown(f"Te preinscribiste correctamente en la actividad:")
+                        st.markdown(f"📘 **{actividad}**")
+                
+                        if st.button("Cerrar"):
+                            # Limpiar estados
+                            for clave in list(st.session_state.keys()):
+                                if clave.startswith("actividad_") or clave in [
+                                    "cuil", "cuil_valido", "validado", "motivo_bloqueo",
+                                    "inscripcion_exitosa", "datos_agenteform",
+                                    "comision_id", "comision_nombre", "fecha_inicio", "fecha_fin",
+                                    "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"
+                                ]:
+                                    del st.session_state[clave]
+                            # Refrescar todo
+                            st.rerun()
+
 
         
                 else:
@@ -620,48 +639,3 @@ with st.container():
 
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-
-# ========== MODAL DE ÉXITO ==========
-if st.session_state.get("mostrar_modal_exito", False):
-    actividad = st.session_state.get("nombre_actividad_exito", "-")
-    modal_html = f"""
-    <div id="modal_exito" style="
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: rgba(0, 0, 0, 0.5); display: flex;
-        justify-content: center; align-items: center; z-index: 9999;
-    ">
-        <div style="
-            background-color: white; padding: 30px; border-radius: 10px;
-            max-width: 500px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        ">
-            <h3 style="color: #136ac1;">✅ ¡Preinscripción exitosa!</h3>
-            <p>Te preinscribiste correctamente en la actividad:</p>
-            <p style="font-weight: bold; font-size: 16px;">📘 {actividad}</p>
-            <button onclick="cerrarModal()" style="
-                background-color: #136ac1; color: white; border: none;
-                padding: 10px 20px; border-radius: 5px; font-size: 14px;
-                margin-top: 20px; cursor: pointer;
-            ">Cerrar</button>
-        </div>
-    </div>
-
-    <script>
-    function cerrarModal() {{
-        parent.postMessage({{ type: 'cerrar_modal_exito' }}, '*');
-    }}
-    </script>
-    """
-    components.html(modal_html, height=300)
-
-# ========== LISTENER PARA CERRAR Y RECARGAR ==========
-components.html("""
-<script>
-window.addEventListener("message", function(event) {
-    if (event.data.type === "cerrar_modal_exito") {
-        window.location.reload();
-    }
-});
-</script>
-""", height=0)
-
