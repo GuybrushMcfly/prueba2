@@ -285,7 +285,8 @@ def create_html_table(df):
     return html
 
 # Renderizado de la tabla
-st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+#st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+components.html(create_html_table(df_comisiones), height=600, scrolling=True)
 
 
 
