@@ -372,7 +372,7 @@ render_datatable_selector(df_comisiones)
 
 
 # ========== DETECCIÓN DE SELECCIÓN DESDE SESSIONSTORAGE (tabla DataTables) ==========
-selected_activity = st.experimental_get_query_params().get("selected_activity", [None])[0]
+selected_activity = st.query_params.get("selected_activity", None)
 
 # Usamos la tabla antigua si no se seleccionó por DataTables
 actividad_dropdown_col = (
