@@ -433,15 +433,27 @@ with st.container():
     selected_from_query = st.query_params.get("selected_activity", None)
     initial_index = 0
     
+    
     dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
     
-    if selected_from_query:
+    # 🚨 Si se activó el reinicio, forzamos índice inicial en 0 (opción por defecto)
+    if st.session_state.get("resetear_todo", False):
+        selected_from_query = None
+        initial_index = 0
+    else:
+        selected_from_query = st.query_params.get("selected_activity", None)
         try:
             initial_index = dropdown_list.index(selected_from_query)
-        except ValueError:
+        except (ValueError, TypeError):
             initial_index = 0
-    
+
     actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
+
+    # ✅ Si estamos en reinicio, también forzamos limpiar el estado de selección anterior
+    if st.session_state.get("resetear_todo", False):
+        st.session_state["actividad_anterior"] = "-Seleccioná una actividad para preinscribirte-"
+        st.session_state["resetear_todo"] = False  # Limpieza de bandera para que no se repita
+
 
     # Detectar cambio en selección
     if "actividad_anterior" not in st.session_state:
