@@ -58,19 +58,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+@st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
 def mostrar_dialogo_exito():
-    with st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False):
-        actividad = st.session_state.get("nombre_actividad_exito", "-")
-        st.markdown("### ✅ ¡Preinscripción exitosa!")
-        st.markdown("Te preinscribiste correctamente en la actividad:")
-        st.markdown(f"📘 **{actividad}**")
+    actividad = st.session_state.get("nombre_actividad_exito", "-")
+    st.markdown("### ✅ ¡Preinscripción exitosa!")
+    st.markdown("Te preinscribiste correctamente en la actividad:")
+    st.markdown(f"📘 **{actividad}**")
 
-        if st.button("Cerrar", key="cerrar_dialogo_exito"):
-            # 🔁 Reset completo
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.query_params.clear()
-            st.rerun()
+    if st.button("Cerrar", key="cerrar_dialogo_exito"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.query_params.clear()
+        st.rerun()
+
 
 
 # ========== FUNCIONES ==========
