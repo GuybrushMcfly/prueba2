@@ -57,20 +57,21 @@ st.markdown("""
     </h4>
 """, unsafe_allow_html=True)
 
-@st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
-def dialogo_exito():
-    actividad = st.session_state.get("nombre_actividad_exito", "-")
-    st.markdown("### ✅ ¡Preinscripción exitosa!")
-    st.markdown("Te preinscribiste correctamente en la actividad:")
-    st.markdown(f"📘 **{actividad}**")
 
-    if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Limpiar completamente el session_state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        # Forzar recarga completa
-        st.query_params.clear()
-        st.rerun()
+def mostrar_dialogo_exito():
+    with st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False):
+        actividad = st.session_state.get("nombre_actividad_exito", "-")
+        st.markdown("### ✅ ¡Preinscripción exitosa!")
+        st.markdown("Te preinscribiste correctamente en la actividad:")
+        st.markdown(f"📘 **{actividad}**")
+
+        if st.button("Cerrar", key="cerrar_dialogo_exito"):
+            # 🔁 Reset completo
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.query_params.clear()
+            st.rerun()
+
 
 # ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
@@ -605,8 +606,13 @@ with st.container():
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
                 if result.data:
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
-                    dialogo_exito()
+                    st.session_state["mostrar_dialogo_exito"] = True
+                    st.rerun()
                 else:
                     st.error("❌ Ocurrió un error al guardar la inscripción.")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+# ========== MOSTRAR DIÁLOGO SI SE COMPLETÓ LA INSCRIPCIÓN ==========
+if st.session_state.get("mostrar_dialogo_exito", False):
+    mostrar_dialogo_exito()
