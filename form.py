@@ -165,7 +165,7 @@ def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
     if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
+        st.warning("No se encontraron cursos con los filtros seleccionados.")
         return ""
 
     html = f"""
@@ -205,11 +205,6 @@ def create_html_table(df):
             background-color: #bbdefb !important;
             border-left: 4px solid #136ac1;
         }}
-        .courses-table .fecha-col,
-        .courses-table .creditos-col,
-        .courses-table .acceso-col {{
-            text-align: center;
-        }}
         .courses-table a {{
             color: #136ac1;
             text-decoration: none;
@@ -221,215 +216,6 @@ def create_html_table(df):
             display: inline-block;
         }}
         .courses-table a:hover {{
-            background-color: #136ac1;
-            color: white;
-            transform: scale(1.05);
-        }}
-        .no-link {{
-            color: #bdc3c7;
-            font-style: italic;
-        }}
-    </style>
-
-    <div style="overflow-x: auto;">
-        <table class="courses-table" id="{table_id}">
-            <thead>
-                <tr>
-                    <th>Actividad (Comisión)</th>
-                    <th>F. Inicio</th>
-                    <th>F. Fin</th>
-                    <th>Cierre Inscrip.</th>
-                    <th>Créditos</th>
-                    <th>Modalidad</th>
-                    <th>Apto Tramo</th>
-                    <th>Acceso</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-
-    for _, row in df.iterrows():
-        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-        html += f'<tr onclick="{onclick_code}">'
-        html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
-        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
-        html += f'<td>{row["Modalidad"]}</td>'
-        html += f'<td>{row["Apto tramo"]}</td>'
-        if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
-        else:
-            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
-        html += '</tr>'
-
-    html += """
-            </tbody>
-        </table>
-    </div>
-
-    <script>
-        let selectedRow = null;
-        function selectActivity(activityName, row) {
-            if (selectedRow) selectedRow.classList.remove('selected');
-            selectedRow = row;
-            row.classList.add('selected');
-            sessionStorage.setItem('selected_activity', activityName);
-            window.parent.postMessage({
-                type: 'setQueryParams',
-                data: { "selected_activity": activityName }
-            }, '*');
-        }
-    </script>
-    """
-    return html
-
-# Renderizado de la tabla
-st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
-
-
-# ================== TABLA 2 (DataTables) ==================
-st.markdown("## 🧪 Tabla 2: DataTables interactiva")
-
-
-
-def render_datatable_selector(df):
-    # Generar HTML con identificador único
-    table_id = "miTabla2"
-
-    html = f"""
-    <link rel="stylesheet"
-          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-    <script>
-    function selectRow(activityName) {{
-        sessionStorage.setItem('selected_activity', activityName);
-        window.parent.postMessage({{
-            type: 'setQueryParams',
-            data: {{ "selected_activity": activityName }}
-        }}, '*');
-    }}
-
-    $(document).ready(function() {{
-        $('#{table_id}').DataTable({{
-            "pageLength": 8,
-            "language": {{
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-            }}
-        }});
-
-        $('#{table_id} tbody').on('click', 'tr', function () {{
-            var activity = $(this).find('td:first').text();
-            selectRow(activity);
-        }});
-    }});
-    </script>
-
-    <style>
-        table.dataTable {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 13px;
-            width: 100%;
-            margin-top: 15px;
-        }}
-        thead {{
-            background-color: #136ac1;
-            color: white;
-        }}
-        tbody tr:hover {{
-            background-color: #e3f2fd;
-            cursor: pointer;
-        }}
-    </style>
-
-    <table id="{table_id}" class="display">
-        <thead>
-            <tr>
-                {''.join(f'<th>{col}</th>' for col in df.columns)}
-            </tr>
-        </thead>
-        <tbody>
-    """
-
-    for _, row in df.iterrows():
-        html += "<tr>" + "".join(f"<td>{row[col]}</td>" for col in df.columns) + "</tr>"
-
-    html += """
-        </tbody>
-    </table>
-    """
-
-    components.html(html, height=500, scrolling=True)
-
-# Mostramos la tabla DataTables
-render_datatable_selector(df_comisiones)
-
-
-
-# ================== TABLA 3 (con paginación + HTML links) ==================
-# 🧩 Agregá este bloque antes del render
-df_comisiones_dt = df_comisiones.copy()
-
-def formatear_link_html(url):
-    if pd.isna(url) or url == "None":
-        return '<span style="color: #bdc3c7; font-style: italic;">Sin enlace</span>'
-    return f'<a href="{url}" target="_blank" style="color: #136ac1; text-decoration: none; font-weight: bold; border: 2px solid #136ac1; border-radius: 5px; padding: 6px 12px; display: inline-block;">🌐 Acceder</a>'
-
-df_comisiones_dt["Ver más"] = df_comisiones_dt["Ver más"].apply(formatear_link_html)
-
-st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
-render_custom_html_table(df_comisiones_dt)
-
-def render_custom_html_table(df):
-    table_id = "tablaHTMLConEstilo"
-
-    html_code = f"""
-    <style>
-        .custom-table {{
-            width: 90%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            font-size: 14px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: white;
-        }}
-        .custom-table thead tr {{
-            background-color: #136ac1;
-            color: #ffffff;
-            text-align: left;
-            font-weight: bold;
-        }}
-        .custom-table th, .custom-table td {{
-            padding: 14px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }}
-        .custom-table tbody tr {{
-            background-color: #ffffff;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }}
-        .custom-table tbody tr:hover {{
-            background-color: #e3f2fd;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
-        }}
-        .custom-table a {{
-            color: #136ac1;
-            text-decoration: none;
-            font-weight: bold;
-            padding: 6px 12px;
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }}
-        .custom-table a:hover {{
             background-color: #136ac1;
             color: white;
             transform: scale(1.05);
@@ -455,76 +241,118 @@ def render_custom_html_table(df):
             background-color: #ccc;
             cursor: not-allowed;
         }}
+        #searchInput {{
+            width: 40%;
+            padding: 8px;
+            margin-top: 10px;
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            font-size: 14px;
+        }}
     </style>
+
+    <input type="text" id="searchInput" placeholder="🔍 Buscar actividad...">
 
     <script>
         let currentPage = 1;
         let rowsPerPage = 10;
+        let filteredRows = [];
 
-        function changePage(direction) {{
-            const totalRows = document.querySelectorAll("#{table_id} tbody tr").length;
-            const totalPages = Math.ceil(totalRows / rowsPerPage);
-
-            if (direction === 'prev' && currentPage > 1) {{
-                currentPage--;
-            }} else if (direction === 'next' && currentPage < totalPages) {{
-                currentPage++;
-            }}
-
-            updateTable();
+        function selectActivity(activityName, row) {{
+            document.querySelectorAll('.courses-table tbody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            sessionStorage.setItem('selected_activity', activityName);
+            window.parent.postMessage({{
+                type: 'setQueryParams',
+                data: {{ "selected_activity": activityName }}
+            }}, '*');
         }}
 
         function updateTable() {{
-            const rows = document.querySelectorAll("#{table_id} tbody tr");
-            const totalPages = Math.ceil(rows.length / rowsPerPage);
+            const rows = Array.from(document.querySelectorAll("#{table_id} tbody tr"));
+            const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+            filteredRows = rows.filter(row =>
+                row.innerText.toLowerCase().includes(searchTerm)
+            );
 
-            rows.forEach((row, index) => {{
-                row.style.display = (index >= (currentPage - 1) * rowsPerPage && index < currentPage * rowsPerPage) ? "" : "none";
-            }});
+            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+            currentPage = Math.min(currentPage, totalPages || 1);
+
+            rows.forEach(row => row.style.display = "none");
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            filteredRows.slice(start, end).forEach(row => row.style.display = "");
 
             document.getElementById("pageIndicator").innerText = `Página ${currentPage} de ${totalPages}`;
             document.getElementById("prevBtn").disabled = currentPage === 1;
             document.getElementById("nextBtn").disabled = currentPage === totalPages;
         }}
 
-        window.onload = function() {{
+        function changePage(direction) {{
+            if (direction === 'prev' && currentPage > 1) currentPage--;
+            if (direction === 'next' && currentPage < Math.ceil(filteredRows.length / rowsPerPage)) currentPage++;
             updateTable();
-        }};
+        }}
+
+        document.addEventListener("DOMContentLoaded", () => {{
+            document.getElementById("searchInput").addEventListener("input", () => {{
+                currentPage = 1;
+                updateTable();
+            }});
+            updateTable();
+        }});
     </script>
 
-    <table class="custom-table" id="{table_id}">
-        <thead>
-            <tr>
-                {''.join(f'<th>{col}</th>' for col in df.columns)}
-            </tr>
-        </thead>
-        <tbody>
+    <div style="overflow-x: auto;">
+        <table class="courses-table" id="{table_id}">
+            <thead>
+                <tr>
+                    <th>Actividad (Comisión)</th>
+                    <th>F. Inicio</th>
+                    <th>F. Fin</th>
+                    <th>Cierre Inscrip.</th>
+                    <th>Créditos</th>
+                    <th>Modalidad</th>
+                    <th>Apto Tramo</th>
+                    <th>Acceso</th>
+                </tr>
+            </thead>
+            <tbody>
     """
 
     for _, row in df.iterrows():
-        html_code += "<tr>"
-        for col in df.columns:
-            val = row[col]
-            if col == "Ver más" and pd.notna(val) and val != "None":
-                html_code += f'<td><a href="{val}" target="_blank">🌐 Acceder</a></td>'
-            elif col == "Ver más":
-                html_code += '<td><span class="no-link">Sin enlace</span></td>'
-            else:
-                html_code += f"<td>{val}</td>"
-        html_code += "</tr>"
+        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
+        html += f'<tr onclick="{onclick_code}">'
+        html += f'<td>{row["Actividad (Comisión)"]}</td>'
+        html += f'<td>{row["Fecha inicio"]}</td>'
+        html += f'<td>{row["Fecha fin"]}</td>'
+        html += f'<td>{row["Fecha cierre"]}</td>'
+        html += f'<td>{row["Créditos"]}</td>'
+        html += f'<td>{row["Modalidad"]}</td>'
+        html += f'<td>{row["Apto tramo"]}</td>'
+        if pd.notna(row["Ver más"]) and row["Ver más"]:
+            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+        else:
+            html += '<td><span class="no-link">Sin enlace</span></td>'
+        html += '</tr>'
 
-    html_code += f"""
-        </tbody>
-    </table>
-
-    <div class="pagination">
-        <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
-        <span id="pageIndicator"></span>
-        <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
+    html += f"""
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
+            <span id="pageIndicator"></span>
+            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
+        </div>
     </div>
     """
 
-    html(html_code, height=600, scrolling=True)
+    return html
+
+# Renderizado de la tabla
+st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
+
 
 
 
