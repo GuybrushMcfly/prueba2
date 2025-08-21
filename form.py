@@ -62,6 +62,24 @@ st.markdown("""
 
 
 
+@st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
+def dialogo_exito():
+    actividad = st.session_state.get("nombre_actividad_exito", "-")
+    st.markdown("Te preinscribiste correctamente en la actividad:")
+    st.markdown(f"📘 **{actividad}**")
+
+    if st.button("Cerrar"):
+        for clave in list(st.session_state.keys()):
+            if clave.startswith("actividad_") or clave in [
+                "cuil", "cuil_valido", "validado", "motivo_bloqueo",
+                "inscripcion_exitosa", "datos_agenteform",
+                "comision_id", "comision_nombre", "fecha_inicio", "fecha_fin",
+                "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"
+            ]:
+                del st.session_state[clave]
+        st.rerun()
+
+
 # ========== FUNCIIONES ==========
 
 
@@ -612,23 +630,8 @@ with st.container():
                 if result.data:
                     st.session_state["inscripcion_exitosa"] = True
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
-                
-                    dialog = st.dialog("✅ ¡Preinscripción exitosa!")
-                    with dialog:
-                        actividad = st.session_state.get("nombre_actividad_exito", "-")
-                        st.markdown("Te preinscribiste correctamente en la actividad:")
-                        st.markdown(f"📘 **{actividad}**")
-                
-                        if st.button("Cerrar"):
-                            for clave in list(st.session_state.keys()):
-                                if clave.startswith("actividad_") or clave in [
-                                    "cuil", "cuil_valido", "validado", "motivo_bloqueo",
-                                    "inscripcion_exitosa", "datos_agenteform",
-                                    "comision_id", "comision_nombre", "fecha_inicio", "fecha_fin",
-                                    "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"
-                                ]:
-                                    del st.session_state[clave]
-                            st.rerun()
+                    dialogo_exito()  # ⬅️ Esto abre el modal correctamente
+
 
 
 
