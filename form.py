@@ -447,39 +447,34 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
         if not validar_cuil(cuil_input):
             st.session_state["cuil_valido"] = False
             st.session_state["validado"] = True
+            st.session_state["motivo_bloqueo"] = "cuil_invalido"
             st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
         else:
-            # 1️⃣ Verificación en base de datos
             existe = verificar_formulario_cuil(supabase, cuil_input)
-            st.markdown(f"🔍 **Resultado verificación CUIL en base:** `{existe}`")
-
             if not existe:
                 st.session_state["cuil_valido"] = False
                 st.session_state["validado"] = True
+                st.session_state["motivo_bloqueo"] = "no_encontrado"
                 st.error("⚠️ El CUIL no corresponde a un agente activo.")
             else:
-                actividad_id = fila["id_actividad"]
                 ya_aprobo = verificar_formulario_historial(supabase, cuil_input, actividad_id)
-                st.markdown(f"📚 **Resultado verificación historial de actividad:** `{ya_aprobo}`")
-
                 if ya_aprobo:
                     st.session_state["cuil_valido"] = False
                     st.session_state["validado"] = True
+                    st.session_state["motivo_bloqueo"] = "ya_aprobo"
                     st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
                 else:
-                    comision_id = fila["Comisión"]
                     ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
-                    st.markdown(f"📝 **Resultado verificación inscripción a comisión:** `{ya_inscripto}`")
-
                     if ya_inscripto:
                         st.session_state["cuil_valido"] = False
                         st.session_state["validado"] = True
+                        st.session_state["motivo_bloqueo"] = "ya_inscripto"
                         st.warning("⚠️ Ya estás inscripto en esta comisión. No podés volver a inscribirte.")
                     else:
-                        # ✅ Todo correcto → mostrar formulario
                         st.session_state["cuil"] = cuil_input
                         st.session_state["cuil_valido"] = True
                         st.session_state["validado"] = True
+                        st.session_state["motivo_bloqueo"] = ""
                         st.success("✅ CUIL válido. Podés continuar con el formulario.")
 
 # ================= PASO 4: Título SOLO si corresponde mostrar el formulario =================
@@ -663,10 +658,18 @@ if st.session_state.get("inscripcion_exitosa", False):
 
 elif st.session_state.get("validado", False):
     if not st.session_state.get("cuil_valido", True):
-        # Ya fue advertido antes por historial o inscripción duplicada
-        st.info("ℹ️ No podés continuar con la inscripción debido a condiciones previas (ya aprobaste o ya estás inscripto).")
-    else:
-        st.error("❌ No se pudo validar correctamente el CUIL.")
+        motivo = st.session_state.get("motivo_bloqueo", "")
+        if motivo == "ya_aprobo":
+            st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
+        elif motivo == "ya_inscripto":
+            st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
+        elif motivo == "no_encontrado":
+            st.error("❌ No se encontró a la persona en la base de datos. Revisá tu CUIL/CUIT e intentá nuevamente. Si el problema persiste, comunicate a capacitacion@indec.gob.ar.")
+        elif motivo == "cuil_invalido":
+            st.error("❌ CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
+        else:
+            st.info("ℹ️ No podés continuar con la inscripción.")
+
 
 
 #else:
