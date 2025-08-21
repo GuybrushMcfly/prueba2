@@ -353,7 +353,7 @@ html_code += """
 """
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
-components.html(html_code, height=700, scrolling=True)
+components.html(html_code, height=500, scrolling=True)
 
 
 
