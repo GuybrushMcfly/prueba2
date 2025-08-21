@@ -361,6 +361,18 @@ with st.container():
     components.html(html_code, height=altura_dinamica, scrolling=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    # ========== DEBUG / MOSTRAR SELECCIÓN DESDE LA TABLA ==========
+    st.markdown("### 🧪 Debug de selección de tabla")
+    
+    # Recuperar lo que guardó el script JS en query_params
+    actividad_seleccionada = st.query_params.get("selected_activity", [None])[0]
+    
+    if st.button("📋 Mostrar selección de la tabla"):
+        if actividad_seleccionada:
+            st.success(f"Fila seleccionada: **{actividad_seleccionada}**")
+        else:
+            st.warning("⚠️ Todavía no seleccionaste ninguna actividad en la tabla.")
 
 
 
