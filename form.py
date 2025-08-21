@@ -661,8 +661,13 @@ if st.session_state.get("inscripcion_exitosa", False):
     else:
         st.info("No se encontraron inscripciones para este usuario.")
 
-elif st.session_state.get("validado", False) and not st.session_state.get("cuil_valido", True):
-    st.error("No existe esa persona en la base de datos. No podés continuar.")
+elif st.session_state.get("validado", False):
+    if not st.session_state.get("cuil_valido", True):
+        # Ya fue advertido antes por historial o inscripción duplicada
+        st.info("ℹ️ No podés continuar con la inscripción debido a condiciones previas (ya aprobaste o ya estás inscripto).")
+    else:
+        st.error("❌ No se pudo validar correctamente el CUIL.")
+
 
 #else:
 #    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
