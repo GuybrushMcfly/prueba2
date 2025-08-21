@@ -54,6 +54,16 @@ def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
         return False
 
 
+def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: str) -> bool:
+    try:
+        response = supabase.rpc("verificar_formulario_historial", {
+            "cuil_input": cuil,
+            "id_actividad_input": id_actividad
+        }).execute()
+        return response.data is True
+    except Exception as e:
+        st.error(f"Error al verificar el historial del agente: {e}")
+        return False
 
 
 
@@ -291,20 +301,29 @@ if st.button("Validar CUIL"):
         st.session_state["cuil_valido"] = False
         st.session_state["validado"] = True
         st.error("CUIL inválido. Verificá que tenga 11 dígitos y sea correcto.")
-
     else:
         # 1️⃣ Formato válido → ahora verificamos en la base de datos
         existe = verificar_formulario_cuil(supabase, cuil_input)
 
-        if existe:
-            st.session_state["cuil"] = cuil_input
-            st.session_state["cuil_valido"] = True
-            st.session_state["validado"] = True
-            st.success("✅ CUIL válido. Podés continuar con el formulario.")
-        else:
+        if not existe:
             st.session_state["cuil_valido"] = False
             st.session_state["validado"] = True
             st.error("⚠️ El CUIL no corresponde a un agente activo.")
+        else:
+            # 2️⃣ Verificamos historial si pasó la primera validación
+            actividad_id = fila["id_actividad"]  # ya cargaste fila desde el dropdown
+
+            ya_aprobo = verificar_formulario_historial(supabase, cuil_input, actividad_id)
+
+            if ya_aprobo:
+                st.session_state["cuil_valido"] = False
+                st.session_state["validado"] = True
+                st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
+            else:
+                st.session_state["cuil"] = cuil_input
+                st.session_state["cuil_valido"] = True
+                st.session_state["validado"] = True
+                st.success("✅ CUIL válido. Podés continuar con el formulario.")
 
 
 
