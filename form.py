@@ -82,6 +82,20 @@ def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str)
         return False
 
 
+def obtener_datos_agente(supabase: Client, cuil: str) -> dict:
+    try:
+        response = supabase.table("agentes") \
+            .select("*") \
+            .eq("cuil", cuil) \
+            .limit(1) \
+            .execute()
+
+        if response.data:
+            return response.data[0]
+        return {}
+    except Exception as e:
+        st.error(f"Error al obtener datos del agente: {e}")
+        return {}
 
 
 
@@ -327,8 +341,16 @@ if st.button("Validar CUIL"):
             st.session_state["validado"] = True
             st.error("⚠️ El CUIL no corresponde a un agente activo.")
         else:
+            # ✅ Guardar el CUIL antes de seguir con más validaciones
+            st.session_state["cuil"] = cuil_input
+
             # 2️⃣ Verificar si ya hizo la actividad y fue APROBADO
-            actividad_id = fila["id_actividad"]
+            try:
+                actividad_id = fila["id_actividad"]
+            except KeyError:
+                st.error("⚠️ No se pudo obtener el ID de actividad. Verificá que hayas seleccionado una comisión.")
+                st.stop()
+
             ya_aprobo = verificar_formulario_historial(supabase, cuil_input, actividad_id)
             st.markdown(f"📚 **Resultado verificación historial de actividad:** `{ya_aprobo}`")
 
@@ -337,8 +359,13 @@ if st.button("Validar CUIL"):
                 st.session_state["validado"] = True
                 st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
             else:
-                # 3️⃣ Verificar si ya se inscribió a esta comisión
-                comision_id = fila["Comisión"]  # Asegurate que esto sea el UUID real de la comisión
+                # 3️⃣ Verificar si ya está inscripto en esta comisión
+                try:
+                    comision_id = fila["Comisión"]  # ← debe contener el UUID
+                except KeyError:
+                    st.error("⚠️ No se pudo obtener el ID de comisión. Verificá que hayas seleccionado una comisión.")
+                    st.stop()
+
                 ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
                 st.markdown(f"📝 **Resultado verificación inscripción a comisión:** `{ya_inscripto}`")
 
@@ -347,12 +374,15 @@ if st.button("Validar CUIL"):
                     st.session_state["validado"] = True
                     st.warning("⚠️ Ya estás inscripto en esta comisión. No podés volver a inscribirte.")
                 else:
-                    # ✅ Todo OK
-                    st.session_state["cuil"] = cuil_input
+                    # ✅ Todo OK → guardar CUIL como válido y traer datos
                     st.session_state["cuil_valido"] = True
                     st.session_state["validado"] = True
-                    st.success("✅ CUIL válido. Podés continuar con el formulario.")
 
+                    # Obtener datos del agente
+                    datos_agente = obtener_datos_agente(supabase, cuil_input)
+                    st.session_state["datos_agenteform"] = datos_agente
+
+                    st.success("✅ CUIL válido. Podés continuar con el formulario.")
 
 
 
