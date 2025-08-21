@@ -56,13 +56,17 @@ def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
 
 def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: str) -> bool:
     try:
-        st.write("🔍 Enviando a Supabase:", {"cuil_input": cuil, "id_actividad_input": id_actividad})
-        response = supabase.rpc("verificar_formulario_historial", {
-            "cuil_input": cuil,
-            "id_actividad_input": id_actividad
-        }).execute()
-        st.write("📦 Respuesta desde Supabase:", response.data)
-        return response.data is True
+        payload = {"cuil_input": cuil, "id_actividad_input": id_actividad}
+        st.info(f"🔍 Enviando a Supabase: {payload}")
+        response = supabase.rpc("verificar_formulario_historial", payload).execute()
+        st.write("🔎 Respuesta Supabase:", response.data)
+
+        # CORRECCIÓN: acceder a .data directamente, sin usar `.get`
+        if isinstance(response.data, list) and response.data:
+            return response.data[0].get("ya_realizo_actividad", False)
+        elif isinstance(response.data, bool):
+            return response.data  # fallback por si la función devuelve boolean directamente
+        return False
     except Exception as e:
         st.error(f"Error al verificar el historial del agente: {e}")
         return False
