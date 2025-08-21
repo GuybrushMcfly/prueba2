@@ -448,6 +448,8 @@ with st.container():
         st.session_state["comision_nombre"] = fila["Comisión"]
         st.session_state["fecha_inicio"] = fila["Fecha inicio"]
         st.session_state["fecha_fin"] = fila["Fecha fin"]
+        st.session_state["comision_id"] = fila["id"]  
+
 
         # Mostrar detalles de la comisión
         st.markdown(f"""
