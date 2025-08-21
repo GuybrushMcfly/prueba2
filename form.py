@@ -26,19 +26,19 @@ st.markdown("""
         padding-left: 2vw;
         padding-right: 2vw;
     }
-    .tabla-container {
-        height: 600px;
-        margin-bottom: 20px;
-    }
     .paso-container {
-        margin-bottom: 5px;    /* Era 20px */
+        margin-bottom: 5px;
     }
     .tabla-container {
-        margin-top: 0px;
+        margin-top: -50px;  /* Más pegada a los filtros */
         margin-bottom: 20px;
+    }
+    .element-container:has(.stSelectbox) {
+        margin-bottom: 0rem !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # ========== TÍTULO GENERAL ==========
