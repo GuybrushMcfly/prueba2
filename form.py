@@ -155,12 +155,16 @@ if modalidad_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Modalidad"] == modalidad_sel]
 
 
+# ========== TABLA HTML ==========
+df_comisiones = df_filtrado[[
+    "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre", "Créditos", "Modalidad", "Apto tramo", "Ver más"
+]].reset_index(drop=True)
 
 def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
     if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados.")
+        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
         return ""
 
     html = f"""
@@ -200,6 +204,11 @@ def create_html_table(df):
             background-color: #bbdefb !important;
             border-left: 4px solid #136ac1;
         }}
+        .courses-table .fecha-col,
+        .courses-table .creditos-col,
+        .courses-table .acceso-col {{
+            text-align: center;
+        }}
         .courses-table a {{
             color: #136ac1;
             text-decoration: none;
@@ -219,34 +228,7 @@ def create_html_table(df):
             color: #bdc3c7;
             font-style: italic;
         }}
-        .pagination {{
-            margin-top: 10px;
-            text-align: center;
-        }}
-        .pagination button {{
-            background-color: #136ac1;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin: 2px;
-            border-radius: 5px;
-            cursor: pointer;
-        }}
-        .pagination button:disabled {{
-            background-color: #ccc;
-            cursor: not-allowed;
-        }}
-        #searchInput {{
-            width: 40%;
-            padding: 8px;
-            margin-top: 10px;
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            font-size: 14px;
-        }}
     </style>
-
-    <input type="text" id="searchInput" placeholder="🔍 Buscar actividad...">
 
     <div style="overflow-x: auto;">
         <table class="courses-table" id="{table_id}">
@@ -269,87 +251,41 @@ def create_html_table(df):
         onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
         html += f'<tr onclick="{onclick_code}">'
         html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td>{row["Fecha inicio"]}</td>'
-        html += f'<td>{row["Fecha fin"]}</td>'
-        html += f'<td>{row["Fecha cierre"]}</td>'
-        html += f'<td>{row["Créditos"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
+        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
         html += f'<td>{row["Modalidad"]}</td>'
         html += f'<td>{row["Apto tramo"]}</td>'
         if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
         else:
-            html += '<td><span class="no-link">Sin enlace</span></td>'
+            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
         html += '</tr>'
 
-    html += f"""
+    html += """
             </tbody>
         </table>
-
-        <div class="pagination">
-            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
-            <span id="pageIndicator"></span>
-            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
-        </div>
     </div>
 
     <script>
-        let currentPage = 1;
-        let rowsPerPage = 10;
-        let filteredRows = [];
-
-        function selectActivity(activityName, row) {{
-            document.querySelectorAll('.courses-table tbody tr').forEach(r => r.classList.remove('selected'));
+        let selectedRow = null;
+        function selectActivity(activityName, row) {
+            if (selectedRow) selectedRow.classList.remove('selected');
+            selectedRow = row;
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
-            window.parent.postMessage({{
+            window.parent.postMessage({
                 type: 'setQueryParams',
-                data: {{ "selected_activity": activityName }}
-            }}, '*');
-        }}
-
-        function updateTable() {{
-            const rows = Array.from(document.querySelectorAll("#{table_id} tbody tr"));
-            const searchTerm = document.getElementById("searchInput").value.toLowerCase();
-            filteredRows = rows.filter(row =>
-                row.innerText.toLowerCase().includes(searchTerm)
-            );
-
-            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-            currentPage = Math.min(currentPage, totalPages || 1);
-
-            rows.forEach(row => row.style.display = "none");
-
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            filteredRows.slice(start, end).forEach(row => row.style.display = "");
-
-            document.getElementById("pageIndicator").innerText = "Página " + currentPage + " de " + totalPages;
-            document.getElementById("prevBtn").disabled = currentPage === 1;
-            document.getElementById("nextBtn").disabled = currentPage === totalPages;
-        }}
-
-        function changePage(direction) {{
-            if (direction === 'prev' && currentPage > 1) currentPage--;
-            if (direction === 'next' && currentPage < Math.ceil(filteredRows.length / rowsPerPage)) currentPage++;
-            updateTable();
-        }}
-
-        document.addEventListener("DOMContentLoaded", () => {{
-            document.getElementById("searchInput").addEventListener("input", () => {{
-                currentPage = 1;
-                updateTable();
-            }});
-            updateTable();
-        }});
+                data: { "selected_activity": activityName }
+            }, '*');
+        }
     </script>
     """
-
     return html
 
-
 # Renderizado de la tabla
-#st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
-st.markdown(create_html_table(df_filtrado), unsafe_allow_html=True)
+st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 
 
