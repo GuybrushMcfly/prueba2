@@ -361,24 +361,64 @@ with st.container():
     components.html(html_code, height=altura_dinamica, scrolling=True)
 
     # ========== TARJETAS DESTACADAS ==========
+    # ========== TARJETAS EN GRID ==========
     st.markdown("---")
     st.subheader("🎯 Actividades destacadas")
     
-    tarjetas = df_comisiones.head(6)  # Mostramos solo las primeras 6 por ejemplo
-    cols = st.columns(3)
+    tarjetas = df_comisiones.head(6)  # Mostrar primeras 6
     
-    for i, (_, row) in enumerate(tarjetas.iterrows()):
-        with cols[i % 3]:
-            st.markdown(f"""
-            <div style="border: 1px solid #ccc; border-left: 5px solid #136ac1;
-                        border-radius: 6px; padding: 16px; margin-bottom: 15px;
-                        background-color: #fefefe; box-shadow: 1px 1px 6px rgba(0,0,0,0.05);">
-                <h4 style="margin-bottom: 5px;">{row['Actividad (Comisión)']}</h4>
-                <p style="margin: 0;"><b>📅 Fechas:</b> {row['Fecha inicio']} al {row['Fecha fin']}</p>
-                <p style="margin: 0;"><b>🎓 Modalidad:</b> {row['Modalidad']}</p>
-                <p style="margin: 0;"><b>⭐ Créditos:</b> {row['Créditos']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+    # Convertimos a dicts para facilidad en Jinja
+    items = tarjetas.to_dict(orient="records")
+    
+    # HTML y CSS con grid + hover
+    html_tarjetas = """
+    <style>
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+        margin-top: 20px;
+    }
+    .card {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-left: 5px solid #136ac1;
+        border-radius: 10px;
+        box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 220px;
+    }
+    .card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+    }
+    .card h4 {
+        margin-top: 0;
+        font-size: 16px;
+        color: #136ac1;
+    }
+    .card p {
+        margin: 6px 0;
+        font-size: 14px;
+    }
+    </style>
+    <div class="card-grid">
+    """
+    
+    for item in items:
+        html_tarjetas += f"""
+        <div class="card">
+            <h4>{item['Actividad (Comisión)']}</h4>
+            <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
+            <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
+            <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
+        </div>
+        """
+    
+    html_tarjetas += "</div>"
+    
+    st.markdown(html_tarjetas, unsafe_allow_html=True)
+
 
 
 
