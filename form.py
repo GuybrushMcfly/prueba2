@@ -42,7 +42,7 @@ st.markdown("""
     }
 
     .dataTables_wrapper + div {
-        margin-top: -40px !important;
+        margin-top: -80px !important;
     }
     </style>
 """, unsafe_allow_html=True)
