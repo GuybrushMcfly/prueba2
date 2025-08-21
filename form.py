@@ -64,15 +64,57 @@ def dialogo_exito():
     st.markdown("Te preinscribiste correctamente en la actividad:")
     st.markdown(f"📘 **{actividad}**")
 
+    # Si por algún motivo entrás acá justo después de un reset, no reabrir
+    if st.session_state.get("_closing_dialog", False):
+        return
+
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Limpiar completamente el session_state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        # Forzar recarga completa
-        st.query_params.clear()
-        st.rerun()
+        hard_reset()
+
 
 # ========== FUNCIONES ==========
+def hard_reset():
+    """Borra TODO el estado de Streamlit, limpia caches, query params y storage del browser, 
+    y fuerza un rerun dejando la app como recién cargada."""
+    # 0) Bandera para que el diálogo no se reabra en el mismo ciclo
+    st.session_state["_closing_dialog"] = True
+
+    # 1) Limpiar session_state (menos la bandera temporal)
+    for k in list(st.session_state.keys()):
+        if k != "_closing_dialog":
+            del st.session_state[k]
+
+    # 2) Limpiar caches (si las usás en otras partes)
+    try:
+        st.cache_data.clear()
+    except Exception:
+        pass
+    try:
+        st.cache_resource.clear()
+    except Exception:
+        pass
+
+    # 3) Limpiar query params de selección
+    st.query_params.clear()
+
+    # 4) Limpiar storage del browser que usás para la tabla
+    components.html(
+        """
+        <script>
+          try {
+            sessionStorage.clear();
+            localStorage.removeItem("selected_activity"); // por si lo hubieras guardado también ahí
+          } catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
+
+    # 5) Forzar rerun
+    st.rerun()
+
+
+
 def validar_cuil(cuil: str) -> bool:
     if not cuil.isdigit() or len(cuil) != 11:
         return False
