@@ -155,7 +155,6 @@ if modalidad_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Modalidad"] == modalidad_sel]
 
 
-render_datatable_selector(df_comisiones_dt)
 
 # ========== TABLA HTML ==========
 df_comisiones = df_filtrado[[
@@ -292,6 +291,9 @@ st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 # ================== TABLA 2 (DataTables) ==================
 st.markdown("## 🧪 Tabla 2: DataTables interactiva")
+
+render_datatable_selector(df_comisiones_dt)
+
 
 def render_datatable_selector(df):
     # Generar HTML con identificador único
