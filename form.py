@@ -348,8 +348,7 @@ def create_html_table(df):
 
 
 # Renderizado de la tabla
-st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
-
+st.markdown(create_html_table(df_filtrado), unsafe_allow_html=True)
 
 
 
