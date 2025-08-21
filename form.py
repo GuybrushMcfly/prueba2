@@ -256,11 +256,16 @@ with st.container():
                 transition: all 0.3s ease;
                 cursor: pointer;
             }}
-            .courses-table tbody tr:hover {{
+
+
+           .courses-table tbody tr:hover {{
                 background-color: #e3f2fd;
-                transform: translateY(-2px);
-                box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+                transform: scale(1.03);
+                box-shadow: 0 4px 12px rgba(19, 106, 193, 0.3);
+                z-index: 1;
+                position: relative;
             }}
+            
             .courses-table tbody tr.selected {{
                 background-color: #bbdefb !important;
                 border-left: 4px solid #136ac1;
