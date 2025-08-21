@@ -65,28 +65,12 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Usar JavaScript para recargar completamente la página
-        js = """
-        <script>
-        function deleteAllCookies() {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i];
-                const eqPos = cookie.indexOf("=");
-                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-            }
-        }
-        
-        deleteAllCookies();
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Recargar forzando fetch desde servidor (no cache)
-        window.location.href = window.location.origin + window.location.pathname;
-        </script>
-        """
-        components.html(js, height=0, width=0)
+        # Limpiar completamente el session_state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        # Forzar recarga completa
+        st.query_params.clear()
+        st.rerun()
 
 # ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
