@@ -421,16 +421,18 @@ with st.container():
 
         # Mostrar
         st.markdown(f"""
-            <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px; margin-top: 10px;">
-            <strong>📘 Actividad:</strong> {fila["Actividad"]}<br>
-            <strong>🆔 Comisión:</strong> {fila["Comisión"]}<br>
-            <strong>📅 Fechas:</strong> {fila["Fecha inicio"]} al {fila["Fecha fin"]}<br>
-            <strong>📅 Cierre Inscripción:</strong> {fila["Fecha cierre"]}<br>
-            <strong>⭐ Créditos:</strong> {fila["Créditos"]}<br>
-            <strong>🎓 Modalidad:</strong> {fila["Modalidad"]}<br>
-            <strong>🎯 Apto tramo:</strong> {fila["Apto tramo"]}
-            </div>
+        <div style="background-color: #f0f8ff; padding: 15px; border-left: 5px solid #136ac1; border-radius: 5px;">
+          <b>🟦 Actividad:</b> {seleccion['nombre_actividad']}<br>
+          <b>🆔 Comisión:</b> {seleccion['id_comision_sai']}<br>
+          <b>🧬 UUID Comisión:</b> <code>{seleccion['id']}</code><br>
+          <b>📅 Fechas:</b> {seleccion['fecha_desde']} al {seleccion['fecha_hasta']}<br>
+          <b>📌 Cierre Inscripción:</b> {seleccion['fecha_cierre']}<br>
+          <b>⭐ Créditos:</b> {seleccion['creditos']}<br>
+          <b>🎓 Modalidad:</b> {seleccion['modalidad_cursada']}<br>
+          <b>❓ Apto tramo:</b> {seleccion['apto_tramo']}<br>
+        </div>
         """, unsafe_allow_html=True)
+
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -507,6 +509,17 @@ with st.container():
 
             else:
                 existe = verificar_formulario_cuil(supabase, cuil_input)
+
+                # 🔍 DEBUG OPCIONAL
+                st.markdown("---")
+                st.subheader("🧪 DEBUG DE VALIDACIÓN DE CUIL")
+                st.write("🔍 CUIL ingresado:", cuil_input)
+                st.write("🔍 UUID comisión seleccionada:", st.session_state.get("comision_id"))
+            
+                resultado = verificar_formulario_comision(supabase, cuil_input, st.session_state.get("comision_id"))
+                st.write("✅ ¿Ya está inscripto según Supabase?", resultado)
+
+                
                 if not existe:
                     st.session_state["cuil_valido"] = False
                     st.session_state["validado"] = True
