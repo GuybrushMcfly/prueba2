@@ -307,7 +307,7 @@ with st.container():
                         <th>Cierre Inscrip.</th>
                         <th>Créditos</th>
                         <th>Modalidad</th>
-                        <th>Apto Tramo</th>
+                    #    <th>Apto Tramo</th>
                         <th>Acceso</th>
                     </tr>
                 </thead>
