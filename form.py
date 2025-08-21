@@ -477,12 +477,20 @@ with st.container():
         st.session_state["actividad_anterior"] = ""
 
     # Si se seleccionó una nueva actividad distinta a la anterior
-    if actividad_seleccionada != st.session_state["actividad_anterior"]:
+    if actividad_seleccionada != st.session_state.get("actividad_anterior", ""):
         st.session_state["actividad_anterior"] = actividad_seleccionada
+    
+        # 🔽 Asegurá que los widgets arranquen limpios
+        for k in ("cuil_input", "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"):
+            if k in st.session_state:
+                del st.session_state[k]
+    
         st.session_state["cuil_valido"] = False
         st.session_state["validado"] = False
         st.session_state["cuil"] = ""
         st.session_state["datos_agenteform"] = {}
+        st.session_state["motivo_bloqueo"] = ""
+
 
     if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
         fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
