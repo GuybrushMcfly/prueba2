@@ -287,6 +287,90 @@ def create_html_table(df):
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 
+# ================== TABLA 2 (DataTables) ==================
+st.markdown("## 🧪 Tabla 2: DataTables interactiva")
+
+def render_datatable_selector(df):
+    # Generar HTML con identificador único
+    table_id = "miTabla2"
+
+    html = f"""
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script>
+    function selectRow(activityName) {{
+        sessionStorage.setItem('selected_activity', activityName);
+        window.parent.postMessage({{
+            type: 'setQueryParams',
+            data: {{ "selected_activity": activityName }}
+        }}, '*');
+    }}
+
+    $(document).ready(function() {{
+        $('#{table_id}').DataTable({{
+            "pageLength": 8,
+            "language": {{
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+            }}
+        }});
+
+        $('#{table_id} tbody').on('click', 'tr', function () {{
+            var activity = $(this).find('td:first').text();
+            selectRow(activity);
+        }});
+    }});
+    </script>
+
+    <style>
+        table.dataTable {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            width: 100%;
+            margin-top: 15px;
+        }}
+        thead {{
+            background-color: #136ac1;
+            color: white;
+        }}
+        tbody tr:hover {{
+            background-color: #e3f2fd;
+            cursor: pointer;
+        }}
+    </style>
+
+    <table id="{table_id}" class="display">
+        <thead>
+            <tr>
+                {''.join(f'<th>{col}</th>' for col in df.columns)}
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    for _, row in df.iterrows():
+        html += "<tr>" + "".join(f"<td>{row[col]}</td>" for col in df.columns) + "</tr>"
+
+    html += """
+        </tbody>
+    </table>
+    """
+
+    components.html(html, height=500, scrolling=True)
+
+# Mostramos la tabla DataTables
+render_datatable_selector(df_comisiones)
+
+
+
+
+
+
+
+
+
 # ========== DROPDOWN DE ACTIVIDAD ==========
 st.markdown("### 🎯 Seleccioná una actividad para inscribirte")
 
