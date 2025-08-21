@@ -67,6 +67,19 @@ def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: st
         st.error("Error al verificar el historial del agente.")
         return False
 
+def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str) -> bool:
+    try:
+        response = supabase.rpc("verificar_formulario_comision", {
+            "cuil_input": cuil,
+            "comision_id_input": comision_id
+        }).execute()
+
+        if isinstance(response.data, list) and response.data:
+            return response.data[0].get("existe", False)
+        return False
+    except Exception as e:
+        st.error("Error al verificar si ya está inscripto en la comisión.")
+        return False
 
 
 
@@ -324,10 +337,22 @@ if st.button("Validar CUIL"):
                 st.session_state["validado"] = True
                 st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
             else:
-                st.session_state["cuil"] = cuil_input
-                st.session_state["cuil_valido"] = True
-                st.session_state["validado"] = True
-                st.success("✅ CUIL válido. Podés continuar con el formulario.")
+                # 3️⃣ Verificar si ya se inscribió a esta comisión
+                comision_id = fila["Comisión"]  # Asegurate que esto sea el UUID real de la comisión
+                ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
+                st.markdown(f"📝 **Resultado verificación inscripción a comisión:** `{ya_inscripto}`")
+
+                if ya_inscripto:
+                    st.session_state["cuil_valido"] = False
+                    st.session_state["validado"] = True
+                    st.warning("⚠️ Ya estás inscripto en esta comisión. No podés volver a inscribirte.")
+                else:
+                    # ✅ Todo OK
+                    st.session_state["cuil"] = cuil_input
+                    st.session_state["cuil_valido"] = True
+                    st.session_state["validado"] = True
+                    st.success("✅ CUIL válido. Podés continuar con el formulario.")
+
 
 
 
