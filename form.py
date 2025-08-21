@@ -430,7 +430,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-
+st.markdown("#### 3) Ingresá tu número de CUIL y validalo con el botón.")
 # CAMPO DE CUIL LUEGO DE SELECCIÓN
 st.markdown("### 🆔 Ingresá tu CUIL para continuar")
 cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11)
@@ -483,6 +483,7 @@ if st.button("Validar CUIL"):
 
 
 
+st.markdown("#### 4) Completá los datos requeridos y finalizá con el botón de preinscripción.")
 
 
 # ========== FORMULARIO SOLO SI EL CUIL ES VÁLIDO Y EXISTE ==========
