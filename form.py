@@ -156,158 +156,94 @@ if modalidad_sel != "Todos":
 
 
 # ========== TABLA HTML ==========
-df_comisiones = df_filtrado[[
-    "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre", "Créditos", "Modalidad", "Apto tramo", "Ver más"
-]].reset_index(drop=True)
-
 def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
     if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
+        st.warning("No se encontraron cursos con los filtros seleccionados.")
         return ""
 
     html = f"""
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <style>
-        .courses-table {{
-            width: 90%;
-            margin: 20px auto;
+        .dataTable {{
+            width: 90% !important;
+            margin: 20px auto !important;
             border-collapse: collapse;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
             background-color: white;
         }}
-        .courses-table thead tr {{
-            background-color: #136ac1;
-            color: #ffffff;
-            text-align: left;
-            font-weight: bold;
-        }}
-        .courses-table th, .courses-table td {{
-            padding: 14px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }}
-        .courses-table tbody tr {{
-            background-color: #ffffff;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }}
-        .courses-table tbody tr:hover {{
-            background-color: #e3f2fd;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
-        }}
-        .courses-table tbody tr.selected {{
-            background-color: #bbdefb !important;
-            border-left: 4px solid #136ac1;
-        }}
-        .courses-table .fecha-col,
-        .courses-table .creditos-col,
-        .courses-table .acceso-col {{
-            text-align: center;
-        }}
-        .courses-table a {{
-            color: #136ac1;
-            text-decoration: none;
-            font-weight: bold;
-            padding: 6px 12px;
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }}
-        .courses-table a:hover {{
+        table.dataTable thead {{
             background-color: #136ac1;
             color: white;
-            transform: scale(1.05);
+            font-weight: bold;
+        }}
+        table.dataTable tbody tr:hover {{
+            background-color: #e3f2fd;
+            cursor: pointer;
+        }}
+        table.dataTable tbody tr.selected {{
+            background-color: #bbdefb !important;
+            border-left: 4px solid #136ac1;
         }}
         .no-link {{
             color: #bdc3c7;
             font-style: italic;
         }}
-        .pagination {{
-            margin-top: 10px;
-            text-align: center;
-        }}
-        .pagination button {{
-            background-color: #136ac1;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin: 2px;
-            border-radius: 5px;
-            cursor: pointer;
-        }}
-        .pagination button:disabled {{
-            background-color: #ccc;
-            cursor: not-allowed;
-        }}
-        #searchInput {{
-            width: 40%;
-            padding: 8px;
-            margin-top: 10px;
+        .dataTables_wrapper .dataTables_filter input {{
             border: 2px solid #136ac1;
             border-radius: 5px;
-            font-size: 14px;
+            padding: 4px 8px;
         }}
     </style>
 
-    <input type="text" id="searchInput" placeholder="🔍 Buscar actividad...">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
-    <div style="overflow-x: auto;">
-        <table class="courses-table" id="{table_id}">
-            <thead>
-                <tr>
-                    <th>Actividad (Comisión)</th>
-                    <th>F. Inicio</th>
-                    <th>F. Fin</th>
-                    <th>Cierre Inscrip.</th>
-                    <th>Créditos</th>
-                    <th>Modalidad</th>
-                    <th>Apto Tramo</th>
-                    <th>Acceso</th>
-                </tr>
-            </thead>
-            <tbody>
+    <table id="{table_id}" class="display dataTable">
+        <thead>
+            <tr>
+                <th>Actividad (Comisión)</th>
+                <th>F. Inicio</th>
+                <th>F. Fin</th>
+                <th>Cierre Inscrip.</th>
+                <th>Créditos</th>
+                <th>Modalidad</th>
+                <th>Apto Tramo</th>
+                <th>Acceso</th>
+            </tr>
+        </thead>
+        <tbody>
     """
 
     for _, row in df.iterrows():
-        onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-        html += f'<tr onclick="{onclick_code}">'
-        html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
-        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
-        html += f'<td>{row["Modalidad"]}</td>'
-        html += f'<td>{row["Apto tramo"]}</td>'
-        if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
-        else:
-            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
-        html += '</tr>'
+        actividad = row["Actividad (Comisión)"]
+        link = row["Ver más"]
+        link_html = f'<a href="{link}" target="_blank">🌐 Acceder</a>' if pd.notna(link) and link else '<span class="no-link">Sin enlace</span>'
+
+        html += f"""
+        <tr onclick="selectActivity('{actividad}', this)">
+            <td>{actividad}</td>
+            <td>{row["Fecha inicio"]}</td>
+            <td>{row["Fecha fin"]}</td>
+            <td>{row["Fecha cierre"]}</td>
+            <td>{row["Créditos"]}</td>
+            <td>{row["Modalidad"]}</td>
+            <td>{row["Apto tramo"]}</td>
+            <td>{link_html}</td>
+        </tr>
+        """
 
     html += f"""
-            </tbody>
-        </table>
-
-        <div class="pagination">
-            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
-            <span id="pageIndicator"></span>
-            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
-        </div>
-    </div>
+        </tbody>
+    </table>
 
     <script>
-        let currentPage = 1;
-        let rowsPerPage = 10;
-        let filteredRows = [];
-
         function selectActivity(activityName, row) {{
-            document.querySelectorAll('.courses-table tbody tr').forEach(r => r.classList.remove('selected'));
+            document.querySelectorAll('#{table_id} tbody tr').forEach(r => r.classList.remove('selected'));
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
             window.parent.postMessage({{
@@ -316,40 +252,22 @@ def create_html_table(df):
             }}, '*');
         }}
 
-        function updateTable() {{
-            const rows = Array.from(document.querySelectorAll("#{table_id} tbody tr"));
-            const searchInput = document.getElementById("searchInput");
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
-            filteredRows = rows.filter(row =>
-                row.innerText.toLowerCase().includes(searchTerm)
-            );
-
-            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-            currentPage = Math.min(currentPage, totalPages || 1);
-
-            rows.forEach(row => row.style.display = "none");
-
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            filteredRows.slice(start, end).forEach(row => row.style.display = "");
-
-            document.getElementById("pageIndicator").innerText = 'Página ' + currentPage + ' de ' + totalPages;
-            document.getElementById("prevBtn").disabled = currentPage === 1;
-            document.getElementById("nextBtn").disabled = currentPage === totalPages;
-        }}
-
-        function changePage(direction) {{
-            if (direction === 'prev' && currentPage > 1) currentPage--;
-            if (direction === 'next' && currentPage < Math.ceil(filteredRows.length / rowsPerPage)) currentPage++;
-            updateTable();
-        }}
-
-        document.addEventListener("DOMContentLoaded", () => {{
-            document.getElementById("searchInput").addEventListener("input", () => {{
-                currentPage = 1;
-                updateTable();
+        $(document).ready(function() {{
+            $('#{table_id}').DataTable({{
+                pageLength: 10,
+                language: {{
+                    search: "🔍 Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros por página",
+                    zeroRecords: "No se encontraron resultados",
+                    info: "Mostrando página _PAGE_ de _PAGES_",
+                    infoEmpty: "No hay registros disponibles",
+                    infoFiltered: "(filtrado de _MAX_ registros totales)",
+                    paginate: {{
+                        previous: "Anterior",
+                        next: "Siguiente"
+                    }}
+                }}
             }});
-            updateTable();
         }});
     </script>
     """
