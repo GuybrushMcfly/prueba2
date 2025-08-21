@@ -323,6 +323,9 @@ html_code += """
 # Mostrar tabla con búsqueda + paginación
 components.html(html_code, height=700, scrolling=True)
 
+# Recuperar actividad seleccionada desde el click
+selected_activity = st.experimental_get_query_params().get("selected_activity", [None])[0]
+
 
 
 # ========== DROPDOWN DE ACTIVIDAD ==========
