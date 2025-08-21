@@ -399,8 +399,8 @@ with st.container():
         font-size: 14px;
     }
     </style>
-    <div class="card-grid">
     """, unsafe_allow_html=True)
+
 
     html_tarjetas = '<div class="card-grid">'
     
