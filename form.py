@@ -641,16 +641,17 @@ with st.container():
     elif st.session_state.get("validado", False):
         if not st.session_state.get("cuil_valido", True):
             motivo = st.session_state.get("motivo_bloqueo", "")
-        #    if motivo == "ya_aprobo":
-        #        st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
-        #    elif motivo == "ya_inscripto":
-        #        st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
-            if motivo == "no_encontrado":
+            if motivo == "ya_aprobo":
+                st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
+            elif motivo == "ya_inscripto":
+                st.warning("⚠️ Ya estás inscripto en esta comisión. No hace falta que vuelvas a inscribirte.")
+            elif motivo == "no_encontrado":
                 st.error("❌ No se encontró a la persona en la base de datos. Revisá tu CUIL/CUIT e intentá nuevamente. Si el problema persiste, comunicate a capacitacion@indec.gob.ar.")
             elif motivo == "cuil_invalido":
                 st.error("❌ CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
             else:
                 st.info("ℹ️ No podés continuar con la inscripción.")
+
 
     #else:
     #    st.info("Seleccioná una comisión y validá tu CUIL para continuar.")
