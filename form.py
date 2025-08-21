@@ -397,14 +397,12 @@ with st.container():
 
     # ================== Mostrar tabla con búsqueda + paginación ==================
 
-    # Estimar alto dinámico: 60px por fila + algo de margen
+    # Calcular altura dinámica: 60px por fila aprox + espacio extra para header, márgenes, paginación, etc.
     num_filas = len(df_comisiones)
-    altura_minima = 350
-    altura_por_fila = 60
-    altura_maxima = 700
-    
-    altura_html = min(altura_minima + num_filas * altura_por_fila, altura_maxima)
-    components.html(html_code, height=altura_html, scrolling=True)
+    altura_dinamica = min(600, 100 + (num_filas * 60))  # Altura mínima 100, máxima 600
+
+    components.html(html_code, height=altura_dinamica, scrolling=True)
+
 #    components.html(html_code, height=500, scrolling=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
