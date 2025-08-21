@@ -353,6 +353,7 @@ html_code += """
 
 
 
+
 # ================== Mostrar tabla con búsqueda + paginación ==================
 components.html(html_code, height=700, scrolling=True)
 
