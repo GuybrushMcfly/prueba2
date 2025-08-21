@@ -115,19 +115,18 @@ def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str)
         return False
 
 
-def obtener_datos_agente(supabase: Client, cuil: str) -> dict:
+def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
     try:
-        response = supabase.table("agentes") \
-            .select("*") \
-            .eq("cuil", cuil) \
-            .limit(1) \
-            .execute()
+        response = supabase.rpc("obtener_datos_para_formulario", {
+            "cuil_input": cuil
+        }).execute()
 
-        if response.data:
-            return response.data[0]
-        return {}
+        if response.data and isinstance(response.data, list):
+            return response.data[0]  # Devuelve un dict con todos los campos
+        else:
+            return {}
     except Exception as e:
-        st.error(f"Error al obtener datos del agente: {e}")
+        st.error(f"Error al obtener los datos del formulario: {e}")
         return {}
 
 
@@ -507,7 +506,19 @@ with st.container():
                             st.session_state["validado"] = True
                             st.session_state["motivo_bloqueo"] = ""
                             st.success("✅ CUIL/CUILT válido. Podés continuar con la preinscripción.")
-    st.markdown('</div>', unsafe_allow_html=True)
+
+                            # 🔍 Obtener datos del agente desde función RPC y guardarlos en sesión
+                            datos = obtener_datos_para_formulario(supabase, cuil_input)
+                            st.session_state["datos_agenteform"] = datos
+
+                            # 🧾 Mostrar datos obtenidos (solo visual)
+                            if datos:
+                                st.markdown("---")
+                                st.markdown("### 🧾 Datos obtenidos del agente")
+                                for campo, valor in datos.items():
+                                    st.markdown(f"**{campo.replace('_', ' ').capitalize()}:** {valor if valor else '-'}")
+                                st.markdown("---")
+
 
 # ================= PASO 4: Título SOLO si corresponde mostrar el formulario =================
 with st.container():
