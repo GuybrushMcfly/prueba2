@@ -65,19 +65,24 @@ st.markdown("""
 @st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
 def dialogo_exito():
     actividad = st.session_state.get("nombre_actividad_exito", "-")
-    st.markdown("Te preinscribiste correctamente en la actividad:")
-    st.markdown(f"📘 **{actividad}**")
 
-    if st.button("Cerrar"):
-        for clave in list(st.session_state.keys()):
-            if clave.startswith("actividad_") or clave in [
-                "cuil", "cuil_valido", "validado", "motivo_bloqueo",
-                "inscripcion_exitosa", "datos_agenteform",
-                "comision_id", "comision_nombre", "fecha_inicio", "fecha_fin",
-                "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"
-            ]:
-                del st.session_state[clave]
-        st.rerun()
+    with st.container(border=True):
+        st.markdown("### ✅ ¡Preinscripción exitosa!")
+        st.markdown("Te preinscribiste correctamente en la actividad:")
+        st.markdown(f"📘 **{actividad}**")
+
+        if st.button("Cerrar"):
+            for clave in list(st.session_state.keys()):
+                if clave.startswith("actividad_") or clave in [
+                    "actividad_seleccionada", "actividad_dropdown",
+                    "cuil", "cuil_valido", "validado", "motivo_bloqueo",
+                    "inscripcion_exitosa", "nombre_actividad_exito",
+                    "datos_agenteform", "comision_id", "comision_nombre",
+                    "fecha_inicio", "fecha_fin", "nivel_educativo", "titulo",
+                    "tareas_desarrolladas", "email_alternativo"
+                ]:
+                    del st.session_state[clave]
+            st.rerun()
 
 
 # ========== FUNCIIONES ==========
