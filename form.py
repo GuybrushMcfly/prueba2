@@ -139,10 +139,22 @@ def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
 
 
 # Detectar si debe reiniciarse el estado tras cierre de diálogo
-if st.session_state.get("resetear_todo", False):
-    st.session_state.clear()
+if "resetear_todo" in st.session_state and st.session_state["resetear_todo"]:
     st.query_params.clear()
+    
+    # Guardar el flag antes de limpiar el estado
+    reset_flag = True
+    st.session_state.clear()
+    st.session_state["__reset_placeholder"] = reset_flag  # Volver a establecer una bandera mínima
+
     st.rerun()
+
+# Si estamos en el primer run luego del reset
+if st.session_state.get("__reset_placeholder", False):
+    initial_index = 0
+    selected_from_query = None
+    st.session_state["__reset_placeholder"] = False  # Limpieza final
+
 
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
@@ -448,6 +460,7 @@ with st.container():
             initial_index = 0
 
     actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
+
 
     # ✅ Si estamos en reinicio, también forzamos limpiar el estado de selección anterior
     if st.session_state.get("resetear_todo", False):
