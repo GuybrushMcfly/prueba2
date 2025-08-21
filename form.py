@@ -377,15 +377,6 @@ st.markdown("""
 
 
 
-
-st.markdown("""
-</div>
-<div style="margin-top: -15px; margin-bottom: 10px;">
-    <h3 style="color: #136ac1; font-weight: bold;">🎯 Seleccioná una actividad para inscribirte</h3>
-</div>
-""", unsafe_allow_html=True)
-
-
 # Formato: ACTIVIDAD (COMISIÓN) - FECHA INICIO
 df_temp["Actividad dropdown"] = (
     df_temp["nombre_actividad"]
