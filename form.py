@@ -76,9 +76,9 @@ def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: st
         if isinstance(response.data, list) and response.data:
             return response.data[0].get("existe", False)
         return False
-   # except Exception as e:
+    except Exception as e:
        # st.error("Error al verificar el historial del agente.")
-       # return False
+       return False
 
 def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str) -> bool:
     try:
@@ -90,9 +90,9 @@ def verificar_formulario_comision(supabase: Client, cuil: str, comision_id: str)
         if isinstance(response.data, list) and response.data:
             return response.data[0].get("existe", False)
         return False
-    #except Exception as e:
+    except Exception as e:
         #st.error("Error al verificar si ya está inscripto en la comisión.")
-        #return False
+        return False
 
 
 def obtener_datos_agente(supabase: Client, cuil: str) -> dict:
