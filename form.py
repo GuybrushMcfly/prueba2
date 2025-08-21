@@ -29,6 +29,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ========== FUNCIIONES ==========
+
+
 # ========== VALIDACIÓN DE CUIL ==========
 def validar_cuil(cuil: str) -> bool:
     if not cuil.isdigit() or len(cuil) != 11:
@@ -41,6 +44,16 @@ def validar_cuil(cuil: str) -> bool:
     elif verificador == 10:
         verificador = 9
     return verificador == int(cuil[-1])
+
+
+def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
+    try:
+        response = supabase.rpc("verificar_formulario_cuil", {"cuil_input": cuil}).execute()
+        return bool(response.data)
+    except Exception as e:
+        st.error(f"Error al verificar el CUIL en la base de datos: {e}")
+        return False
+
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
 @st.cache_data(ttl=86400)
