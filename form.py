@@ -323,7 +323,7 @@ def create_html_table(df):
             const end = start + rowsPerPage;
             filteredRows.slice(start, end).forEach(row => row.style.display = "");
 
-            document.getElementById("pageIndicator").innerText = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById("pageIndicator").innerText = "Página " + currentPage + " de " + totalPages;
             document.getElementById("prevBtn").disabled = currentPage === 1;
             document.getElementById("nextBtn").disabled = currentPage === totalPages;
         }}
@@ -348,8 +348,7 @@ def create_html_table(df):
 
 
 # Renderizado de la tabla
-st.markdown(create_html_table(df_filtrado), unsafe_allow_html=True)
-
+st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
 
 
 
