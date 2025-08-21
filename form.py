@@ -164,35 +164,14 @@ def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
     if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados.")
+        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
         return ""
 
     html = f"""
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <style>
-        .dataTables_wrapper .dataTables_paginate .paginate_button {{
-            padding: 2px 6px;
-            margin-left: 2px;
-            background: #136ac1;
-            color: white !important;
-            border-radius: 4px;
-            border: none;
-        }}
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {{
-            background: #0d47a1 !important;
-        }}
-        .dataTables_filter input {{
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            padding: 6px;
-        }}
-        .dataTables_wrapper .dataTables_length select {{
-            border: 2px solid #136ac1;
-            border-radius: 5px;
-            padding: 6px;
-        }}
         .courses-table {{
-            width: 100%;
+            width: 90%;
+            margin: 20px auto;
             border-collapse: collapse;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -225,6 +204,11 @@ def create_html_table(df):
             background-color: #bbdefb !important;
             border-left: 4px solid #136ac1;
         }}
+        .courses-table .fecha-col,
+        .courses-table .creditos-col,
+        .courses-table .acceso-col {{
+            text-align: center;
+        }}
         .courses-table a {{
             color: #136ac1;
             text-decoration: none;
@@ -244,51 +228,86 @@ def create_html_table(df):
             color: #bdc3c7;
             font-style: italic;
         }}
+        .pagination {{
+            margin-top: 10px;
+            text-align: center;
+        }}
+        .pagination button {{
+            background-color: #136ac1;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+        }}
+        .pagination button:disabled {{
+            background-color: #ccc;
+            cursor: not-allowed;
+        }}
+        #searchInput {{
+            width: 40%;
+            padding: 8px;
+            margin-top: 10px;
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            font-size: 14px;
+        }}
     </style>
 
-    <table id="{table_id}" class="display courses-table">
-        <thead>
-            <tr>
-                <th>Actividad (Comisión)</th>
-                <th>F. Inicio</th>
-                <th>F. Fin</th>
-                <th>Cierre Inscrip.</th>
-                <th>Créditos</th>
-                <th>Modalidad</th>
-                <th>Apto Tramo</th>
-                <th>Acceso</th>
-            </tr>
-        </thead>
-        <tbody>
+    <input type="text" id="searchInput" placeholder="🔍 Buscar actividad...">
+
+    <div style="overflow-x: auto;">
+        <table class="courses-table" id="{table_id}">
+            <thead>
+                <tr>
+                    <th>Actividad (Comisión)</th>
+                    <th>F. Inicio</th>
+                    <th>F. Fin</th>
+                    <th>Cierre Inscrip.</th>
+                    <th>Créditos</th>
+                    <th>Modalidad</th>
+                    <th>Apto Tramo</th>
+                    <th>Acceso</th>
+                </tr>
+            </thead>
+            <tbody>
     """
 
     for _, row in df.iterrows():
         onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
         html += f'<tr onclick="{onclick_code}">'
         html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td>{row["Fecha inicio"]}</td>'
-        html += f'<td>{row["Fecha fin"]}</td>'
-        html += f'<td>{row["Fecha cierre"]}</td>'
-        html += f'<td>{row["Créditos"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
+        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
+        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
         html += f'<td>{row["Modalidad"]}</td>'
         html += f'<td>{row["Apto tramo"]}</td>'
         if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
         else:
-            html += '<td><span class="no-link">Sin enlace</span></td>'
+            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
         html += '</tr>'
 
     html += f"""
-        </tbody>
-    </table>
+            </tbody>
+        </table>
 
-    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <div class="pagination">
+            <button id="prevBtn" onclick="changePage('prev')">⬅ Anterior</button>
+            <span id="pageIndicator"></span>
+            <button id="nextBtn" onclick="changePage('next')">Siguiente ➡</button>
+        </div>
+    </div>
+
     <script>
-        let selectedRow = null;
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let filteredRows = [];
+
         function selectActivity(activityName, row) {{
-            if (selectedRow) selectedRow.classList.remove('selected');
-            selectedRow = row;
+            document.querySelectorAll('.courses-table tbody tr').forEach(r => r.classList.remove('selected'));
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
             window.parent.postMessage({{
@@ -297,21 +316,39 @@ def create_html_table(df):
             }}, '*');
         }}
 
-        $(document).ready(function () {{
-            $('#{table_id}').DataTable({{
-                "pageLength": 10,
-                "language": {{
-                    "search": "🔍 Buscar:",
-                    "lengthMenu": "Mostrar _MENU_ registros",
-                    "info": "Mostrando _START_ a _END_ de _TOTAL_ entradas",
-                    "paginate": {{
-                        "first": "Primera",
-                        "last": "Última",
-                        "next": "➡",
-                        "previous": "⬅"
-                    }}
-                }}
+        function updateTable() {{
+            const rows = Array.from(document.querySelectorAll("#{table_id} tbody tr"));
+            const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+            filteredRows = rows.filter(row =>
+                row.innerText.toLowerCase().includes(searchTerm)
+            );
+
+            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+            currentPage = Math.min(currentPage, totalPages || 1);
+
+            rows.forEach(row => row.style.display = "none");
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            filteredRows.slice(start, end).forEach(row => row.style.display = "");
+
+            document.getElementById("pageIndicator").innerText = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById("prevBtn").disabled = currentPage === 1;
+            document.getElementById("nextBtn").disabled = currentPage === totalPages;
+        }}
+
+        function changePage(direction) {{
+            if (direction === 'prev' && currentPage > 1) currentPage--;
+            if (direction === 'next' && currentPage < Math.ceil(filteredRows.length / rowsPerPage)) currentPage++;
+            updateTable();
+        }}
+
+        document.addEventListener("DOMContentLoaded", () => {{
+            document.getElementById("searchInput").addEventListener("input", () => {{
+                currentPage = 1;
+                updateTable();
             }});
+            updateTable();
         }});
     </script>
     """
