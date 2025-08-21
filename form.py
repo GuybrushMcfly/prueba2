@@ -292,18 +292,20 @@ with st.container():
 
         for _, row in df.iterrows():
             onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
-            html += f'<tr onclick="{onclick_code}">'
-            html += f'<td>{row["Actividad (Comisión)"]}</td>'
-            html += f'<td>{row["Fecha inicio"]}</td>'
-            html += f'<td>{row["Fecha fin"]}</td>'
-            html += f'<td>{row["Fecha cierre"]}</td>'
-            html += f'<td>{row["Créditos"]}</td>'
-            html += f'<td>{row["Modalidad"]}</td>'
-            html += f'<td>{row["Apto tramo"]}</td>'
+            html += f'<tr onclick="{onclick_code}">' \
+                    + f'<td>{row["Actividad (Comisión)"]}</td>' \
+                    + f'<td>{row["Fecha inicio"]}</td>' \
+                    + f'<td>{row["Fecha fin"]}</td>' \
+                    + f'<td>{row["Fecha cierre"]}</td>' \
+                    + f'<td>{row["Créditos"]}</td>' \
+                    + f'<td>{row["Modalidad"]}</td>' \
+                    + f'<td>{row["Apto tramo"]}</td>'
+
             if pd.notna(row["Ver más"]) and row["Ver más"]:
                 html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">Acceder</a></td>'
             else:
                 html += '<td><span class="no-link">Sin enlace</span></td>'
+
             html += '</tr>'
 
         html += """
@@ -361,15 +363,12 @@ with st.container():
     components.html(html_code, height=altura_dinamica, scrolling=True)
 
     # ========== TARJETAS DESTACADAS ==========
-    # ========== TARJETAS EN GRID ==========
     st.markdown("---")
-    st.subheader("🎯 Actividades destacadas")
-    
-    tarjetas = df_comisiones.head(6)  # Mostrar primeras 6
-    items = tarjetas.to_dict(orient="records")  # Convertimos a dicts
-    
-    # Estilo CSS y estructura HTML
-    html_tarjetas = """
+    st.subheader("🌟 Actividades destacadas")
+
+    tarjetas = df_comisiones.head(6).to_dict(orient="records")
+
+    st.markdown("""
     <style>
     .card-grid {
         display: grid;
@@ -401,27 +400,21 @@ with st.container():
     }
     </style>
     <div class="card-grid">
-    """
-    
-    for item in items:
-        html_tarjetas += f"""
+    """, unsafe_allow_html=True)
+
+    for item in tarjetas:
+        st.markdown(f"""
         <div class="card">
             <h4>{item['Actividad (Comisión)']}</h4>
             <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
             <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
             <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
         </div>
-        """
-    
-    html_tarjetas += "</div>"
-    
-    st.markdown(html_tarjetas, unsafe_allow_html=True)
-
-
-
-
+        """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
     
 
 
