@@ -302,12 +302,12 @@ with st.container():
                 <thead>
                     <tr>
                         <th>Actividad (Comisión)</th>
-                        <th>F. Inicio</th>
-                        <th>F. Fin</th>
-                        <th>F. Cierre</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Cierre</th>
                         <th>Créditos</th>
                         <th>Modalidad</th>
-                        <th>Apto Tramo</th>
+                        <th>Tramo</th>
                         <th>INAP</th>
                     </tr>
                 </thead>
