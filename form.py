@@ -304,7 +304,7 @@ with st.container():
                         <th>Actividad (Comisión)</th>
                         <th>F. Inicio</th>
                         <th>F. Fin</th>
-                        <th>Cierre Inscrip.</th>
+                        <th>F. Cierre</th>
                         <th>Créditos</th>
                         <th>Modalidad</th>
                         <th>Apto Tramo</th>
