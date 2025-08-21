@@ -156,13 +156,9 @@ df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
 df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
 
+st.markdown("### 1) Revisá la oferta de actividades disponibles.")
 
 
-
-# ========== PASO 1 ==========
-st.markdown("""
-    <h5 style="font-size: 16px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
-""", unsafe_allow_html=True)
 
 # ========== FILTROS VISUALES ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
