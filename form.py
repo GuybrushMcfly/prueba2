@@ -49,10 +49,12 @@ def validar_cuil(cuil: str) -> bool:
 def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
     try:
         response = supabase.rpc("verificar_formulario_cuil", {"cuil_input": cuil}).execute()
-        return bool(response.data)
+        # 🔧 Aquí asumimos que la función devuelve directamente True o False
+        return response.data is True
     except Exception as e:
         st.error(f"Error al verificar el CUIL en la base de datos: {e}")
         return False
+
 
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
