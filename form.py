@@ -402,17 +402,20 @@ with st.container():
     <div class="card-grid">
     """, unsafe_allow_html=True)
 
+    html_tarjetas = '<div class="card-grid">'
+    
     for item in tarjetas:
-        st.markdown(f"""
+        html_tarjetas += f"""
         <div class="card">
             <h4>{item['Actividad (Comisión)']}</h4>
             <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
             <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
             <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
         </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        """
+    
+    html_tarjetas += '</div>'
+    st.markdown(html_tarjetas, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     
