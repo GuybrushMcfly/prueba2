@@ -439,6 +439,59 @@ html_tarjetas += '</div>'
 st.markdown(html_tarjetas, unsafe_allow_html=True)
 
 
+# ========== TARJETAS INTERACTIVAS (con botones reales) ==========
+
+st.markdown("---")
+st.subheader("📝 Actividades destacadas (modo interactivo)")
+
+# Inicializar variable en session_state para guardar la selección
+if "actividad_seleccionada" not in st.session_state:
+    st.session_state.actividad_seleccionada = ""
+
+tarjetas = df_comisiones.head(6).to_dict(orient="records")
+
+# Grid de 3 tarjetas por fila
+cols = st.columns(3)
+
+for i, item in enumerate(tarjetas):
+    with cols[i % 3]:
+        # Caja con estilo
+        st.markdown(f"""
+        <div style="
+            background-color:#f9f9f9;
+            padding:20px;
+            border-left:5px solid #136ac1;
+            border-radius:10px;
+            box-shadow:1px 1px 5px rgba(0,0,0,0.05);
+            margin-bottom:15px;
+            min-height:220px;">
+            <h4 style="color:#136ac1; font-size:16px; margin:0 0 8px 0;">{item['Actividad (Comisión)']}</h4>
+            <p style="margin:4px 0;"><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
+            <p style="margin:4px 0;"><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
+            <p style="margin:4px 0;"><b>⭐ Créditos:</b> {item['Créditos']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Botón Acceder
+        if item["Ver más"]:
+            st.markdown(
+                f'<a href="{item["Ver más"]}" target="_blank">'
+                f'<button style="background-color:#136ac1;color:white;'
+                f'border:none;padding:6px 12px;border-radius:6px;cursor:pointer;">🌐 Acceder</button></a>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown('<span style="color:#bdc3c7;font-style:italic;">Sin enlace</span>', unsafe_allow_html=True)
+
+        # Botón Anotarse (este llena el campo vacío)
+        if st.button("📝 Anotarse", key=f"anotarse_{i}"):
+            st.session_state.actividad_seleccionada = item['Actividad (Comisión)']
+
+# Campo vacío debajo que se llena al hacer clic en "Anotarse"
+st.markdown("### 🏷️ Actividad seleccionada")
+st.text_input("Nombre de la actividad", st.session_state.actividad_seleccionada, key="campo_actividad")
+
+
 
 
 
