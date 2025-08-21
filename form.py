@@ -575,7 +575,7 @@ with st.container():
                         edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
                     except:
                         edad = None
-
+        
                 datos_inscripcion = {
                     "comision_id": st.session_state.get("comision_id"),
                     "cuil": st.session_state.get("cuil", ""),
@@ -598,16 +598,23 @@ with st.container():
                     "id_dependencia_simple": datos_agente.get("id_dependencia_simple"),
                     "id_dependencia_general": datos_agente.get("id_dependencia_general")
                 }
-
+        
+                # 🔍 DEBUG: Mostrar datos que se van a insertar
+                st.write("📦 Datos que se van a insertar:")
+                st.json(datos_inscripcion)
+                st.write("🧩 ID de comisión:", st.session_state.get("comision_id"))
+        
+                # 🧾 Intentar insertar en Supabase
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
                 if result.data:
                     st.success("✅ ¡Inscripción registrada correctamente!")
                     st.session_state["inscripcion_exitosa"] = True
                     st.balloons()
                     # A partir de acá podrías llamar a la función PDF como ya lo hacías
-
+        
                 else:
                     st.error("❌ Ocurrió un error al guardar la inscripción.")
+
 
     st.markdown('</div>', unsafe_allow_html=True)
 
