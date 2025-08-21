@@ -157,12 +157,7 @@ df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
 
 
-# ========== PASO 1 ==========
-st.markdown("""
-    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
-""", unsafe_allow_html=True)
 
-components.html(html_code, height=700, scrolling=True)
 
 # ========== FILTROS VISUALES ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -190,7 +185,12 @@ if modalidad_sel != "Todos":
 if duracion_sel != "Todas":
     df_filtrado = df_filtrado[df_filtrado["Duración"] == duracion_sel]
 
+# ========== PASO 1 ==========
+st.markdown("""
+    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
+""", unsafe_allow_html=True)
 
+components.html(html_code, height=700, scrolling=True)
 
 # ========== TABLA HTML ==========
 df_comisiones = df_filtrado[[
