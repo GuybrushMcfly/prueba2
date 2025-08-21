@@ -164,14 +164,35 @@ def create_html_table(df):
     table_id = f"coursesTable_{hash(str(df.values.tobytes())) % 10000}"
 
     if df.empty:
-        st.warning("No se encontraron cursos con los filtros seleccionados. Probá cambiar los filtros para ver otras actividades disponibles.")
+        st.warning("No se encontraron cursos con los filtros seleccionados.")
         return ""
 
     html = f"""
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <style>
+        .dataTables_wrapper .dataTables_paginate .paginate_button {{
+            padding: 2px 6px;
+            margin-left: 2px;
+            background: #136ac1;
+            color: white !important;
+            border-radius: 4px;
+            border: none;
+        }}
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {{
+            background: #0d47a1 !important;
+        }}
+        .dataTables_filter input {{
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            padding: 6px;
+        }}
+        .dataTables_wrapper .dataTables_length select {{
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            padding: 6px;
+        }}
         .courses-table {{
-            width: 90%;
-            margin: 20px auto;
+            width: 100%;
             border-collapse: collapse;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -204,11 +225,6 @@ def create_html_table(df):
             background-color: #bbdefb !important;
             border-left: 4px solid #136ac1;
         }}
-        .courses-table .fecha-col,
-        .courses-table .creditos-col,
-        .courses-table .acceso-col {{
-            text-align: center;
-        }}
         .courses-table a {{
             color: #136ac1;
             text-decoration: none;
@@ -230,59 +246,78 @@ def create_html_table(df):
         }}
     </style>
 
-    <div style="overflow-x: auto;">
-        <table class="courses-table" id="{table_id}">
-            <thead>
-                <tr>
-                    <th>Actividad (Comisión)</th>
-                    <th>F. Inicio</th>
-                    <th>F. Fin</th>
-                    <th>Cierre Inscrip.</th>
-                    <th>Créditos</th>
-                    <th>Modalidad</th>
-                    <th>Apto Tramo</th>
-                    <th>Acceso</th>
-                </tr>
-            </thead>
-            <tbody>
+    <table id="{table_id}" class="display courses-table">
+        <thead>
+            <tr>
+                <th>Actividad (Comisión)</th>
+                <th>F. Inicio</th>
+                <th>F. Fin</th>
+                <th>Cierre Inscrip.</th>
+                <th>Créditos</th>
+                <th>Modalidad</th>
+                <th>Apto Tramo</th>
+                <th>Acceso</th>
+            </tr>
+        </thead>
+        <tbody>
     """
 
     for _, row in df.iterrows():
         onclick_code = f"selectActivity('{row['Actividad (Comisión)']}', this)"
         html += f'<tr onclick="{onclick_code}">'
         html += f'<td>{row["Actividad (Comisión)"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha inicio"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha fin"]}</td>'
-        html += f'<td class="fecha-col">{row["Fecha cierre"]}</td>'
-        html += f'<td class="creditos-col">{row["Créditos"]}</td>'
+        html += f'<td>{row["Fecha inicio"]}</td>'
+        html += f'<td>{row["Fecha fin"]}</td>'
+        html += f'<td>{row["Fecha cierre"]}</td>'
+        html += f'<td>{row["Créditos"]}</td>'
         html += f'<td>{row["Modalidad"]}</td>'
         html += f'<td>{row["Apto tramo"]}</td>'
         if pd.notna(row["Ver más"]) and row["Ver más"]:
-            html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
+            html += f'<td><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
         else:
-            html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
+            html += '<td><span class="no-link">Sin enlace</span></td>'
         html += '</tr>'
 
-    html += """
-            </tbody>
-        </table>
-    </div>
+    html += f"""
+        </tbody>
+    </table>
 
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
         let selectedRow = null;
-        function selectActivity(activityName, row) {
+        function selectActivity(activityName, row) {{
             if (selectedRow) selectedRow.classList.remove('selected');
             selectedRow = row;
             row.classList.add('selected');
             sessionStorage.setItem('selected_activity', activityName);
-            window.parent.postMessage({
+            window.parent.postMessage({{
                 type: 'setQueryParams',
-                data: { "selected_activity": activityName }
-            }, '*');
-        }
+                data: {{ "selected_activity": activityName }}
+            }}, '*');
+        }}
+
+        $(document).ready(function () {{
+            $('#{table_id}').DataTable({{
+                "pageLength": 10,
+                "language": {{
+                    "search": "🔍 Buscar:",
+                    "lengthMenu": "Mostrar _MENU_ registros",
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ entradas",
+                    "paginate": {{
+                        "first": "Primera",
+                        "last": "Última",
+                        "next": "➡",
+                        "previous": "⬅"
+                    }}
+                }}
+            }});
+        }});
     </script>
     """
+
     return html
+
 
 # Renderizado de la tabla
 st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
