@@ -376,6 +376,12 @@ st.markdown("""
 components.html(html_code, height=600, scrolling=True)
 
 
+# Reducir el espacio entre la tabla y el título del paso 2
+st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+
+
+
 
 # Formato: ACTIVIDAD (COMISIÓN) - FECHA INICIO
 df_temp["Actividad dropdown"] = (
