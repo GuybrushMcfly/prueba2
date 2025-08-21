@@ -474,7 +474,16 @@ with st.container():
     st.write("🧪 Actividad seleccionada desde query:", selected_from_query)
     st.write("🧪 Índice inicial:", initial_index)
     
-    actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
+   # actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
+
+    actividad_seleccionada = st.selectbox(
+        "Actividad disponible",
+        dropdown_list,
+        index=initial_index,
+        key=f"select_actividad_{st.session_state.get('__reset_placeholder', False)}"
+    )
+
+
 
 
     # ✅ Si estamos en reinicio, también forzamos limpiar el estado de selección anterior
