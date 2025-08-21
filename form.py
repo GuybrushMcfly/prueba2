@@ -321,8 +321,10 @@ html_code += """
         const table = $("table").first();
         table.DataTable({
             pageLength: 10,
+            dom: '<"top"f<"length-menu"l>>rt<"bottom"ip><"clear">',
             language: {
-                search: "🔍 Buscar:",
+                search: "",
+                searchPlaceholder: "🔍 Buscar...",
                 lengthMenu: "Mostrar _MENU_ registros por página",
                 zeroRecords: "No se encontraron resultados",
                 info: "Mostrando página _PAGE_ de _PAGES_",
@@ -334,9 +336,21 @@ html_code += """
                 }
             }
         });
+
+        // Reordenar elementos
+        $(".dataTables_filter").css({
+            "float": "left",
+            "margin-bottom": "10px"
+        });
+        $(".dataTables_filter input").css({
+            "width": "300px"
+        });
+        $(".dataTables_length").css({
+            "float": "right"
+        });
     });
 </script>
-"""
+
 
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
