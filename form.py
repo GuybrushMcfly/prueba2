@@ -47,19 +47,12 @@ def validar_cuil(cuil: str) -> bool:
 
 def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
     try:
-        st.info(f"🛠️ Enviando CUIL a Supabase: {cuil}")
         response = supabase.rpc("verificar_formulario_cuil", {"cuil_input": cuil}).execute()
-        st.json(response.data)  # DEBUG VISUAL para ver respuesta
-
-        # ✅ Usar el valor del campo "existe" dentro del dict
-        if response.data and isinstance(response.data, list):
-            return response.data[0].get("existe", False)
-        else:
-            return False
-
+        return response.data[0].get("existe", False)
     except Exception as e:
-        st.error(f"Error al verificar el CUIL en la base de datos: {e}")
+        st.error("Error al verificar el CUIL en la base de datos.")
         return False
+
 
 
 
