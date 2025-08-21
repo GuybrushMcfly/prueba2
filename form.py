@@ -469,6 +469,11 @@ with st.container():
         except (ValueError, TypeError):
             initial_index = 0
 
+
+    # DEBUG: Verificación de selección desde la URL
+    st.write("🧪 Actividad seleccionada desde query:", selected_from_query)
+    st.write("🧪 Índice inicial:", initial_index)
+    
     actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
 
 
