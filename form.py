@@ -389,6 +389,21 @@ st.markdown("#### 2) Seleccioná la actividad en la cual querés preinscribirte.
 dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
 actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
 
+# Detectar cambio en selección (guardamos la última selección previa)
+if "actividad_anterior" not in st.session_state:
+    st.session_state["actividad_anterior"] = ""
+
+# Si se seleccionó una nueva actividad distinta a la anterior
+if actividad_seleccionada != st.session_state["actividad_anterior"]:
+    st.session_state["actividad_anterior"] = actividad_seleccionada
+    st.session_state["cuil_valido"] = False
+    st.session_state["validado"] = False
+    st.session_state["cuil"] = ""
+    st.session_state["datos_agenteform"] = {}
+
+
+
+
 if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
     fila = df_temp[df_temp["Actividad dropdown"] == actividad_seleccionada].iloc[0]
 
