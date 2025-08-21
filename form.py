@@ -56,10 +56,12 @@ def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
 
 def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: str) -> bool:
     try:
+        st.write("🔍 Enviando a Supabase:", {"cuil_input": cuil, "id_actividad_input": id_actividad})
         response = supabase.rpc("verificar_formulario_historial", {
             "cuil_input": cuil,
             "id_actividad_input": id_actividad
         }).execute()
+        st.write("📦 Respuesta desde Supabase:", response.data)
         return response.data is True
     except Exception as e:
         st.error(f"Error al verificar el historial del agente: {e}")
