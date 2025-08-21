@@ -67,21 +67,17 @@ def dialogo_exito():
     actividad = st.session_state.get("nombre_actividad_exito", "-")
 
     with st.container(border=True):
-        st.markdown("### ✅ ¡Preinscripción exitosa!")
+       # st.markdown("### ✅ ¡Preinscripción exitosa!")
         st.markdown("Te preinscribiste correctamente en la actividad:")
         st.markdown(f"📘 **{actividad}**")
 
         if st.button("Cerrar"):
+            # Limpieza explícita
             for clave in list(st.session_state.keys()):
-                if clave.startswith("actividad_") or clave in [
-                    "actividad_seleccionada", "actividad_dropdown",
-                    "cuil", "cuil_valido", "validado", "motivo_bloqueo",
-                    "inscripcion_exitosa", "nombre_actividad_exito",
-                    "datos_agenteform", "comision_id", "comision_nombre",
-                    "fecha_inicio", "fecha_fin", "nivel_educativo", "titulo",
-                    "tareas_desarrolladas", "email_alternativo"
-                ]:
-                    del st.session_state[clave]
+                del st.session_state[clave]
+
+            # Reiniciar sin parámetros
+            st.experimental_set_query_params()  # Limpia parámetros
             st.rerun()
 
 
