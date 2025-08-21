@@ -21,6 +21,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== CONFIGURACIÓN DE PÁGINA ==========
 st.set_page_config(layout="wide")
+if st.session_state.get("inscripcion_exitosa", False):
+    dialogo_exito()
+
+
 st.markdown("""
     <style>
     .block-container {
@@ -675,7 +679,9 @@ with st.container():
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
                 if result.data:
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
-                    dialogo_exito()
+                    st.session_state["inscripcion_exitosa"] = True
+                    st.rerun()
+
                 else:
                     st.error("❌ Ocurrió un error al guardar la inscripción.")
 
