@@ -202,7 +202,9 @@ with st.container():
     st.markdown('<div class="tabla-container">', unsafe_allow_html=True)
 
     # Recalcular columna combinada como Actividad (Comisión)
-    df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
+    #df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
+    df_filtrado["Actividad (Comisión)"] = df_filtrado["nombre_actividad"] + " (" + df_filtrado["id_comision_sai"] + ")"
+
 
     df_comisiones = df_filtrado[[
         "Actividad (Comisión)", "Fecha inicio", "Fecha fin", "Fecha cierre",
