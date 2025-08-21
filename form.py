@@ -350,9 +350,7 @@ html_code += """
         });
     });
 </script>
-
-
-
+"""
 
 # ================== Mostrar tabla con búsqueda + paginación ==================
 components.html(html_code, height=700, scrolling=True)
