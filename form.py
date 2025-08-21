@@ -67,13 +67,14 @@ def dialogo_exito():
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
         # Limpiar completamente el session_state
         for key in list(st.session_state.keys()):
-            if key not in ["_forms", "_get_query_params", "_last_report_hash"]:  # Mantener algunas claves internas
-                del st.session_state[key]
-        # Establecer bandera para resetear dropdown
-        st.session_state["reset_dropdown"] = True
-        # Forzar recarga completa
-        st.query_params.clear()
+            del st.session_state[key]
+    
+        # Marcar que debe reiniciarse todo
+        st.session_state["resetear_todo"] = True
+    
+        # Forzar recarga
         st.rerun()
+
 
 # ========== FUNCIONES ==========
 def validar_cuil(cuil: str) -> bool:
@@ -135,6 +136,14 @@ def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
     except Exception as e:
         st.error(f"Error al obtener los datos del formulario: {e}")
         return {}
+
+
+# Detectar si debe reiniciarse el estado tras cierre de diálogo
+if st.session_state.get("resetear_todo", False):
+    st.session_state.clear()
+    st.query_params.clear()
+    st.rerun()
+
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
 def obtener_comisiones():
@@ -328,6 +337,7 @@ with st.container():
             html += f'<td>{row["Modalidad"]}</td>'
             html += f'<td>{row["Apto tramo"]}</td>'
             if pd.notna(row["Ver más"]) and row["Ver más"]:
+                #html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">🌐 Acceder</a></td>'
                 html += f'<td class="acceso-col"><a href="{row["Ver más"]}" target="_blank" onclick="event.stopPropagation()">Acceder</a></td>'
             else:
                 html += '<td class="acceso-col"><span class="no-link">Sin enlace</span></td>'
@@ -421,21 +431,16 @@ with st.container():
     
     # Manejar parámetros de consulta para selección inicial
     selected_from_query = st.query_params.get("selected_activity", None)
-    
-    # Si estamos en estado de reinicio, forzar selección inicial
-    if st.session_state.get("reset_dropdown", False):
-        initial_index = 0
-        st.session_state["reset_dropdown"] = False
-    else:
-        initial_index = 0
-        if selected_from_query:
-            try:
-                dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
-                initial_index = dropdown_list.index(selected_from_query)
-            except ValueError:
-                initial_index = 0
+    initial_index = 0
     
     dropdown_list = ["-Seleccioná una actividad para preinscribirte-"] + df_temp["Actividad dropdown"].tolist()
+    
+    if selected_from_query:
+        try:
+            initial_index = dropdown_list.index(selected_from_query)
+        except ValueError:
+            initial_index = 0
+    
     actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
 
     # Detectar cambio en selección
