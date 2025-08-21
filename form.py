@@ -286,7 +286,42 @@ def create_html_table(df):
 
 # Renderizado de la tabla
 #st.markdown(create_html_table(df_comisiones), unsafe_allow_html=True)
-components.html(create_html_table(df_comisiones), height=600, scrolling=True)
+#components.html(create_html_table(df_comisiones), height=600, scrolling=True)
+
+
+# ========== RENDER CON FUNCIONALIDADES ADICIONALES ==========
+html_code = create_html_table(df_comisiones)
+
+# Agregamos scripts de DataTables
+html_code += """
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        const table = $("table").first();
+        table.DataTable({
+            pageLength: 10,
+            language: {
+                search: "🔍 Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros por página",
+                zeroRecords: "No se encontraron resultados",
+                info: "Mostrando página _PAGE_ de _PAGES_",
+                infoEmpty: "No hay registros disponibles",
+                infoFiltered: "(filtrado de _MAX_ registros totales)",
+                paginate: {
+                    previous: "Anterior",
+                    next: "Siguiente"
+                }
+            }
+        });
+    });
+</script>
+"""
+
+# Mostrar tabla con búsqueda + paginación
+components.html(html_code, height=700, scrolling=True)
 
 
 
