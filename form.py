@@ -457,6 +457,8 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                 st.session_state["motivo_bloqueo"] = "no_encontrado"
                 st.error("⚠️ El CUIL no corresponde a un agente activo.")
             else:
+                actividad_id = fila["id_actividad"]
+        
                 ya_aprobo = verificar_formulario_historial(supabase, cuil_input, actividad_id)
                 if ya_aprobo:
                     st.session_state["cuil_valido"] = False
@@ -464,6 +466,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
                     st.session_state["motivo_bloqueo"] = "ya_aprobo"
                     st.warning("⚠️ Ya realizaste esta actividad y fue APROBADA. No podés volver a inscribirte.")
                 else:
+                    comision_id = fila["Comisión"]
                     ya_inscripto = verificar_formulario_comision(supabase, cuil_input, comision_id)
                     if ya_inscripto:
                         st.session_state["cuil_valido"] = False
