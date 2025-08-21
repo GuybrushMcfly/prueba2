@@ -65,14 +65,24 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Limpiar completamente el session_state
+        # Limpia el sessionStorage del navegador (muy importante)
+        components.html("""
+        <script>
+            sessionStorage.removeItem("selected_activity");
+        </script>
+        """, height=0)
+
+        # Limpiar session_state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-    
+
         # Marcar que debe reiniciarse todo
         st.session_state["resetear_todo"] = True
-    
-        # Forzar recarga
+
+        # Limpiar parámetros de URL (por si quedaron)
+        st.query_params.clear()
+
+        # Recarga
         st.rerun()
 
 
