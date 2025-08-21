@@ -381,8 +381,7 @@ def formatear_link_html(url):
 df_comisiones_dt["Ver más"] = df_comisiones_dt["Ver más"].apply(formatear_link_html)
 
 st.markdown("## 🧪 Tabla 3: HTML con paginación personalizada")
-render_datatable_selector(df_comisiones_dt)
-
+render_custom_html_table(df_comisiones_dt)
 
 def render_custom_html_table(df):
     table_id = "tablaHTMLConEstilo"
