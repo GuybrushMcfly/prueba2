@@ -28,17 +28,21 @@ st.markdown("""
     }
 
     .paso-container {
-        margin-top: -20px;   /* Subís el siguiente paso */
+        margin-top: -20px;
         margin-bottom: 5px;
     }
 
     .tabla-container {
-        margin-top: -50px;  /* Más pegada a los filtros */
+        margin-top: -50px;
         margin-bottom: 20px;
     }
 
     .element-container:has(.stSelectbox) {
         margin-bottom: 0rem !important;
+    }
+
+    .dataTables_wrapper + div {
+        margin-top: -40px !important;
     }
     </style>
 """, unsafe_allow_html=True)
