@@ -448,7 +448,7 @@ if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
             st.session_state["cuil_valido"] = False
             st.session_state["validado"] = True
             st.session_state["motivo_bloqueo"] = "cuil_invalido"
-            st.error("CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
+          #  st.error("CUIL/CUIT inválido. Verificá que tenga 11 dígitos y sea correcto.")
         else:
             existe = verificar_formulario_cuil(supabase, cuil_input)
             if not existe:
