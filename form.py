@@ -248,7 +248,7 @@ def create_html_table(df):
         }}
     </style>
 
-    <div style="overflow-x: auto;">
+    <div style="overflow-x: auto; margin-bottom: 0;">
         <table class="courses-table" id="{table_id}">
             <thead>
                 <tr>
