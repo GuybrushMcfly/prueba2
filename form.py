@@ -424,18 +424,18 @@ st.markdown("""
 html_tarjetas = '<div class="card-grid">'
 
 for item in tarjetas:
-    html_tarjetas += f"""
-    <div class="card">
-        <h4>{item['Actividad (Comisión)']}</h4>
-        <p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>
-        <p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>
-        <p><b>⭐ Créditos:</b> {item['Créditos']}</p>
-    </div>
-    """
+    html_tarjetas += (
+        '<div class="card">'
+        f"<h4>{item['Actividad (Comisión)']}</h4>"
+        f"<p><b>📅 Fechas:</b> {item['Fecha inicio']} al {item['Fecha fin']}</p>"
+        f"<p><b>🎓 Modalidad:</b> {item['Modalidad']}</p>"
+        f"<p><b>⭐ Créditos:</b> {item['Créditos']}</p>"
+        "</div>"
+    )
 
 html_tarjetas += '</div>'
 
-# Mostrar tarjetas
+# Mostrar tarjetas (HTML renderizado)
 st.markdown(html_tarjetas, unsafe_allow_html=True)
 
 
