@@ -387,29 +387,57 @@ render_datatable_selector(df_comisiones_dt)
 def render_custom_html_table(df):
     table_id = "tablaHTMLConEstilo"
 
-    # Estilo y Script de paginación JS básico (puede mejorarse luego)
     html_code = f"""
     <style>
         .custom-table {{
-            width: 100%;
+            width: 90%;
+            margin: 20px auto;
             border-collapse: collapse;
-            font-family: 'Segoe UI', sans-serif;
             font-size: 14px;
-            margin-top: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
             background-color: white;
         }}
-        .custom-table th {{
+        .custom-table thead tr {{
             background-color: #136ac1;
-            color: white;
-            padding: 12px;
+            color: #ffffff;
             text-align: left;
+            font-weight: bold;
         }}
-        .custom-table td {{
-            padding: 10px;
+        .custom-table th, .custom-table td {{
+            padding: 14px 12px;
             border-bottom: 1px solid #e0e0e0;
+        }}
+        .custom-table tbody tr {{
+            background-color: #ffffff;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }}
         .custom-table tbody tr:hover {{
             background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(19, 106, 193, 0.2);
+        }}
+        .custom-table a {{
+            color: #136ac1;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 6px 12px;
+            border: 2px solid #136ac1;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }}
+        .custom-table a:hover {{
+            background-color: #136ac1;
+            color: white;
+            transform: scale(1.05);
+        }}
+        .no-link {{
+            color: #bdc3c7;
+            font-style: italic;
         }}
         .pagination {{
             margin-top: 10px;
@@ -479,9 +507,9 @@ def render_custom_html_table(df):
         for col in df.columns:
             val = row[col]
             if col == "Ver más" and pd.notna(val) and val != "None":
-                html_code += f'<td><a href="{val}" target="_blank" style="color:#136ac1; font-weight:bold;">🌐 Acceder</a></td>'
+                html_code += f'<td><a href="{val}" target="_blank">🌐 Acceder</a></td>'
             elif col == "Ver más":
-                html_code += '<td><span style="color: #bdc3c7; font-style: italic;">Sin enlace</span></td>'
+                html_code += '<td><span class="no-link">Sin enlace</span></td>'
             else:
                 html_code += f"<td>{val}</td>"
         html_code += "</tr>"
