@@ -373,7 +373,7 @@ st.markdown("""
 <div style="margin-bottom: -30px;">
 """, unsafe_allow_html=True)
 
-#components.html(html_code, height=600, scrolling=True)
+components.html(html_code, height=600, scrolling=True)
 
 
 
