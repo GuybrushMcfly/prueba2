@@ -47,12 +47,15 @@ def validar_cuil(cuil: str) -> bool:
 
 def verificar_formulario_cuil(supabase: Client, cuil: str) -> bool:
     try:
+        st.info(f"🛠️ Enviando CUIL a Supabase: `{cuil}`")  # DEBUG VISUAL
         response = supabase.rpc("verificar_formulario_cuil", {"cuil_input": cuil}).execute()
-        st.write("🔍 Respuesta Supabase:", response.data)  # <-- AGREGAR ESTO
+        st.write("🔍 Respuesta Supabase:", response.data)  # DEBUG VISUAL
+
         return response.data is True
     except Exception as e:
         st.error(f"Error al verificar el CUIL en la base de datos: {e}")
         return False
+
 
 
 
