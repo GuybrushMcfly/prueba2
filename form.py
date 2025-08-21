@@ -156,7 +156,7 @@ df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
 df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
 
-st.markdown("### 1) Revisá la oferta de actividades disponibles.")
+st.markdown("#### 1) Revisá la oferta de actividades disponibles.")
 
 
 
@@ -403,12 +403,7 @@ df_temp["Actividad dropdown"] = (
 
 dropdown_list = df_temp["Actividad dropdown"].tolist()
 
-# ========== PASO 2 ==========
-st.markdown("""
-    <h5 style="font-size: 16px; color: #333333;">2) Seleccioná la actividad en la cual querés preinscribirte.</h5>
-""", unsafe_allow_html=True)
-
-
+st.markdown("#### 2) Seleccioná la actividad en la cual querés preinscribirte.")
 
 actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
 
