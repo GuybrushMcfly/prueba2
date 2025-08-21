@@ -236,7 +236,7 @@ with st.container():
                 width: 90%;
                 margin: 0 auto;
                 border-collapse: collapse;
-                font-size: 14px;
+                font-size: 12px;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 border-radius: 8px;
