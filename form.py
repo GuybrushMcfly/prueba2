@@ -73,7 +73,7 @@ def verificar_formulario_historial(supabase: Client, cuil: str, id_actividad: st
 
 
 # ========== CARGA DE DATOS DESDE VISTA ==========
-@st.cache_data(ttl=86400)
+#@st.cache_data(ttl=86400)
 def obtener_comisiones():
     resp = supabase.table("vista_comisiones_abiertas").select(
         "id_comision_sai, organismo, id_actividad, nombre_actividad, fecha_desde, fecha_hasta, fecha_cierre, creditos, modalidad_cursada, link_externo, apto_tramo"
