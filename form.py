@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 from datetime import date, datetime
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 from supabase import create_client, Client
@@ -64,6 +65,7 @@ def dialogo_exito():
     st.markdown("Te preinscribiste correctamente en la actividad:")
     st.markdown(f"📘 **{actividad}**")
 
+
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
         # 🔁 Limpia el valor almacenado en el navegador (evita que se conserve en JS)
         components.html("""
@@ -76,7 +78,11 @@ def dialogo_exito():
         st.session_state["__reset_placeholder"] = True
         st.session_state.clear()
         st.query_params.clear()
+    
+        # ⏱️ Agregamos pequeña pausa para que el frontend termine de "soltar" el valor anterior
+        time.sleep(3)
         st.rerun()
+
 
 
 
