@@ -70,11 +70,12 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar"):
-        # 1. Borrar TODO el session_state
+        # Borrar todo el session state
         for clave in list(st.session_state.keys()):
             del st.session_state[clave]
-        # 2. Forzar recarga completa
-        components.html("<script>window.location.reload();</script>", height=0)
+        # Forzar recarga sin diálogo
+        st.rerun()
+
 
 
 # ========== FUNCIIONES ==========
@@ -624,10 +625,12 @@ with st.container():
         
                 # 🧾 Intentar insertar en Supabase
                 result = supabase.table("cursos_inscripciones").insert(datos_inscripcion).execute()
-                if result.data:
-                    st.session_state["inscripcion_exitosa"] = True
+                if result.data and not st.session_state.get("modal_mostrado", False):
+                    st.session_state["modal_mostrado"] = True
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
-                    dialogo_exito()  # ⬅️ Esto abre el modal correctamente
+                    dialogo_exito()
+
+
 
 
 
