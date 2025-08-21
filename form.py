@@ -184,7 +184,7 @@ df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 # ========== PASO 1: FILTROS ==========
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
-    st.markdown("#### 1) Revisá la oferta de actividades disponibles.")
+    st.markdown("##### 1) Revisá la oferta de actividades disponibles.")
 
     # ========== FILTROS VISUALES ==========
     organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
@@ -415,7 +415,7 @@ df_temp["Actividad (Comisión)"] = df_temp["Actividad dropdown"]
 # ================= PASO 2: Selección de actividad =================
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
-    st.markdown("#### 2) Seleccioná la actividad en la cual querés preinscribirte.")
+    st.markdown("##### 2) Seleccioná la actividad en la cual querés preinscribirte.")
     
     # Manejar parámetros de consulta para selección inicial
     selected_from_query = st.query_params.get("selected_activity", None)
@@ -471,7 +471,7 @@ with st.container():
 with st.container():
     st.markdown('<div class="paso-container">', unsafe_allow_html=True)
     if actividad_seleccionada != "-Seleccioná una actividad para preinscribirte-":
-        st.markdown("#### 3) Ingresá tu número de CUIL y validalo con el botón.")
+        st.markdown("##### 3) Ingresá tu número de CUIL y validalo con el botón.")
         cuil_input = st.text_input("CUIL (11 dígitos)", max_chars=11, key="cuil_input")
 
         if st.button("Validar CUIL", key="validar_cuil_btn"):
