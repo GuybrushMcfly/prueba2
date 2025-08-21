@@ -66,32 +66,22 @@ def dialogo_exito():
     st.markdown("Te preinscribiste correctamente en la actividad:")
     st.markdown(f"📘 **{actividad}**")
 
+
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # 🔄 Marcar que necesitamos resetear
-        st.session_state["necesita_reset"] = True
-        st.session_state["timestamp_reset"] = time.time()  # Nuevo timestamp para forzar clave única
-        
-        # 🔁 Limpiar el valor almacenado en el navegador
+        # 🔁 Limpia el valor almacenado en el navegador (evita que se conserve en JS)
         components.html("""
         <script>
             sessionStorage.removeItem("selected_activity");
         </script>
         """, height=0)
-        
-        # 🔁 Limpiar session_state específicamente
-        keys_to_clear = [
-            "actividad_anterior", "cuil_valido", "validado", "cuil", 
-            "datos_agenteform", "actividad_nombre", "comision_nombre", 
-            "fecha_inicio", "fecha_fin", "comision_id", "inscripcion_exitosa",
-            "nombre_actividad_exito", "motivo_bloqueo"
-        ]
-        
-        for key in keys_to_clear:
-            if key in st.session_state:
-                del st.session_state[key]
-                
+    
+        # 🔁 Guardar flag ANTES de limpiar session_state
+        st.session_state["__reset_placeholder"] = True
+        st.session_state.clear()
         st.query_params.clear()
+
         st.rerun()
+
 
 
 
