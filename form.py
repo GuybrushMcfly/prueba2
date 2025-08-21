@@ -159,6 +159,11 @@ df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
 
 
+# ========== PASO 1 ==========
+st.markdown("""
+    <h5 style="font-size: 16px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
+""", unsafe_allow_html=True)
+
 # ========== FILTROS VISUALES ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
 modalidades = sorted(df_temp["Modalidad"].dropna().unique().tolist())
@@ -167,6 +172,15 @@ duraciones = sorted(df_temp["Duración"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 duraciones.insert(0, "Todas")
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    organismo_sel = st.selectbox("Organismo", organismos, index=0)
+with col2:
+    modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
+with col3:
+    duracion_sel = st.selectbox("Duración", duraciones, index=0)
+
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -185,12 +199,6 @@ if modalidad_sel != "Todos":
 if duracion_sel != "Todas":
     df_filtrado = df_filtrado[df_filtrado["Duración"] == duracion_sel]
 
-# ========== PASO 1 ==========
-st.markdown("""
-    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
-""", unsafe_allow_html=True)
-
-components.html(html_code, height=700, scrolling=True)
 
 # ========== TABLA HTML ==========
 df_comisiones = df_filtrado[[
@@ -398,6 +406,14 @@ df_temp["Actividad dropdown"] = (
 )
 
 dropdown_list = df_temp["Actividad dropdown"].tolist()
+
+# ========== PASO 2 ==========
+st.markdown("""
+    <h5 style="font-size: 16px; color: #333333;">2) Seleccioná la actividad en la cual querés preinscribirte.</h5>
+""", unsafe_allow_html=True)
+
+
+
 actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list)
 
 # Obtener fila seleccionada
