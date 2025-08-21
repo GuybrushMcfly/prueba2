@@ -189,7 +189,7 @@ def create_html_table(df):
     <style>
         .courses-table {{
             width: 90%;
-            margin: 20px auto;
+            margin: 0 auto;
             border-collapse: collapse;
             font-size: 14px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
