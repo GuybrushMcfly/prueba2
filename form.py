@@ -34,7 +34,7 @@ st.markdown("""
         margin-bottom: 5px;    /* Era 20px */
     }
     .tabla-container {
-        margin-top: -5px;      /* Nuevo, para acercar más */
+        margin-top: 0px;
         margin-bottom: 20px;
     }
     </style>
