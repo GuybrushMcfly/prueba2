@@ -26,18 +26,23 @@ st.markdown("""
         padding-left: 2vw;
         padding-right: 2vw;
     }
+
     .paso-container {
+        margin-top: -20px;   /* Subís el siguiente paso */
         margin-bottom: 5px;
     }
+
     .tabla-container {
         margin-top: -50px;  /* Más pegada a los filtros */
         margin-bottom: 20px;
     }
+
     .element-container:has(.stSelectbox) {
         margin-bottom: 0rem !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
