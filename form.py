@@ -144,6 +144,7 @@ df_temp["Actividad dropdown"] = (
     df_temp["nombre_actividad"]
     + " (" + df_temp["Fecha inicio"] + " al " + df_temp["Fecha fin"] + ")"
 )
+df_temp["Actividad (Comisión)"] = df_temp["Actividad dropdown"]
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
 def clasificar_duracion(creditos):
     if 1 <= creditos < 10:
