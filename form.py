@@ -613,14 +613,13 @@ with st.container():
                     st.session_state["inscripcion_exitosa"] = True
                     st.session_state["nombre_actividad_exito"] = fila["Actividad"]
                 
-                    # Abrir el diálogo
-                    with st.dialog("✅ ¡Preinscripción exitosa!"):
+                    dialog = st.dialog("✅ ¡Preinscripción exitosa!")
+                    with dialog:
                         actividad = st.session_state.get("nombre_actividad_exito", "-")
-                        st.markdown(f"Te preinscribiste correctamente en la actividad:")
+                        st.markdown("Te preinscribiste correctamente en la actividad:")
                         st.markdown(f"📘 **{actividad}**")
                 
                         if st.button("Cerrar"):
-                            # Limpiar estados
                             for clave in list(st.session_state.keys()):
                                 if clave.startswith("actividad_") or clave in [
                                     "cuil", "cuil_valido", "validado", "motivo_bloqueo",
@@ -629,8 +628,8 @@ with st.container():
                                     "nivel_educativo", "titulo", "tareas_desarrolladas", "email_alternativo"
                                 ]:
                                     del st.session_state[clave]
-                            # Refrescar todo
                             st.rerun()
+
 
 
         
