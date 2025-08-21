@@ -65,25 +65,19 @@ def dialogo_exito():
     st.markdown(f"📘 **{actividad}**")
 
     if st.button("Cerrar", key="cerrar_dialogo_exito"):
-        # Limpia el sessionStorage del navegador (muy importante)
+        # 🔁 Limpia el valor almacenado en el navegador (evita que se conserve en JS)
         components.html("""
         <script>
             sessionStorage.removeItem("selected_activity");
         </script>
         """, height=0)
-
-        # Limpiar session_state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-
-        # Marcar que debe reiniciarse todo
-        st.session_state["resetear_todo"] = True
-
-        # Limpiar parámetros de URL (por si quedaron)
+    
+        # 🔁 Guardar flag ANTES de limpiar session_state
+        st.session_state["__reset_placeholder"] = True
+        st.session_state.clear()
         st.query_params.clear()
-
-        # Recarga
         st.rerun()
+
 
 
 # ========== FUNCIONES ==========
@@ -150,14 +144,10 @@ def obtener_datos_para_formulario(supabase: Client, cuil: str) -> dict:
 
 # Detectar si debe reiniciarse el estado tras cierre de diálogo
 if "resetear_todo" in st.session_state and st.session_state["resetear_todo"]:
+    st.session_state["__reset_placeholder"] = True
+    st.session_state["resetear_todo"] = False
     st.query_params.clear()
-    
-    # Guardar el flag antes de limpiar el estado
-    reset_flag = True
-    st.session_state.clear()
-    st.session_state["__reset_placeholder"] = reset_flag  # Volver a establecer una bandera mínima
 
-    st.rerun()
 
 # Si estamos en el primer run luego del reset
 if st.session_state.get("__reset_placeholder", False):
@@ -476,13 +466,19 @@ with st.container():
     
    # actividad_seleccionada = st.selectbox("Actividad disponible", dropdown_list, index=initial_index)
 
+    # Clave dinámica para evitar que Streamlit recuerde selección anterior
+    clave_selectbox = f"actividad_key_{st.session_state.get('__reset_placeholder', False)}"
+    
     actividad_seleccionada = st.selectbox(
         "Actividad disponible",
         dropdown_list,
         index=initial_index,
-        key=f"select_actividad_{st.session_state.get('__reset_placeholder', False)}"
+        key=clave_selectbox
     )
 
+    # 🔒 Seguridad: si por alguna razón el valor no está en la lista, reseteamos
+    if actividad_seleccionada not in dropdown_list:
+        actividad_seleccionada = dropdown_list[0]
 
 
 
