@@ -65,20 +65,16 @@ st.markdown("""
 @st.dialog("✅ ¡Preinscripción exitosa!", width="small", dismissible=False)
 def dialogo_exito():
     actividad = st.session_state.get("nombre_actividad_exito", "-")
+    st.markdown("### ✅ ¡Preinscripción exitosa!")
+    st.markdown("Te preinscribiste correctamente en la actividad:")
+    st.markdown(f"📘 **{actividad}**")
 
-    with st.container(border=True):
-       # st.markdown("### ✅ ¡Preinscripción exitosa!")
-        st.markdown("Te preinscribiste correctamente en la actividad:")
-        st.markdown(f"📘 **{actividad}**")
-
-        if st.button("Cerrar"):
-            # Limpieza explícita
-            for clave in list(st.session_state.keys()):
-                del st.session_state[clave]
-
-            # Reiniciar sin parámetros
-            st.experimental_set_query_params()  # Limpia parámetros
-            st.rerun()
+    if st.button("Cerrar"):
+        # 1. Borrar TODO el session_state
+        for clave in list(st.session_state.keys()):
+            del st.session_state[clave]
+        # 2. Forzar recarga completa
+        components.html("<script>window.location.reload();</script>", height=0)
 
 
 # ========== FUNCIIONES ==========
