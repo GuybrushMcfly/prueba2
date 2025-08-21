@@ -260,7 +260,7 @@ with st.container():
 
            .courses-table tbody tr:hover {{
                 background-color: #e3f2fd;
-                transform: scale(1.03);
+                transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(19, 106, 193, 0.3);
                 z-index: 1;
                 position: relative;
