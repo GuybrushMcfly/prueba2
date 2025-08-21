@@ -324,8 +324,7 @@ html_code += """
 components.html(html_code, height=700, scrolling=True)
 
 # Recuperar actividad seleccionada desde el click
-selected_activity = st.get_query_params().get("selected_activity", [None])[0]
-
+selected_activity = st.query_params.get("selected_activity", [None])[0]
 
 
 # ========== DROPDOWN DE ACTIVIDAD ==========
