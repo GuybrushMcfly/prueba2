@@ -366,11 +366,9 @@ with st.container():
     st.subheader("🎯 Actividades destacadas")
     
     tarjetas = df_comisiones.head(6)  # Mostrar primeras 6
+    items = tarjetas.to_dict(orient="records")  # Convertimos a dicts
     
-    # Convertimos a dicts para facilidad en Jinja
-    items = tarjetas.to_dict(orient="records")
-    
-    # HTML y CSS con grid + hover
+    # Estilo CSS y estructura HTML
     html_tarjetas = """
     <style>
     .card-grid {
@@ -418,6 +416,7 @@ with st.container():
     html_tarjetas += "</div>"
     
     st.markdown(html_tarjetas, unsafe_allow_html=True)
+
 
 
 
