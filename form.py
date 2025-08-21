@@ -29,6 +29,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
+# ========== TÍTULO GENERAL ==========
+st.markdown("""
+    <h1 style="color: #136ac1; text-align: center; font-size: 28px; margin-bottom: 0px;">
+        PREINSCRIPCIÓN EN ACTIVIDADES DE CAPACITACIÓN
+    </h1>
+    <h4 style="text-align: center; font-size: 16px; margin-top: 5px; margin-bottom: 40px;">
+        En solo 4 simples pasos:
+    </h4>
+""", unsafe_allow_html=True)
+
+
+
 # ========== FUNCIIONES ==========
 
 
@@ -151,8 +164,6 @@ duraciones = sorted(df_temp["Duración"].dropna().unique().tolist())
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
 duraciones.insert(0, "Todas")
-
-st.markdown("### 🎛 Filtros disponibles")
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -357,7 +368,17 @@ st.markdown("""
 <div style="margin-bottom: -30px;">
 """, unsafe_allow_html=True)
 
-components.html(html_code, height=600, scrolling=True)
+#components.html(html_code, height=600, scrolling=True)
+
+# ========== PASO 1 ==========
+st.markdown("""
+    <h5 style="font-size: 14px; color: #333333;">1) Revisá la oferta de actividades disponibles.</h5>
+""", unsafe_allow_html=True)
+
+components.html(html_code, height=700, scrolling=True)
+
+
+
 
 st.markdown("""
 </div>
