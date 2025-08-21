@@ -21,9 +21,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ========== CONFIGURACIÓN DE PÁGINA ==========
 st.set_page_config(layout="wide")
-if st.session_state.get("inscripcion_exitosa", False):
-    dialogo_exito()
-
 
 st.markdown("""
     <style>
@@ -86,7 +83,8 @@ def dialogo_exito():
 
         st.rerun()
 
-
+if st.session_state.get("inscripcion_exitosa", False):
+    dialogo_exito()
 
 
 # ========== FUNCIONES ==========
