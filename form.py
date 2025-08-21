@@ -152,7 +152,7 @@ df_temp["Fecha cierre"] = df_temp["fecha_cierre"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad dropdown"] = (
     df_temp["nombre_actividad"] + " (" + df_temp["Fecha inicio"] + " al " + df_temp["Fecha fin"] + ")"
 )
-df_temp["Actividad (Comisión)"] = df_temp["Actividad dropdown"]
+df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
 
 def clasificar_duracion(creditos):
