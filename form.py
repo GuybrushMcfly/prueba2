@@ -129,30 +129,48 @@ df_temp["Fecha fin"] = df_temp["fecha_hasta"].dt.strftime("%d/%m/%Y")
 df_temp["Fecha cierre"] = df_temp["fecha_cierre"].dt.strftime("%d/%m/%Y")
 df_temp["Actividad (Comisión)"] = df_temp["nombre_actividad"] + " (" + df_temp["id_comision_sai"] + ")"
 df_temp["Créditos"] = df_temp["creditos"].fillna(0).astype(int)
+def clasificar_duracion(creditos):
+    if 1 <= creditos < 10:
+        return "BREVE (hasta 10 hs)"
+    elif 10 <= creditos < 20:
+        return "INTERMEDIA (entre 10 y 20 hs)"
+    elif creditos >= 20:
+        return "PROLONGADA (más de 20 hs)"
+    return "SIN CLASIFICAR"
+df_temp["Duración"] = df_temp["Créditos"].apply(clasificar_duracion)
 df_temp["Modalidad"] = df_temp["modalidad_cursada"]
 df_temp["Apto tramo"] = df_temp["apto_tramo"].fillna("No")
 df_temp["Ver más"] = df_temp["link_externo"]  # solo URL
 
 
-# ========== APLICAR FILTROS ==========
+# ========== FILTROS VISUALES ==========
 organismos = sorted(df_temp["organismo"].dropna().unique().tolist())
 modalidades = sorted(df_temp["Modalidad"].dropna().unique().tolist())
+duraciones = sorted(df_temp["Duración"].dropna().unique().tolist())
+
 organismos.insert(0, "Todos")
 modalidades.insert(0, "Todos")
+duraciones.insert(0, "Todas")
 
-st.title("FORMULARIO DE INSCRIPCIÓN DE CURSOS")
+st.markdown("### 🎛 Filtros disponibles")
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     organismo_sel = st.selectbox("Organismo", organismos, index=0)
 with col2:
     modalidad_sel = st.selectbox("Modalidad", modalidades, index=0)
+with col3:
+    duracion_sel = st.selectbox("Duración", duraciones, index=0)
 
+# Aplicar filtros
 df_filtrado = df_temp.copy()
 if organismo_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["organismo"] == organismo_sel]
 if modalidad_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado["Modalidad"] == modalidad_sel]
+if duracion_sel != "Todas":
+    df_filtrado = df_filtrado[df_filtrado["Duración"] == duracion_sel]
+
 
 
 # ========== TABLA HTML ==========
